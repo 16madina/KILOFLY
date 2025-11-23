@@ -14,6 +14,7 @@ interface ListingCardProps {
   arrivalDate: string;
   availableKg: number;
   pricePerKg: number;
+  destinationImage?: string;
 }
 
 const ListingCard = ({
@@ -25,16 +26,26 @@ const ListingCard = ({
   arrivalDate,
   availableKg,
   pricePerKg,
+  destinationImage,
 }: ListingCardProps) => {
   return (
-    <Card className="overflow-hidden transition-all hover:shadow-hover">
-      <div className="relative h-40 bg-gradient-hero">
-        <Avatar className="absolute inset-0 h-full w-full rounded-none">
-          <AvatarImage src={userAvatar} className="object-cover" />
-          <AvatarFallback className="bg-gradient-sky text-primary-foreground rounded-none text-6xl">
-            {userName.substring(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+    <Card className="overflow-hidden transition-all hover:shadow-hover group">
+      <div className="relative h-40 overflow-hidden">
+        {destinationImage ? (
+          <img 
+            src={destinationImage} 
+            alt={arrival}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <Avatar className="h-full w-full rounded-none">
+            <AvatarImage src={userAvatar} className="object-cover" />
+            <AvatarFallback className="bg-gradient-sky text-primary-foreground rounded-none text-6xl">
+              {userName.substring(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
         <div className="absolute top-3 right-3">
           <Badge variant="secondary" className="gap-1 bg-background/90 backdrop-blur-sm">
             <Weight className="h-3 w-3" />
