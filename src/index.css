@@ -8,25 +8,25 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 210 100% 98%;
-    --foreground: 220 20% 20%;
+    --background: 270 30% 98%;
+    --foreground: 270 20% 20%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 20%;
+    --card-foreground: 270 20% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 20%;
+    --popover-foreground: 270 20% 20%;
 
-    --primary: 200 95% 50%;
+    --primary: 270 70% 55%;
     --primary-foreground: 0 0% 100%;
     
-    --primary-glow: 200 95% 65%;
+    --primary-glow: 270 70% 70%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 220 20% 20%;
+    --secondary: 270 30% 96%;
+    --secondary-foreground: 270 20% 20%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 270 30% 96%;
+    --muted-foreground: 270 10% 50%;
 
     --accent: 25 95% 60%;
     --accent-foreground: 0 0% 100%;
@@ -42,43 +42,43 @@ All colors MUST be HSL.
     --surface: 0 0% 98%;
     --surface-dark: 220 30% 12%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 200 95% 50%;
+    --border: 270 25% 91%;
+    --input: 270 25% 91%;
+    --ring: 270 70% 55%;
 
     --radius: 0.75rem;
     
     /* Custom tokens for travel app */
-    --gradient-sky: linear-gradient(135deg, hsl(200 95% 50%), hsl(180 90% 55%));
+    --gradient-sky: linear-gradient(135deg, hsl(270 70% 55%), hsl(290 65% 60%));
     --gradient-sunset: linear-gradient(135deg, hsl(25 95% 60%), hsl(10 90% 65%));
-    --gradient-hero: linear-gradient(135deg, hsl(200 95% 50% / 0.1), hsl(25 95% 60% / 0.05));
+    --gradient-hero: linear-gradient(135deg, hsl(270 70% 55% / 0.1), hsl(25 95% 60% / 0.05));
     
-    --shadow-card: 0 4px 20px hsl(200 95% 50% / 0.08);
-    --shadow-hover: 0 8px 30px hsl(200 95% 50% / 0.15);
+    --shadow-card: 0 4px 20px hsl(270 70% 55% / 0.08);
+    --shadow-hover: 0 8px 30px hsl(270 70% 55% / 0.15);
     
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    --background: 220 30% 8%;
-    --foreground: 210 40% 98%;
+    --background: 270 25% 8%;
+    --foreground: 270 30% 98%;
 
-    --card: 220 30% 12%;
-    --card-foreground: 210 40% 98%;
+    --card: 270 25% 12%;
+    --card-foreground: 270 30% 98%;
 
-    --popover: 220 30% 12%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 270 25% 12%;
+    --popover-foreground: 270 30% 98%;
 
-    --primary: 200 95% 55%;
+    --primary: 270 70% 60%;
     --primary-foreground: 0 0% 100%;
     
-    --primary-glow: 200 95% 70%;
+    --primary-glow: 270 70% 75%;
 
-    --secondary: 220 25% 15%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 270 20% 15%;
+    --secondary-foreground: 270 30% 98%;
 
-    --muted: 220 25% 15%;
-    --muted-foreground: 220 10% 65%;
+    --muted: 270 20% 15%;
+    --muted-foreground: 270 10% 65%;
 
     --accent: 25 95% 65%;
     --accent-foreground: 0 0% 100%;
@@ -91,12 +91,12 @@ All colors MUST be HSL.
     --success: 142 71% 50%;
     --success-foreground: 0 0% 100%;
     
-    --surface: 220 30% 12%;
-    --surface-dark: 220 30% 8%;
+    --surface: 270 25% 12%;
+    --surface-dark: 270 25% 8%;
 
-    --border: 220 25% 20%;
-    --input: 220 25% 20%;
-    --ring: 200 95% 55%;
+    --border: 270 20% 20%;
+    --input: 270 20% 20%;
+    --ring: 270 70% 60%;
     
     --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.3);
     --shadow-hover: 0 8px 30px hsl(0 0% 0% / 0.4);

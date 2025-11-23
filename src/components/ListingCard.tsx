@@ -28,25 +28,27 @@ const ListingCard = ({
 }: ListingCardProps) => {
   return (
     <Card className="overflow-hidden transition-all hover:shadow-hover">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-12 w-12 ring-2 ring-primary/20">
-              <AvatarImage src={userAvatar} />
-              <AvatarFallback className="bg-gradient-sky text-primary-foreground">
-                {userName.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-semibold text-foreground">{userName}</p>
-              <p className="text-sm text-muted-foreground">Voyageur vérifié</p>
-            </div>
-          </div>
-          <Badge variant="secondary" className="gap-1">
+      <div className="relative h-40 bg-gradient-hero">
+        <Avatar className="absolute inset-0 h-full w-full rounded-none">
+          <AvatarImage src={userAvatar} className="object-cover" />
+          <AvatarFallback className="bg-gradient-sky text-primary-foreground rounded-none text-6xl">
+            {userName.substring(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="absolute top-3 right-3">
+          <Badge variant="secondary" className="gap-1 bg-background/90 backdrop-blur-sm">
             <Weight className="h-3 w-3" />
             {availableKg} kg
           </Badge>
         </div>
+        <div className="absolute bottom-3 left-3 right-3">
+          <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2">
+            <p className="font-semibold text-foreground text-sm">{userName}</p>
+            <p className="text-xs text-muted-foreground">Voyageur vérifié</p>
+          </div>
+        </div>
+      </div>
+      <CardContent className="p-4">
 
         <div className="space-y-3">
           <div className="flex items-center gap-3 text-sm">
@@ -67,13 +69,13 @@ const ListingCard = ({
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-border">
+          <div className="flex items-center justify-between pt-3 border-t border-border">
             <div>
-              <p className="text-2xl font-bold text-primary">
-                {pricePerKg}€<span className="text-base text-muted-foreground">/kg</span>
+              <p className="text-xl font-bold text-primary">
+                {pricePerKg}€<span className="text-sm text-muted-foreground">/kg</span>
               </p>
             </div>
-            <Button className="gap-2 bg-gradient-sky hover:opacity-90 transition-opacity">
+            <Button size="sm" className="gap-2 bg-gradient-sky hover:opacity-90 transition-opacity">
               Contacter
               <ArrowRight className="h-4 w-4" />
             </Button>
