@@ -39,7 +39,7 @@ const BottomSheet = ({ isOpen, onClose, children, title }: BottomSheetProps) => 
       {/* Bottom Sheet */}
       <div
         className={cn(
-          "fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-2xl transition-transform duration-300 ease-out pb-safe max-h-[90vh] overflow-y-auto",
+          "fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-2xl transition-transform duration-300 ease-out pb-safe max-h-[75vh] overflow-y-auto",
           isVisible ? "translate-y-0" : "translate-y-full"
         )}
       >
