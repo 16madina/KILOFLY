@@ -1,37 +1,40 @@
-import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { MapPin, Calendar, Weight, DollarSign } from "lucide-react";
+import { MapPin, Calendar, Weight, DollarSign, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const PostListing = () => {
+  const navigate = useNavigate();
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     toast.success("Annonce créée avec succès!");
+    navigate("/");
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <div className="min-h-screen bg-background pb-20">
+      {/* Mobile Header */}
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe">
+        <div className="container py-4 flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/")}
+            className="h-9 w-9"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold">Poster une annonce</h1>
+        </div>
+      </header>
 
-      <div className="container py-12">
-        <div className="max-w-2xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-2">
-              Poster une{" "}
-              <span className="bg-gradient-sky bg-clip-text text-transparent">
-                annonce
-              </span>
-            </h1>
-            <p className="text-muted-foreground">
-              Partagez vos kilos disponibles avec d'autres voyageurs
-            </p>
-          </div>
-
-          <Card className="shadow-card">
+      <div className="container py-6">
+        <Card className="shadow-card animate-fade-in">
             <CardHeader>
               <CardTitle>Détails du voyage</CardTitle>
               <CardDescription>
@@ -135,7 +138,7 @@ const PostListing = () => {
 
                 <Button
                   type="submit"
-                  className="w-full h-12 text-lg bg-gradient-sky hover:opacity-90 transition-opacity"
+                  className="w-full h-12 text-base font-semibold bg-gradient-sky hover:opacity-90 transition-opacity"
                 >
                   Publier l'annonce
                 </Button>
@@ -143,7 +146,6 @@ const PostListing = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
     </div>
   );
 };
