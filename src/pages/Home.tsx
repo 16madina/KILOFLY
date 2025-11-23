@@ -107,7 +107,7 @@ const Home = () => {
           </p>
         </div>
 
-        <div className="grid gap-4 animate-fade-in">
+        <div className="grid grid-cols-2 gap-3 animate-fade-in">
           {mockListings.map((listing) => (
             <ListingCard key={listing.id} {...listing} />
           ))}
