@@ -44,13 +44,13 @@ const BottomSheet = ({ isOpen, onClose, children, title }: BottomSheetProps) => 
         )}
       >
         {/* Handle */}
-        <div className="flex justify-center pt-3 pb-2">
+        <div className="flex justify-center pt-2 pb-1">
           <div className="w-12 h-1.5 rounded-full bg-muted" />
         </div>
 
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="flex items-center justify-between px-6 py-2 border-b border-border">
             <h3 className="text-lg font-semibold">{title}</h3>
             <button
               onClick={handleClose}
