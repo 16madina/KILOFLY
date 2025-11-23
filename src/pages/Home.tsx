@@ -3,6 +3,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Plane } from "lucide-react";
 import heroImage from "@/assets/hero-travel.jpg";
+import montrealImg from "@/assets/destinations/montreal.jpg";
+import abidjanImg from "@/assets/destinations/abidjan.jpg";
+import parisImg from "@/assets/destinations/paris.jpg";
+import dakarImg from "@/assets/destinations/dakar.jpg";
+import torontoImg from "@/assets/destinations/toronto.jpg";
+import lomeImg from "@/assets/destinations/lome.jpg";
 
 const Home = () => {
   // Mock data - sera remplacé par des vraies données de la base de données
@@ -16,6 +22,7 @@ const Home = () => {
       arrivalDate: "16 Jan 2025",
       availableKg: 15,
       pricePerKg: 8,
+      destinationImage: abidjanImg,
     },
     {
       id: "2",
@@ -26,6 +33,7 @@ const Home = () => {
       arrivalDate: "20 Jan 2025",
       availableKg: 20,
       pricePerKg: 6,
+      destinationImage: dakarImg,
     },
     {
       id: "3",
@@ -36,6 +44,7 @@ const Home = () => {
       arrivalDate: "26 Jan 2025",
       availableKg: 12,
       pricePerKg: 10,
+      destinationImage: lomeImg,
     },
   ];
 
