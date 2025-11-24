@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, MapPin, Phone, Mail, Upload, CheckCircle, Clock, XCircle } from "lucide-react";
+import { User, MapPin, Phone, Mail, Upload, CheckCircle, Clock, XCircle, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 interface Profile {
@@ -28,6 +28,7 @@ const Profile = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -36,7 +37,21 @@ const Profile = () => {
     }
 
     fetchProfile();
+    checkAdminRole();
   }, [user, navigate]);
+
+  const checkAdminRole = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single();
+
+    setIsAdmin(!!data);
+  };
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -167,6 +182,29 @@ const Profile = () => {
       <Navbar />
       
       <div className="container py-8 max-w-4xl">
+        {/* Admin Panel Link */}
+        {isAdmin && (
+          <Card className="mb-6 bg-gradient-primary border-primary/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Shield className="h-6 w-6 text-primary-foreground" />
+                  <div>
+                    <h3 className="font-semibold text-primary-foreground">Panneau d'administration</h3>
+                    <p className="text-sm text-primary-foreground/80">Gérer les vérifications d'identité</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => navigate('/admin/verification')}
+                  variant="secondary"
+                >
+                  Accéder
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Profile Header */}
         <Card className="mb-6">
           <CardContent className="pt-6">
