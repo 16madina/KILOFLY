@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plane, Plus, User, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import NotificationBell from "@/components/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,12 +32,15 @@ const Navbar = () => {
 
         <div className="flex items-center gap-4">
           {user && (
-            <Link to="/post">
-              <Button variant="default" className="gap-2">
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Poster une annonce</span>
-              </Button>
-            </Link>
+            <>
+              <NotificationBell />
+              <Link to="/post">
+                <Button variant="default" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Poster une annonce</span>
+                </Button>
+              </Link>
+            </>
           )}
           
           {user ? (

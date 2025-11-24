@@ -99,11 +99,28 @@ const AdminVerification = () => {
     if (error) {
       toast.error("Erreur lors de la vérification");
       console.error(error);
-    } else {
-      toast.success(approved ? "Document approuvé" : "Document rejeté");
-      fetchPendingVerifications();
+      setProcessing(null);
+      return;
     }
 
+    // Send notification to user
+    const notificationTitle = approved 
+      ? "✅ Identité vérifiée" 
+      : "❌ Document rejeté";
+    const notificationMessage = approved
+      ? "Votre document d'identité a été vérifié avec succès. Vous pouvez maintenant utiliser toutes les fonctionnalités de KiloShare."
+      : "Votre document d'identité a été rejeté. Veuillez soumettre un document valide et lisible.";
+    const notificationType = approved ? 'success' : 'error';
+
+    await supabase.rpc('send_notification', {
+      p_user_id: userId,
+      p_title: notificationTitle,
+      p_message: notificationMessage,
+      p_type: notificationType
+    });
+
+    toast.success(approved ? "Document approuvé et utilisateur notifié" : "Document rejeté et utilisateur notifié");
+    fetchPendingVerifications();
     setProcessing(null);
   };
 
