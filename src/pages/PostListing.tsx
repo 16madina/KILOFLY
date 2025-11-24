@@ -115,6 +115,7 @@ const PostListing = () => {
                     </Label>
                     <Input
                       id="departure"
+                      name="departure"
                       placeholder="ex: Montréal"
                       required
                     />
@@ -127,6 +128,7 @@ const PostListing = () => {
                     </Label>
                     <Input
                       id="arrival"
+                      name="arrival"
                       placeholder="ex: Abidjan"
                       required
                     />
@@ -141,6 +143,7 @@ const PostListing = () => {
                     </Label>
                     <Input
                       id="departure-date"
+                      name="departure-date"
                       type="date"
                       required
                     />
@@ -153,6 +156,7 @@ const PostListing = () => {
                     </Label>
                     <Input
                       id="arrival-date"
+                      name="arrival-date"
                       type="date"
                       required
                     />
@@ -167,6 +171,7 @@ const PostListing = () => {
                     </Label>
                     <Input
                       id="kg"
+                      name="kg"
                       type="number"
                       placeholder="ex: 15"
                       min="1"
@@ -181,6 +186,7 @@ const PostListing = () => {
                     </Label>
                     <Input
                       id="price"
+                      name="price"
                       type="number"
                       placeholder="ex: 8"
                       min="1"
@@ -195,6 +201,7 @@ const PostListing = () => {
                   </Label>
                   <Textarea
                     id="notes"
+                    name="notes"
                     placeholder="Ajoutez des informations supplémentaires sur votre offre..."
                     className="min-h-[100px]"
                   />
