@@ -181,22 +181,23 @@ const Home = () => {
             <p className="text-muted-foreground">Aucune annonce disponible pour le moment.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 animate-fade-in">
+          <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory -mx-4 px-4 animate-fade-in scrollbar-hide">
             {listings.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                id={listing.id}
-                userId={listing.user_id}
-                userName={listing.profiles.full_name}
-                userAvatar={listing.profiles.avatar_url}
-                departure={listing.departure}
-                arrival={listing.arrival}
-                departureDate={formatDate(listing.departure_date)}
-                arrivalDate={formatDate(listing.arrival_date)}
-                availableKg={listing.available_kg}
-                pricePerKg={listing.price_per_kg}
-                destinationImage={listing.destination_image || getDestinationImage(listing.arrival)}
-              />
+              <div key={listing.id} className="flex-shrink-0 w-[280px] snap-center">
+                <ListingCard
+                  id={listing.id}
+                  userId={listing.user_id}
+                  userName={listing.profiles.full_name}
+                  userAvatar={listing.profiles.avatar_url}
+                  departure={listing.departure}
+                  arrival={listing.arrival}
+                  departureDate={formatDate(listing.departure_date)}
+                  arrivalDate={formatDate(listing.arrival_date)}
+                  availableKg={listing.available_kg}
+                  pricePerKg={listing.price_per_kg}
+                  destinationImage={listing.destination_image || getDestinationImage(listing.arrival)}
+                />
+              </div>
             ))}
           </div>
         )}
