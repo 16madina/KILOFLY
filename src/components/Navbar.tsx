@@ -1,8 +1,22 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Plane, Plus, User } from "lucide-react";
+import { Plane, Plus, User, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -16,17 +30,40 @@ const Navbar = () => {
         </Link>
 
         <div className="flex items-center gap-4">
-          <Link to="/post">
-            <Button variant="default" className="gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Poster une annonce</span>
-            </Button>
-          </Link>
-          <Link to="/auth">
-            <Button variant="outline" size="icon">
-              <User className="h-4 w-4" />
-            </Button>
-          </Link>
+          {user && (
+            <Link to="/post">
+              <Button variant="default" className="gap-2">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Poster une annonce</span>
+              </Button>
+            </Link>
+          )}
+          
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <User className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  <User className="mr-2 h-4 w-4" />
+                  Profil
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Déconnexion
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link to="/auth">
+              <Button variant="outline" size="icon">
+                <User className="h-4 w-4" />
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </nav>
