@@ -14,6 +14,7 @@ import Terms from "./pages/Terms";
 import AdminVerification from "./pages/AdminVerification";
 import NotFound from "./pages/NotFound";
 import ProhibitedItems from "./pages/ProhibitedItems";
+import AdminReports from "./pages/AdminReports";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -39,6 +40,7 @@ function App() {
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/prohibited-items" element={<ProhibitedItems />} />
                 <Route path="/admin/verification" element={<AdminVerification />} />
+                <Route path="/admin/reports" element={<AdminReports />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

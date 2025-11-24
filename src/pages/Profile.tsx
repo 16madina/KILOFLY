@@ -15,6 +15,7 @@ import { TrustScore } from "@/components/TrustScore";
 import { ProfileStats } from "@/components/ProfileStats";
 import { ReviewCard } from "@/components/ReviewCard";
 import VerifiedBadge from "@/components/VerifiedBadge";
+import { PhoneVerification } from "@/components/PhoneVerification";
 import AvatarUpload from "@/components/AvatarUpload";
 
 interface Profile {
@@ -261,25 +262,47 @@ const Profile = () => {
       <div className="container px-4 sm:px-6 py-6 sm:py-8 max-w-4xl animate-fade-in">
         {/* Admin Panel Link */}
         {isAdmin && (
-          <Card className="mb-6 bg-gradient-primary border-primary/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Shield className="h-6 w-6 text-primary-foreground" />
-                  <div>
-                    <h3 className="font-semibold text-primary-foreground">Panneau d'administration</h3>
-                    <p className="text-sm text-primary-foreground/80">Gérer les vérifications d'identité</p>
+          <div className="space-y-4 mb-6">
+            <Card className="bg-gradient-primary border-primary/20">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Shield className="h-6 w-6 text-primary-foreground" />
+                    <div>
+                      <h3 className="font-semibold text-primary-foreground">Vérifications d'identité</h3>
+                      <p className="text-sm text-primary-foreground/80">Gérer les demandes de vérification</p>
+                    </div>
                   </div>
+                  <Button 
+                    onClick={() => navigate('/admin/verification')}
+                    variant="secondary"
+                  >
+                    Accéder
+                  </Button>
                 </div>
-                <Button 
-                  onClick={() => navigate('/admin/verification')}
-                  variant="secondary"
-                >
-                  Accéder
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-primary border-primary/20">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="h-6 w-6 text-primary-foreground" />
+                    <div>
+                      <h3 className="font-semibold text-primary-foreground">Signalements</h3>
+                      <p className="text-sm text-primary-foreground/80">Gérer les signalements des utilisateurs</p>
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={() => navigate('/admin/reports')}
+                    variant="secondary"
+                  >
+                    Accéder
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* Profile Header */}
@@ -368,8 +391,9 @@ const Profile = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="identity" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="identity">Identité</TabsTrigger>
+            <TabsTrigger value="phone">Téléphone</TabsTrigger>
             <TabsTrigger value="reviews">Avis ({reviews.length})</TabsTrigger>
             <TabsTrigger value="info">Infos</TabsTrigger>
           </TabsList>
@@ -465,6 +489,14 @@ const Profile = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="phone" className="mt-6">
+            <PhoneVerification
+              currentPhone={profile.phone}
+              isVerified={profile.phone_verified}
+              onVerificationComplete={fetchProfile}
+            />
           </TabsContent>
 
           <TabsContent value="reviews" className="mt-6 space-y-4">
