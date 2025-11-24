@@ -32,14 +32,16 @@ interface Listing {
 const Home = () => {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchDeparture, setSearchDeparture] = useState("");
+  const [searchArrival, setSearchArrival] = useState("");
 
   useEffect(() => {
     fetchListings();
   }, []);
 
-  const fetchListings = async () => {
+  const fetchListings = async (departure?: string, arrival?: string) => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("listings")
       .select(`
         *,
@@ -48,8 +50,18 @@ const Home = () => {
           avatar_url
         )
       `)
-      .eq("status", "active")
-      .order("created_at", { ascending: false });
+      .eq("status", "active");
+
+    if (departure) {
+      query = query.ilike("departure", `%${departure}%`);
+    }
+    if (arrival) {
+      query = query.ilike("arrival", `%${arrival}%`);
+    }
+
+    query = query.order("created_at", { ascending: false });
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching listings:", error);
@@ -57,6 +69,10 @@ const Home = () => {
       setListings(data || []);
     }
     setLoading(false);
+  };
+
+  const handleSearch = () => {
+    fetchListings(searchDeparture, searchArrival);
   };
 
   const getDestinationImage = (city: string) => {
@@ -120,6 +136,9 @@ const Home = () => {
                 <Input
                   placeholder="Ville de départ..."
                   className="pl-10 h-12 bg-card shadow-card text-base"
+                  value={searchDeparture}
+                  onChange={(e) => setSearchDeparture(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
               <div className="relative">
@@ -127,9 +146,16 @@ const Home = () => {
                 <Input
                   placeholder="Destination..."
                   className="pl-10 h-12 bg-card shadow-card text-base"
+                  value={searchArrival}
+                  onChange={(e) => setSearchArrival(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
-              <Button size="lg" className="h-12 w-full bg-gradient-sky hover:opacity-90 transition-opacity text-base font-semibold">
+              <Button 
+                size="lg" 
+                className="h-12 w-full bg-gradient-sky hover:opacity-90 transition-opacity text-base font-semibold"
+                onClick={handleSearch}
+              >
                 Rechercher
               </Button>
             </div>
@@ -160,7 +186,9 @@ const Home = () => {
               <ListingCard
                 key={listing.id}
                 id={listing.id}
+                userId={listing.user_id}
                 userName={listing.profiles.full_name}
+                userAvatar={listing.profiles.avatar_url}
                 departure={listing.departure}
                 arrival={listing.arrival}
                 departureDate={formatDate(listing.departure_date)}
