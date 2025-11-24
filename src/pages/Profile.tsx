@@ -263,7 +263,7 @@ const Profile = () => {
         {/* Admin Panel Link */}
         {isAdmin && (
           <div className="space-y-4 mb-6">
-            <Card className="bg-gradient-primary border-primary/20">
+            <Card className="bg-primary border-primary/20">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -283,7 +283,7 @@ const Profile = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-primary border-primary/20">
+            <Card className="bg-primary border-primary/20">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
