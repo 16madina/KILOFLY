@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Send, MapPin, Calendar, Weight, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import VerifiedBadge from "@/components/VerifiedBadge";
 
 interface Message {
   id: string;
@@ -27,8 +28,10 @@ const Conversation = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [otherUser, setOtherUser] = useState<any>(null);
+  const [isOtherUserVerified, setIsOtherUserVerified] = useState(false);
   const [listing, setListing] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -86,8 +89,8 @@ const Conversation = () => {
       .from('conversations')
       .select(`
         *,
-        buyer:profiles!buyer_id(full_name, avatar_url),
-        seller:profiles!seller_id(full_name, avatar_url),
+        buyer:profiles!buyer_id(full_name, avatar_url, id_verified),
+        seller:profiles!seller_id(full_name, avatar_url, id_verified),
         listings(id, departure, arrival, departure_date, arrival_date, available_kg, price_per_kg)
       `)
       .eq('id', id)
@@ -100,6 +103,7 @@ const Conversation = () => {
 
     const other = data.buyer_id === user?.id ? data.seller : data.buyer;
     setOtherUser(other);
+    setIsOtherUserVerified(other.id_verified || false);
     setListing(data.listings);
   };
 
@@ -129,6 +133,8 @@ const Conversation = () => {
     
     if (!newMessage.trim() || !user) return;
 
+    setSendingMessage(true);
+
     const { error } = await supabase
       .from('messages')
       .insert({
@@ -137,10 +143,13 @@ const Conversation = () => {
         content: newMessage.trim()
       });
 
+    setSendingMessage(false);
+
     if (error) {
       toast.error("Erreur lors de l'envoi du message");
     } else {
       setNewMessage("");
+      toast.success("Message envoyé");
     }
   };
 
@@ -166,8 +175,11 @@ const Conversation = () => {
                 {otherUser.full_name?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <h2 className="font-semibold">{otherUser.full_name}</h2>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="font-semibold truncate">{otherUser.full_name}</h2>
+                <VerifiedBadge verified={isOtherUserVerified} size="sm" />
+              </div>
             </div>
           </>
         )}
@@ -251,8 +263,13 @@ const Conversation = () => {
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Écrire un message..."
             className="flex-1"
+            disabled={sendingMessage}
           />
-          <Button type="submit" size="icon" disabled={!newMessage.trim()}>
+          <Button 
+            type="submit" 
+            size="icon" 
+            disabled={!newMessage.trim() || sendingMessage}
+          >
             <Send className="h-4 w-4" />
           </Button>
         </div>

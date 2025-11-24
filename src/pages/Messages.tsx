@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import VerifiedBadge from "@/components/VerifiedBadge";
 
 interface ConversationData {
   id: string;
@@ -16,10 +17,12 @@ interface ConversationData {
   buyer: {
     full_name: string;
     avatar_url: string | null;
+    id_verified: boolean | null;
   };
   seller: {
     full_name: string;
     avatar_url: string | null;
+    id_verified: boolean | null;
   };
   messages: Array<{
     content: string;
@@ -85,8 +88,8 @@ const Messages = () => {
       .from('conversations')
       .select(`
         *,
-        buyer:profiles!buyer_id(full_name, avatar_url),
-        seller:profiles!seller_id(full_name, avatar_url),
+        buyer:profiles!buyer_id(full_name, avatar_url, id_verified),
+        seller:profiles!seller_id(full_name, avatar_url, id_verified),
         messages(content, created_at, sender_id, read)
       `)
       .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
@@ -190,7 +193,10 @@ const Messages = () => {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <h3 className="font-semibold truncate">{otherUser.full_name}</h3>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <h3 className="font-semibold truncate">{otherUser.full_name}</h3>
+                      <VerifiedBadge verified={otherUser.id_verified || false} size="sm" />
+                    </div>
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
                       {new Date(conversation.updated_at).toLocaleDateString('fr-FR', {
                         day: 'numeric',

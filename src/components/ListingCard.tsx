@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import BottomSheet from "@/components/mobile/BottomSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import VerifiedBadge from "@/components/VerifiedBadge";
 
 interface ListingCardProps {
   id: string;
@@ -38,8 +39,24 @@ const ListingCard = ({
   destinationImage,
 }: ListingCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [contactLoading, setContactLoading] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  useEffect(() => {
+    fetchUserVerification();
+  }, [userId]);
+
+  const fetchUserVerification = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id_verified')
+      .eq('id', userId)
+      .single();
+    
+    setIsVerified(data?.id_verified || false);
+  };
 
   const handleContact = async () => {
     if (!user) {
@@ -53,6 +70,8 @@ const ListingCard = ({
       return;
     }
 
+    setContactLoading(true);
+
     try {
       // Check if conversation already exists
       const { data: existingConversation } = await supabase
@@ -63,6 +82,7 @@ const ListingCard = ({
         .single();
 
       if (existingConversation) {
+        toast.success("Redirection vers la conversation");
         navigate(`/conversation/${existingConversation.id}`);
         return;
       }
@@ -80,11 +100,13 @@ const ListingCard = ({
 
       if (error) throw error;
 
-      toast.success("Conversation créée");
+      toast.success("Conversation créée avec succès");
       navigate(`/conversation/${newConversation.id}`);
     } catch (error) {
       console.error('Error creating conversation:', error);
       toast.error("Erreur lors de la création de la conversation");
+    } finally {
+      setContactLoading(false);
     }
   };
 
@@ -104,9 +126,14 @@ const ListingCard = ({
                 {userName.substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <p className="font-semibold text-lg">{userName}</p>
-              <p className="text-sm text-muted-foreground">Voyageur vérifié</p>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <p className="font-semibold text-lg">{userName}</p>
+                <VerifiedBadge verified={isVerified} size="sm" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {isVerified ? "Voyageur vérifié" : "En attente de vérification"}
+              </p>
             </div>
           </div>
 
@@ -177,9 +204,10 @@ const ListingCard = ({
             className="w-full gap-2 bg-gradient-sky hover:opacity-90 transition-opacity" 
             size="lg"
             onClick={handleContact}
+            disabled={contactLoading}
           >
             <Phone className="h-5 w-5" />
-            Contacter le voyageur
+            {contactLoading ? "Chargement..." : "Contacter le voyageur"}
           </Button>
         </div>
       </BottomSheet>
@@ -215,9 +243,11 @@ const ListingCard = ({
                 {userName.substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <p className="font-semibold text-foreground text-sm">{userName}</p>
-              <p className="text-xs text-muted-foreground">Voyageur vérifié</p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className="font-semibold text-foreground text-sm truncate">{userName}</p>
+                <VerifiedBadge verified={isVerified} size="sm" />
+              </div>
             </div>
           </div>
         </div>

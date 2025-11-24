@@ -3,8 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { MapPin, Calendar, Weight, DollarSign, ArrowLeft } from "lucide-react";
+import { MapPin, Calendar, Weight, DollarSign, ArrowLeft, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -199,18 +200,33 @@ const PostListing = () => {
                   />
                 </div>
 
+                {isVerified === false && (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="flex flex-col gap-3">
+                      <p className="font-medium">Vérification d'identité requise</p>
+                      <p className="text-sm">
+                        Pour garantir la sécurité de tous les utilisateurs, vous devez vérifier votre identité avant de poster une annonce.
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate("/profile")}
+                        className="w-full"
+                      >
+                        Vérifier mon identité
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <Button
                   type="submit"
                   disabled={loading || isVerified === false}
                   className="w-full h-12 text-base font-semibold bg-gradient-sky hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                  {loading ? "Publication..." : "Publier l'annonce"}
+                  {loading ? "Publication en cours..." : "Publier l'annonce"}
                 </Button>
-                {isVerified === false && (
-                  <p className="text-sm text-destructive text-center mt-2">
-                    Vous devez vérifier votre identité pour poster une annonce
-                  </p>
-                )}
               </form>
             </CardContent>
           </Card>
