@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { User, MapPin, Phone, Mail, Upload, CheckCircle, Clock, XCircle, Shield, Star, AlertTriangle, Edit, FileText, HelpCircle, Settings, LogOut, Package, Truck, Send } from "lucide-react";
@@ -393,276 +392,277 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Tabs */}
-        <Tabs defaultValue="identity" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="identity">Identité</TabsTrigger>
-            <TabsTrigger value="phone">Téléphone</TabsTrigger>
-            <TabsTrigger value="verification">Vérification</TabsTrigger>
-            <TabsTrigger value="reviews">Avis ({reviews.length})</TabsTrigger>
-            <TabsTrigger value="more">Plus</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="identity" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Vérification d'identité</CardTitle>
-                <CardDescription>
-                  Pour la sécurité de tous, nous devons vérifier votre identité. 
-                  Téléchargez une photo claire de votre pièce d'identité (carte d'identité, passeport).
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {profile.id_document_url ? (
-                  <div className="space-y-4">
-                    <div className="rounded-lg border p-4">
-                      <img 
-                        src={profile.id_document_url} 
-                        alt="Document d'identité"
-                        className="w-full max-w-md mx-auto rounded"
-                      />
-                    </div>
-                    
-                    {profile.id_verified ? (
-                      <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                        <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                          <CheckCircle className="h-5 w-5" />
-                          <p className="font-medium">Identité vérifiée</p>
-                        </div>
-                        <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                          Votre document a été approuvé par notre équipe
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
-                        <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
-                          <Clock className="h-5 w-5" />
-                          <p className="font-medium">En attente de vérification</p>
-                        </div>
-                        <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
-                          Votre document est en cours de vérification. Cela peut prendre jusqu'à 48h.
-                        </p>
-                      </div>
-                    )}
-                    
-                    <label htmlFor="id-upload">
-                      <Button variant="outline" className="w-full" disabled={uploading} asChild>
-                        <span>
-                          <Upload className="h-4 w-4 mr-2" />
-                          {uploading ? 'Téléchargement...' : 'Changer le document'}
-                        </span>
-                      </Button>
-                    </label>
+        {/* Sections */}
+        <div className="space-y-6">
+          {/* Verification Identity */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Vérification d'identité</CardTitle>
+              <CardDescription>
+                Pour la sécurité de tous, nous devons vérifier votre identité. 
+                Téléchargez une photo claire de votre pièce d'identité (carte d'identité, passeport).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {profile.id_document_url ? (
+                <div className="space-y-4">
+                  <div className="rounded-lg border p-4">
+                    <img 
+                      src={profile.id_document_url} 
+                      alt="Document d'identité"
+                      className="w-full max-w-md mx-auto rounded"
+                    />
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-                      <div className="flex items-center gap-2 text-destructive">
-                        <XCircle className="h-5 w-5" />
-                        <p className="font-medium">Document non soumis</p>
+                  
+                  {profile.id_verified ? (
+                    <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                        <CheckCircle className="h-5 w-5" />
+                        <p className="font-medium">Identité vérifiée</p>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Vous devez soumettre un document d'identité pour utiliser la plateforme
+                      <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                        Votre document a été approuvé par notre équipe
                       </p>
                     </div>
-                    
-                    <label htmlFor="id-upload">
-                      <Button className="w-full" disabled={uploading} asChild>
-                        <span>
-                          <Upload className="h-4 w-4 mr-2" />
-                          {uploading ? 'Téléchargement...' : 'Télécharger mon document'}
-                        </span>
-                      </Button>
-                    </label>
-                  </div>
-                )}
-                
-                <input
-                  id="id-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={uploadIdDocument}
-                  disabled={uploading}
-                  className="hidden"
-                />
-                
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>• Le document doit être lisible et en couleur</p>
-                  <p>• Formats acceptés: JPG, PNG (max 10 MB)</p>
-                  <p>• Toutes les informations doivent être visibles</p>
-                  <p>• Vos données sont sécurisées et confidentielles</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="phone" className="mt-6">
-            <PhoneVerification
-              currentPhone={profile.phone}
-              isVerified={profile.phone_verified}
-              onVerificationComplete={fetchProfile}
-            />
-          </TabsContent>
-
-          <TabsContent value="verification" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Type de profil</CardTitle>
-                <CardDescription>
-                  Sélectionnez votre utilisation de la plateforme
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between py-3 border-b">
-                  <div className="flex items-center gap-3">
-                    <Package className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Je suis voyageur</p>
-                      <p className="text-sm text-muted-foreground">Je transporte des colis</p>
+                  ) : (
+                    <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
+                        <Clock className="h-5 w-5" />
+                        <p className="font-medium">En attente de vérification</p>
+                      </div>
+                      <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
+                        Votre document est en cours de vérification. Cela peut prendre jusqu'à 48h.
+                      </p>
                     </div>
-                  </div>
-                  <Switch checked={isTraveler} onCheckedChange={setIsTraveler} />
+                  )}
+                  
+                  <label htmlFor="id-upload">
+                    <Button variant="outline" className="w-full" disabled={uploading} asChild>
+                      <span>
+                        <Upload className="h-4 w-4 mr-2" />
+                        {uploading ? 'Téléchargement...' : 'Changer le document'}
+                      </span>
+                    </Button>
+                  </label>
                 </div>
-                
-                <div className="flex items-center justify-between py-3 border-b">
-                  <div className="flex items-center gap-3">
-                    <Truck className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Je suis transitaire professionnel</p>
-                      <p className="text-sm text-muted-foreground">Service de transport</p>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-destructive">
+                      <XCircle className="h-5 w-5" />
+                      <p className="font-medium">Document non soumis</p>
                     </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Vous devez soumettre un document d'identité pour utiliser la plateforme
+                    </p>
                   </div>
-                  <Switch checked={isForwarder} onCheckedChange={setIsForwarder} />
+                  
+                  <label htmlFor="id-upload">
+                    <Button className="w-full" disabled={uploading} asChild>
+                      <span>
+                        <Upload className="h-4 w-4 mr-2" />
+                        {uploading ? 'Téléchargement...' : 'Télécharger mon document'}
+                      </span>
+                    </Button>
+                  </label>
                 </div>
-                
-                <div className="flex items-center justify-between py-3">
-                  <div className="flex items-center gap-3">
-                    <Send className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Je veux envoyer un colis</p>
-                      <p className="text-sm text-muted-foreground">Rechercher un transporteur</p>
-                    </div>
-                  </div>
-                  <Switch checked={wantsToSendPackage} onCheckedChange={setWantsToSendPackage} />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              )}
+              
+              <input
+                id="id-upload"
+                type="file"
+                accept="image/*"
+                onChange={uploadIdDocument}
+                disabled={uploading}
+                className="hidden"
+              />
+              
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>• Le document doit être lisible et en couleur</p>
+                <p>• Formats acceptés: JPG, PNG (max 10 MB)</p>
+                <p>• Toutes les informations doivent être visibles</p>
+                <p>• Vos données sont sécurisées et confidentielles</p>
+              </div>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="reviews" className="mt-6 space-y-4">
-            {reviews.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
+          {/* Phone Verification */}
+          <PhoneVerification
+            currentPhone={profile.phone}
+            isVerified={profile.phone_verified}
+            onVerificationComplete={fetchProfile}
+          />
+
+          {/* Profile Type */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Type de profil</CardTitle>
+              <CardDescription>
+                Sélectionnez votre utilisation de la plateforme
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between py-3 border-b">
+                <div className="flex items-center gap-3">
+                  <Package className="w-5 h-5 text-primary" />
+                  <div>
+                    <p className="font-medium">Je suis voyageur</p>
+                    <p className="text-sm text-muted-foreground">Je transporte des colis</p>
+                  </div>
+                </div>
+                <Switch checked={isTraveler} onCheckedChange={setIsTraveler} />
+              </div>
+              
+              <div className="flex items-center justify-between py-3 border-b">
+                <div className="flex items-center gap-3">
+                  <Truck className="w-5 h-5 text-primary" />
+                  <div>
+                    <p className="font-medium">Je suis transitaire professionnel</p>
+                    <p className="text-sm text-muted-foreground">Service de transport</p>
+                  </div>
+                </div>
+                <Switch checked={isForwarder} onCheckedChange={setIsForwarder} />
+              </div>
+              
+              <div className="flex items-center justify-between py-3">
+                <div className="flex items-center gap-3">
+                  <Send className="w-5 h-5 text-primary" />
+                  <div>
+                    <p className="font-medium">Je veux envoyer un colis</p>
+                    <p className="text-sm text-muted-foreground">Rechercher un transporteur</p>
+                  </div>
+                </div>
+                <Switch checked={wantsToSendPackage} onCheckedChange={setWantsToSendPackage} />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Reviews */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Avis reçus ({reviews.length})</CardTitle>
+              <CardDescription>
+                Les avis des utilisateurs avec qui vous avez échangé
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {reviews.length === 0 ? (
+                <div className="p-8 text-center">
                   <Star className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground">Aucun avis pour le moment</p>
-                </CardContent>
-              </Card>
-            ) : (
-              reviews.map((review) => (
-                <ReviewCard key={review.id} review={review} />
-              ))
-            )}
-          </TabsContent>
-          
-          <TabsContent value="more" className="mt-6 space-y-4">
-            <Card>
-              <CardContent className="p-2 space-y-2">
-                <Link to="/my-listings">
-                  <Button variant="ghost" className="w-full justify-start">
-                    <Package className="w-5 h-5 mr-3 text-primary" />
-                    Mes annonces
-                  </Button>
-                </Link>
-                
-                <Link to="/my-transactions">
-                  <Button variant="ghost" className="w-full justify-start">
-                    <FileText className="w-5 h-5 mr-3 text-primary" />
-                    Mes transactions
-                  </Button>
-                </Link>
-                
-                <Link to="/account-security">
-                  <Button variant="ghost" className="w-full justify-start">
-                    <Shield className="w-5 h-5 mr-3 text-primary" />
-                    Sécurité du compte
-                  </Button>
-                </Link>
-                
-                <Link to="/settings">
-                  <Button variant="ghost" className="w-full justify-start">
-                    <Settings className="w-5 h-5 mr-3 text-primary" />
-                    Paramètres
-                  </Button>
-                </Link>
-                
-                <Link to="/support">
-                  <Button variant="ghost" className="w-full justify-start">
-                    <HelpCircle className="w-5 h-5 mr-3 text-primary" />
-                    Support & aide
-                  </Button>
-                </Link>
-                
-                <Link to="/prohibited-items">
-                  <Button variant="ghost" className="w-full justify-start">
-                    <AlertTriangle className="w-5 h-5 mr-3 text-destructive" />
-                    Articles interdits
-                  </Button>
-                </Link>
-                
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    navigate('/auth');
-                    toast.success('Déconnexion réussie');
-                  }}
-                >
-                  <LogOut className="w-5 h-5 mr-3" />
-                  Déconnexion
-                </Button>
-              </CardContent>
-            </Card>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {reviews.map((review) => (
+                    <ReviewCard key={review.id} review={review} />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Mes informations</CardTitle>
-                <CardDescription>
-                  Vos informations personnelles
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4">
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Actions rapides</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Link to="/my-listings">
+                <Button variant="ghost" className="w-full justify-start">
+                  <Package className="w-5 h-5 mr-3 text-primary" />
+                  Mes annonces
+                </Button>
+              </Link>
+              
+              <Link to="/my-transactions">
+                <Button variant="ghost" className="w-full justify-start">
+                  <FileText className="w-5 h-5 mr-3 text-primary" />
+                  Mes transactions
+                </Button>
+              </Link>
+              
+              <Link to="/account-security">
+                <Button variant="ghost" className="w-full justify-start">
+                  <Shield className="w-5 h-5 mr-3 text-primary" />
+                  Sécurité du compte
+                </Button>
+              </Link>
+              
+              <Link to="/settings">
+                <Button variant="ghost" className="w-full justify-start">
+                  <Settings className="w-5 h-5 mr-3 text-primary" />
+                  Paramètres
+                </Button>
+              </Link>
+              
+              <Link to="/support">
+                <Button variant="ghost" className="w-full justify-start">
+                  <HelpCircle className="w-5 h-5 mr-3 text-primary" />
+                  Support & aide
+                </Button>
+              </Link>
+              
+              <Link to="/prohibited-items">
+                <Button variant="ghost" className="w-full justify-start">
+                  <AlertTriangle className="w-5 h-5 mr-3 text-destructive" />
+                  Articles interdits
+                </Button>
+              </Link>
+              
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  navigate('/auth');
+                  toast.success('Déconnexion réussie');
+                }}
+              >
+                <LogOut className="w-5 h-5 mr-3" />
+                Déconnexion
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Personal Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Mes informations</CardTitle>
+              <CardDescription>
+                Vos informations personnelles
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Nom complet</label>
+                  <p className="text-base">{profile.full_name}</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Nom complet</label>
-                    <p className="text-base">{profile.full_name}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Pays</label>
+                    <p className="text-base">{profile.country}</p>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Pays</label>
-                      <p className="text-base">{profile.country}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Ville</label>
-                      <p className="text-base">{profile.city}</p>
-                    </div>
-                  </div>
-                  
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Téléphone</label>
-                    <p className="text-base">{profile.phone}</p>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Email</label>
-                    <p className="text-base">{user?.email}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Ville</label>
+                    <p className="text-base">{profile.city}</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Téléphone</label>
+                  <p className="text-base">{profile.phone}</p>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Email</label>
+                  <p className="text-base">{user?.email}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

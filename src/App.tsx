@@ -16,6 +16,9 @@ import NotFound from "./pages/NotFound";
 import ProhibitedItems from "./pages/ProhibitedItems";
 import AdminReports from "./pages/AdminReports";
 import Settings from "./pages/Settings";
+import MyListings from "./pages/MyListings";
+import MyTransactions from "./pages/MyTransactions";
+import AccountSecurity from "./pages/AccountSecurity";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -43,6 +46,9 @@ function App() {
                 <Route path="/admin/verification" element={<AdminVerification />} />
                 <Route path="/admin/reports" element={<AdminReports />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/my-listings" element={<MyListings />} />
+                <Route path="/my-transactions" element={<MyTransactions />} />
+                <Route path="/account-security" element={<AccountSecurity />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
