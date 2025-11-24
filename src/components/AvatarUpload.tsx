@@ -9,15 +9,16 @@ interface AvatarUploadProps {
   value: string;
   onChange: (url: string) => void;
   userName: string;
+  onFileSelect?: (file: File) => void;
+  disabled?: boolean;
 }
 
-const AvatarUpload = ({ value, onChange, userName }: AvatarUploadProps) => {
+const AvatarUpload = ({ value, onChange, userName, onFileSelect, disabled }: AvatarUploadProps) => {
   const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string>(value);
 
-  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      setUploading(true);
-
       if (!event.target.files || event.target.files.length === 0) {
         return;
       }
@@ -36,10 +37,29 @@ const AvatarUpload = ({ value, onChange, userName }: AvatarUploadProps) => {
         return;
       }
 
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${crypto.randomUUID()}.${fileExt}`;
+      // Create preview URL
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewUrl(objectUrl);
 
-      const { error: uploadError, data } = await supabase.storage
+      // If onFileSelect is provided (signup flow), just store the file
+      if (onFileSelect) {
+        onFileSelect(file);
+        return;
+      }
+
+      // Otherwise, upload immediately (profile update flow)
+      setUploading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error('Vous devez être connecté');
+        return;
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
 
@@ -64,14 +84,14 @@ const AvatarUpload = ({ value, onChange, userName }: AvatarUploadProps) => {
     <div className="flex flex-col items-center gap-4">
       <div className="relative">
         <Avatar className="h-24 w-24">
-          <AvatarImage src={value} />
+          <AvatarImage src={previewUrl || value} />
           <AvatarFallback className="bg-gradient-sky text-primary-foreground text-2xl">
             {userName.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         <label 
           htmlFor="avatar-upload" 
-          className="absolute bottom-0 right-0 p-1.5 bg-primary text-primary-foreground rounded-full cursor-pointer hover:bg-primary/90 transition-colors"
+          className={`absolute bottom-0 right-0 p-1.5 bg-primary text-primary-foreground rounded-full cursor-pointer hover:bg-primary/90 transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <Camera className="h-4 w-4" />
         </label>
@@ -79,8 +99,8 @@ const AvatarUpload = ({ value, onChange, userName }: AvatarUploadProps) => {
           id="avatar-upload"
           type="file"
           accept="image/*"
-          onChange={uploadAvatar}
-          disabled={uploading}
+          onChange={handleFileChange}
+          disabled={uploading || disabled}
           className="hidden"
         />
       </div>

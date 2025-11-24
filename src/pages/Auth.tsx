@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AvatarUpload from "@/components/AvatarUpload";
 import { z } from "zod";
 
-// Validation schema
+// Validation schema - avatar validation removed since upload happens after signup
 const signupSchema = z.object({
   fullName: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères").max(100),
   email: z.string().trim().email("Email invalide").max(255),
@@ -22,7 +22,6 @@ const signupSchema = z.object({
   city: z.string().trim().min(2, "Ville requise").max(100),
   password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
   confirmPassword: z.string(),
-  avatarUrl: z.string().url("Photo de profil requise").min(1, "Photo de profil requise"),
   termsAccepted: z.boolean().refine(val => val === true, "Vous devez accepter les conditions")
 }).refine(data => data.password === data.confirmPassword, {
   message: "Les mots de passe ne correspondent pas",
@@ -43,6 +42,7 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirm, setSignupConfirm] = useState("");
   const [signupAvatar, setSignupAvatar] = useState("");
+  const [signupAvatarFile, setSignupAvatarFile] = useState<File | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   
   const { user, signIn } = useAuth();
@@ -74,8 +74,15 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      // Validate form data
-      const formData = {
+      // Validate avatar file
+      if (!signupAvatarFile) {
+        toast.error("Photo de profil requise");
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate other fields
+      const validationData = {
         fullName: signupFullName,
         email: signupEmail,
         phone: signupPhone,
@@ -83,11 +90,9 @@ const Auth = () => {
         city: signupCity,
         password: signupPassword,
         confirmPassword: signupConfirm,
-        avatarUrl: signupAvatar,
         termsAccepted
       };
-
-      const validation = signupSchema.safeParse(formData);
+      const validation = signupSchema.safeParse(validationData);
       
       if (!validation.success) {
         const firstError = validation.error.errors[0];
@@ -96,7 +101,7 @@ const Auth = () => {
         return;
       }
 
-      // Create user account
+      // Create user account first
       const redirectUrl = `${window.location.origin}/profile`;
       
       const { error: signUpError, data } = await supabase.auth.signUp({
@@ -109,7 +114,7 @@ const Auth = () => {
             phone: signupPhone,
             country: signupCountry,
             city: signupCity,
-            avatar_url: signupAvatar,
+            avatar_url: '', // Will be updated after upload
             terms_accepted: true
           }
         }
@@ -119,6 +124,31 @@ const Auth = () => {
         toast.error(signUpError.message || "Erreur lors de l'inscription");
         setIsLoading(false);
         return;
+      }
+
+      // Now upload avatar with authenticated user
+      if (data.user && signupAvatarFile) {
+        const fileExt = signupAvatarFile.name.split('.').pop();
+        const filePath = `${data.user.id}/${crypto.randomUUID()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, signupAvatarFile, { upsert: true });
+
+        if (uploadError) {
+          console.error('Avatar upload error:', uploadError);
+          toast.warning('Compte créé mais erreur lors de l\'upload de la photo');
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath);
+
+          // Update profile with avatar URL
+          await supabase
+            .from('profiles')
+            .update({ avatar_url: publicUrl })
+            .eq('id', data.user.id);
+        }
       }
 
       toast.success("Compte créé avec succès! Redirection vers votre profil...");
@@ -206,6 +236,7 @@ const Auth = () => {
                       value={signupAvatar}
                       onChange={setSignupAvatar}
                       userName={signupFullName || "U"}
+                      onFileSelect={setSignupAvatarFile}
                     />
                     
                     <div className="space-y-2">
