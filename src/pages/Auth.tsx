@@ -5,29 +5,67 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [signupName, setSignupName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signupConfirm, setSignupConfirm] = useState("");
+  
+  const { user, signIn, signUp } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simuler une connexion
-    setTimeout(() => {
-      setIsLoading(false);
+    
+    const { error } = await signIn(loginEmail, loginPassword);
+    
+    if (error) {
+      toast.error(error.message || "Erreur lors de la connexion");
+    } else {
       toast.success("Connexion réussie!");
-    }, 1000);
+    }
+    
+    setIsLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (signupPassword !== signupConfirm) {
+      toast.error("Les mots de passe ne correspondent pas");
+      return;
+    }
+    
+    if (signupPassword.length < 6) {
+      toast.error("Le mot de passe doit contenir au moins 6 caractères");
+      return;
+    }
+    
     setIsLoading(true);
-    // Simuler une inscription
-    setTimeout(() => {
-      setIsLoading(false);
+    
+    const { error } = await signUp(signupEmail, signupPassword, signupName);
+    
+    if (error) {
+      toast.error(error.message || "Erreur lors de l'inscription");
+    } else {
       toast.success("Compte créé avec succès!");
-    }, 1000);
+    }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -70,6 +108,8 @@ const Auth = () => {
                         id="login-email"
                         type="email"
                         placeholder="votre@email.com"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
                         required
                       />
                     </div>
@@ -78,6 +118,8 @@ const Auth = () => {
                       <Input
                         id="login-password"
                         type="password"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
                         required
                       />
                     </div>
@@ -98,6 +140,8 @@ const Auth = () => {
                       <Input
                         id="signup-name"
                         placeholder="Jean Dupont"
+                        value={signupName}
+                        onChange={(e) => setSignupName(e.target.value)}
                         required
                       />
                     </div>
@@ -107,6 +151,8 @@ const Auth = () => {
                         id="signup-email"
                         type="email"
                         placeholder="votre@email.com"
+                        value={signupEmail}
+                        onChange={(e) => setSignupEmail(e.target.value)}
                         required
                       />
                     </div>
@@ -115,6 +161,8 @@ const Auth = () => {
                       <Input
                         id="signup-password"
                         type="password"
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
                         required
                       />
                     </div>
@@ -123,6 +171,8 @@ const Auth = () => {
                       <Input
                         id="signup-confirm"
                         type="password"
+                        value={signupConfirm}
+                        onChange={(e) => setSignupConfirm(e.target.value)}
                         required
                       />
                     </div>
