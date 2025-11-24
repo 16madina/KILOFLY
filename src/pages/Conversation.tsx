@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import SwipeableCard from "@/components/mobile/SwipeableCard";
 import { ReportDialog } from "@/components/ReportDialog";
+import { BlockUserDialog } from "@/components/BlockUserDialog";
 
 interface Message {
   id: string;
@@ -202,6 +203,10 @@ const Conversation = () => {
             <ReportDialog
               reportedUserId={otherUser.id || ''}
               reportedUserName={otherUser.full_name}
+            />
+            <BlockUserDialog
+              userId={otherUser.id || ''}
+              userName={otherUser.full_name}
             />
           </>
         )}
