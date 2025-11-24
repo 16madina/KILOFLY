@@ -81,15 +81,15 @@ const PostListing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       {/* Mobile Header */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe">
-        <div className="container py-4 flex items-center gap-3">
+        <div className="container px-4 sm:px-6 py-4 flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate("/")}
-            className="h-9 w-9"
+            className="h-9 w-9 transition-all duration-200 hover:scale-110"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -97,15 +97,15 @@ const PostListing = () => {
         </div>
       </header>
 
-      <div className="container py-6">
-        <Card className="shadow-card animate-fade-in">
+      <div className="container px-4 sm:px-6 py-6">
+        <Card className="shadow-card animate-fade-in transition-all duration-200 hover:shadow-lg">
             <CardHeader>
               <CardTitle>Détails du voyage</CardTitle>
               <CardDescription>
                 Remplissez les informations de votre voyage
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pb-8">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
@@ -118,6 +118,7 @@ const PostListing = () => {
                       name="departure"
                       placeholder="ex: Montréal"
                       required
+                      className="transition-all duration-200 focus:scale-[1.02]"
                     />
                   </div>
 
@@ -131,6 +132,7 @@ const PostListing = () => {
                       name="arrival"
                       placeholder="ex: Abidjan"
                       required
+                      className="transition-all duration-200 focus:scale-[1.02]"
                     />
                   </div>
                 </div>
@@ -146,6 +148,7 @@ const PostListing = () => {
                       name="departure-date"
                       type="date"
                       required
+                      className="transition-all duration-200 focus:scale-[1.02]"
                     />
                   </div>
 
@@ -159,6 +162,7 @@ const PostListing = () => {
                       name="arrival-date"
                       type="date"
                       required
+                      className="transition-all duration-200 focus:scale-[1.02]"
                     />
                   </div>
                 </div>
@@ -176,6 +180,7 @@ const PostListing = () => {
                       placeholder="ex: 15"
                       min="1"
                       required
+                      className="transition-all duration-200 focus:scale-[1.02]"
                     />
                   </div>
 
@@ -191,6 +196,7 @@ const PostListing = () => {
                       placeholder="ex: 8"
                       min="1"
                       required
+                      className="transition-all duration-200 focus:scale-[1.02]"
                     />
                   </div>
                 </div>
@@ -203,12 +209,12 @@ const PostListing = () => {
                     id="notes"
                     name="notes"
                     placeholder="Ajoutez des informations supplémentaires sur votre offre..."
-                    className="min-h-[100px]"
+                    className="min-h-[100px] transition-all duration-200 focus:scale-[1.01]"
                   />
                 </div>
 
                 {isVerified === false && (
-                  <Alert variant="destructive" className="mb-4">
+                  <Alert variant="destructive" className="mb-4 animate-fade-in">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription className="flex flex-col gap-3">
                       <p className="font-medium">Vérification d'identité requise</p>
@@ -219,7 +225,7 @@ const PostListing = () => {
                         variant="outline" 
                         size="sm"
                         onClick={() => navigate("/profile")}
-                        className="w-full"
+                        className="w-full transition-all duration-200 hover:scale-[1.02]"
                       >
                         Vérifier mon identité
                       </Button>
@@ -230,7 +236,7 @@ const PostListing = () => {
                 <Button
                   type="submit"
                   disabled={loading || isVerified === false}
-                  className="w-full h-12 text-base font-semibold bg-gradient-sky hover:opacity-90 transition-opacity disabled:opacity-50"
+                  className="w-full h-12 text-base font-semibold bg-gradient-sky hover:opacity-90 transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {loading ? "Publication en cours..." : "Publier l'annonce"}
                 </Button>

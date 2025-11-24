@@ -178,10 +178,10 @@ const Profile = () => {
   const status = getVerificationStatus();
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       <Navbar />
       
-      <div className="container py-8 max-w-4xl">
+      <div className="container px-4 sm:px-6 py-6 sm:py-8 max-w-4xl animate-fade-in">
         {/* Admin Panel Link */}
         {isAdmin && (
           <Card className="mb-6 bg-gradient-primary border-primary/20">
@@ -206,10 +206,10 @@ const Profile = () => {
         )}
 
         {/* Profile Header */}
-        <Card className="mb-6">
+        <Card className="mb-6 transition-all duration-200 hover:shadow-lg">
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row items-center gap-6">
-              <Avatar className="h-24 w-24">
+              <Avatar className="h-24 w-24 border-4 border-primary/20 transition-all duration-200 hover:scale-105">
                 <AvatarImage src={profile.avatar_url} />
                 <AvatarFallback className="bg-gradient-sky text-primary-foreground text-2xl">
                   {profile.full_name.charAt(0).toUpperCase()}
@@ -217,24 +217,24 @@ const Profile = () => {
               </Avatar>
               
               <div className="flex-1 text-center sm:text-left">
-                <h1 className="text-2xl font-bold mb-2">{profile.full_name}</h1>
+                <h1 className="text-2xl font-bold mb-2 animate-fade-in">{profile.full_name}</h1>
                 <div className="flex flex-wrap gap-2 justify-center sm:justify-start text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 transition-colors duration-200 hover:text-foreground">
                     <MapPin className="h-4 w-4" />
                     {profile.city}, {profile.country}
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 transition-colors duration-200 hover:text-foreground">
                     <Phone className="h-4 w-4" />
                     {profile.phone}
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 transition-colors duration-200 hover:text-foreground">
                     <Mail className="h-4 w-4" />
                     {user?.email}
                   </div>
                 </div>
               </div>
               
-              <Badge variant={status.color} className="flex items-center gap-2">
+              <Badge variant={status.color} className="flex items-center gap-2 animate-scale-in">
                 {status.icon}
                 {status.text}
               </Badge>

@@ -95,15 +95,15 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       {/* Mobile Header */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe">
-        <div className="container py-4 flex items-center gap-3">
-          <div className="rounded-lg bg-gradient-sky p-2">
+        <div className="container px-4 sm:px-6 py-4 flex items-center gap-3">
+          <div className="rounded-lg bg-gradient-sky p-2 transition-all duration-200 hover:scale-110">
             <Plane className="h-5 w-5 text-primary-foreground" />
           </div>
           <h1 className="text-xl font-bold bg-gradient-sky bg-clip-text text-transparent">
-            KiloShare
+            KiloFly
           </h1>
         </div>
       </header>
@@ -117,8 +117,8 @@ const Home = () => {
           <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
         </div>
         
-        <div className="relative container py-12 md:py-20">
-          <div className="max-w-3xl mx-auto text-center space-y-4">
+        <div className="relative container px-4 sm:px-6 py-12 md:py-20">
+          <div className="max-w-3xl mx-auto text-center space-y-4 animate-fade-in">
             <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
               Partagez vos kilos,{" "}
               <span className="bg-gradient-sky bg-clip-text text-transparent">
@@ -135,7 +135,7 @@ const Home = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   placeholder="Ville de départ..."
-                  className="pl-10 h-12 bg-card shadow-card text-base"
+                  className="pl-10 h-12 bg-card shadow-card text-base transition-all duration-200 focus:scale-[1.02]"
                   value={searchDeparture}
                   onChange={(e) => setSearchDeparture(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -145,7 +145,7 @@ const Home = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   placeholder="Destination..."
-                  className="pl-10 h-12 bg-card shadow-card text-base"
+                  className="pl-10 h-12 bg-card shadow-card text-base transition-all duration-200 focus:scale-[1.02]"
                   value={searchArrival}
                   onChange={(e) => setSearchArrival(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -153,7 +153,7 @@ const Home = () => {
               </div>
               <Button 
                 size="lg" 
-                className="h-12 w-full bg-gradient-sky hover:opacity-90 transition-opacity text-base font-semibold"
+                className="h-12 w-full bg-gradient-sky hover:opacity-90 transition-all duration-200 hover:scale-[1.02] text-base font-semibold"
                 onClick={handleSearch}
               >
                 Rechercher
@@ -164,7 +164,7 @@ const Home = () => {
       </section>
 
       {/* Listings Section */}
-      <section className="container py-8">
+      <section className="container px-4 sm:px-6 py-8">
         <div className="mb-6">
           <h2 className="text-2xl font-bold">Annonces récentes</h2>
           <p className="text-sm text-muted-foreground mt-1">
@@ -174,10 +174,11 @@ const Home = () => {
 
         {loading ? (
           <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Chargement des annonces...</p>
           </div>
         ) : listings.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12 animate-fade-in">
             <p className="text-muted-foreground">Aucune annonce disponible pour le moment.</p>
           </div>
         ) : (

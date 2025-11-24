@@ -26,7 +26,7 @@ const Navbar = () => {
             <Plane className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="bg-gradient-sky bg-clip-text text-transparent">
-            KiloShare
+            KiloFly
           </span>
         </Link>
 
