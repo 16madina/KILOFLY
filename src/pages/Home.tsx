@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Search, Plane } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import PullToRefresh from "@/components/mobile/PullToRefresh";
 import heroImage from "@/assets/hero-travel.jpg";
 import montrealImg from "@/assets/destinations/montreal.jpg";
 import abidjanImg from "@/assets/destinations/abidjan.jpg";
@@ -75,6 +76,10 @@ const Home = () => {
     fetchListings(searchDeparture, searchArrival);
   };
 
+  const handleRefresh = async () => {
+    await fetchListings(searchDeparture, searchArrival);
+  };
+
   const getDestinationImage = (city: string) => {
     const cityMap: Record<string, string> = {
       "Abidjan": abidjanImg,
@@ -95,114 +100,116 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-32">
-      {/* Mobile Header */}
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe">
-        <div className="container px-4 sm:px-6 py-4 flex items-center gap-3">
-          <div className="rounded-lg bg-gradient-sky p-2 transition-all duration-200 hover:scale-110">
-            <Plane className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <h1 className="text-xl font-bold bg-gradient-sky bg-clip-text text-transparent">
-            KiloFly
-          </h1>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroImage})` }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
-        </div>
-        
-        <div className="relative container px-4 sm:px-6 py-12 md:py-20">
-          <div className="max-w-3xl mx-auto text-center space-y-4 animate-fade-in">
-            <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
-              Partagez vos kilos,{" "}
-              <span className="bg-gradient-sky bg-clip-text text-transparent">
-                voyagez léger
-              </span>
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="min-h-screen bg-background pb-32">
+        {/* Mobile Header */}
+        <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe">
+          <div className="container px-4 sm:px-6 py-4 flex items-center gap-3">
+            <div className="rounded-lg bg-gradient-sky p-2 transition-all duration-200 hover:scale-110">
+              <Plane className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <h1 className="text-xl font-bold bg-gradient-sky bg-clip-text text-transparent">
+              KiloFly
             </h1>
-            <p className="text-base md:text-lg text-muted-foreground">
-              Connectez-vous avec des voyageurs pour utiliser leurs kilos disponibles
-            </p>
+          </div>
+        </header>
 
-            {/* Search Bar */}
-            <div className="flex flex-col gap-3 mt-6 max-w-2xl mx-auto">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  placeholder="Ville de départ..."
-                  className="pl-10 h-12 bg-card shadow-card text-base transition-all duration-200 focus:scale-[1.02]"
-                  value={searchDeparture}
-                  onChange={(e) => setSearchDeparture(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
+        {/* Hero Section */}
+        <section className="relative overflow-hidden">
+          <div 
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${heroImage})` }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
+          </div>
+          
+          <div className="relative container px-4 sm:px-6 py-12 md:py-20">
+            <div className="max-w-3xl mx-auto text-center space-y-4 animate-fade-in">
+              <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
+                Partagez vos kilos,{" "}
+                <span className="bg-gradient-sky bg-clip-text text-transparent">
+                  voyagez léger
+                </span>
+              </h1>
+              <p className="text-base md:text-lg text-muted-foreground">
+                Connectez-vous avec des voyageurs pour utiliser leurs kilos disponibles
+              </p>
+
+              {/* Search Bar */}
+              <div className="flex flex-col gap-3 mt-6 max-w-2xl mx-auto">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    placeholder="Ville de départ..."
+                    className="pl-10 h-12 bg-card shadow-card text-base transition-all duration-200 focus:scale-[1.02]"
+                    value={searchDeparture}
+                    onChange={(e) => setSearchDeparture(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  />
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    placeholder="Destination..."
+                    className="pl-10 h-12 bg-card shadow-card text-base transition-all duration-200 focus:scale-[1.02]"
+                    value={searchArrival}
+                    onChange={(e) => setSearchArrival(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  />
+                </div>
+                <Button 
+                  size="lg" 
+                  className="h-12 w-full bg-gradient-sky hover:opacity-90 transition-all duration-200 hover:scale-[1.02] text-base font-semibold"
+                  onClick={handleSearch}
+                >
+                  Rechercher
+                </Button>
               </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  placeholder="Destination..."
-                  className="pl-10 h-12 bg-card shadow-card text-base transition-all duration-200 focus:scale-[1.02]"
-                  value={searchArrival}
-                  onChange={(e) => setSearchArrival(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
-              </div>
-              <Button 
-                size="lg" 
-                className="h-12 w-full bg-gradient-sky hover:opacity-90 transition-all duration-200 hover:scale-[1.02] text-base font-semibold"
-                onClick={handleSearch}
-              >
-                Rechercher
-              </Button>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Listings Section */}
-      <section className="container px-4 sm:px-6 py-8">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold">Annonces récentes</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Dernières offres disponibles
-          </p>
-        </div>
+        {/* Listings Section */}
+        <section className="container px-4 sm:px-6 py-8">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold">Annonces récentes</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Dernières offres disponibles
+            </p>
+          </div>
 
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Chargement des annonces...</p>
-          </div>
-        ) : listings.length === 0 ? (
-          <div className="text-center py-12 animate-fade-in">
-            <p className="text-muted-foreground">Aucune annonce disponible pour le moment.</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3 animate-fade-in">
-            {listings.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                id={listing.id}
-                userId={listing.user_id}
-                userName={listing.profiles.full_name}
-                userAvatar={listing.profiles.avatar_url}
-                departure={listing.departure}
-                arrival={listing.arrival}
-                departureDate={formatDate(listing.departure_date)}
-                arrivalDate={formatDate(listing.arrival_date)}
-                availableKg={listing.available_kg}
-                pricePerKg={listing.price_per_kg}
-                destinationImage={listing.destination_image || getDestinationImage(listing.arrival)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Chargement des annonces...</p>
+            </div>
+          ) : listings.length === 0 ? (
+            <div className="text-center py-12 animate-fade-in">
+              <p className="text-muted-foreground">Aucune annonce disponible pour le moment.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 animate-fade-in">
+              {listings.map((listing) => (
+                <ListingCard
+                  key={listing.id}
+                  id={listing.id}
+                  userId={listing.user_id}
+                  userName={listing.profiles.full_name}
+                  userAvatar={listing.profiles.avatar_url}
+                  departure={listing.departure}
+                  arrival={listing.arrival}
+                  departureDate={formatDate(listing.departure_date)}
+                  arrivalDate={formatDate(listing.arrival_date)}
+                  availableKg={listing.available_kg}
+                  pricePerKg={listing.price_per_kg}
+                  destinationImage={listing.destination_image || getDestinationImage(listing.arrival)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </PullToRefresh>
   );
 };
 
