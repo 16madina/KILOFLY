@@ -6,12 +6,75 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { MapPin, Calendar, Weight, DollarSign, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const PostListing = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [isVerified, setIsVerified] = useState<boolean | null>(null);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    checkVerificationStatus();
+  }, []);
+
+  const checkVerificationStatus = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast.error("Vous devez être connecté");
+      navigate("/auth");
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id_verified")
+      .eq("id", user.id)
+      .single();
+
+    setIsVerified(profile?.id_verified || false);
+  };
+  
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (!isVerified) {
+      toast.error("Vous devez vérifier votre identité avant de poster une annonce");
+      navigate("/profile");
+      return;
+    }
+
+    setLoading(true);
+    
+    const formData = new FormData(e.currentTarget);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      toast.error("Vous devez être connecté");
+      navigate("/auth");
+      return;
+    }
+
+    const { error } = await supabase.from("listings").insert({
+      user_id: user.id,
+      departure: formData.get("departure") as string,
+      arrival: formData.get("arrival") as string,
+      departure_date: formData.get("departure-date") as string,
+      arrival_date: formData.get("arrival-date") as string,
+      available_kg: parseFloat(formData.get("kg") as string),
+      price_per_kg: parseFloat(formData.get("price") as string),
+      description: formData.get("notes") as string || null,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      toast.error("Erreur lors de la création de l'annonce");
+      console.error(error);
+      return;
+    }
+
     toast.success("Annonce créée avec succès!");
     navigate("/");
   };
@@ -138,10 +201,16 @@ const PostListing = () => {
 
                 <Button
                   type="submit"
-                  className="w-full h-12 text-base font-semibold bg-gradient-sky hover:opacity-90 transition-opacity"
+                  disabled={loading || isVerified === false}
+                  className="w-full h-12 text-base font-semibold bg-gradient-sky hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                  Publier l'annonce
+                  {loading ? "Publication..." : "Publier l'annonce"}
                 </Button>
+                {isVerified === false && (
+                  <p className="text-sm text-destructive text-center mt-2">
+                    Vous devez vérifier votre identité pour poster une annonce
+                  </p>
+                )}
               </form>
             </CardContent>
           </Card>

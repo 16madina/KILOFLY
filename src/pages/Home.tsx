@@ -2,6 +2,8 @@ import ListingCard from "@/components/ListingCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Plane } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-travel.jpg";
 import montrealImg from "@/assets/destinations/montreal.jpg";
 import abidjanImg from "@/assets/destinations/abidjan.jpg";
@@ -10,43 +12,71 @@ import dakarImg from "@/assets/destinations/dakar.jpg";
 import torontoImg from "@/assets/destinations/toronto.jpg";
 import lomeImg from "@/assets/destinations/lome.jpg";
 
+interface Listing {
+  id: string;
+  user_id: string;
+  departure: string;
+  arrival: string;
+  departure_date: string;
+  arrival_date: string;
+  available_kg: number;
+  price_per_kg: number;
+  destination_image: string | null;
+  description: string | null;
+  profiles: {
+    full_name: string;
+    avatar_url: string;
+  };
+}
+
 const Home = () => {
-  // Mock data - sera remplacé par des vraies données de la base de données
-  const mockListings = [
-    {
-      id: "1",
-      userName: "Marie Dubois",
-      departure: "Montréal",
-      arrival: "Abidjan",
-      departureDate: "15 Jan 2025",
-      arrivalDate: "16 Jan 2025",
-      availableKg: 15,
-      pricePerKg: 8,
-      destinationImage: abidjanImg,
-    },
-    {
-      id: "2",
-      userName: "Jean Kouassi",
-      departure: "Paris",
-      arrival: "Dakar",
-      departureDate: "20 Jan 2025",
-      arrivalDate: "20 Jan 2025",
-      availableKg: 20,
-      pricePerKg: 6,
-      destinationImage: dakarImg,
-    },
-    {
-      id: "3",
-      userName: "Sophie Martin",
-      departure: "Toronto",
-      arrival: "Lomé",
-      departureDate: "25 Jan 2025",
-      arrivalDate: "26 Jan 2025",
-      availableKg: 12,
-      pricePerKg: 10,
-      destinationImage: lomeImg,
-    },
-  ];
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchListings();
+  }, []);
+
+  const fetchListings = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("listings")
+      .select(`
+        *,
+        profiles (
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq("status", "active")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching listings:", error);
+    } else {
+      setListings(data || []);
+    }
+    setLoading(false);
+  };
+
+  const getDestinationImage = (city: string) => {
+    const cityMap: Record<string, string> = {
+      "Abidjan": abidjanImg,
+      "Dakar": dakarImg,
+      "Lomé": lomeImg,
+      "Lome": lomeImg,
+      "Paris": parisImg,
+      "Toronto": torontoImg,
+      "Montréal": montrealImg,
+      "Montreal": montrealImg,
+    };
+    return cityMap[city] || abidjanImg;
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -116,11 +146,32 @@ const Home = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 animate-fade-in">
-          {mockListings.map((listing) => (
-            <ListingCard key={listing.id} {...listing} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Chargement des annonces...</p>
+          </div>
+        ) : listings.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Aucune annonce disponible pour le moment.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 animate-fade-in">
+            {listings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                id={listing.id}
+                userName={listing.profiles.full_name}
+                departure={listing.departure}
+                arrival={listing.arrival}
+                departureDate={formatDate(listing.departure_date)}
+                arrivalDate={formatDate(listing.arrival_date)}
+                availableKg={listing.available_kg}
+                pricePerKg={listing.price_per_kg}
+                destinationImage={listing.destination_image || getDestinationImage(listing.arrival)}
+              />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
