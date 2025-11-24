@@ -178,7 +178,7 @@ const Profile = () => {
   const status = getVerificationStatus();
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-32">
       <Navbar />
       
       <div className="container px-4 sm:px-6 py-6 sm:py-8 max-w-4xl animate-fade-in">
