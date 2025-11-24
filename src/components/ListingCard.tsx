@@ -1,13 +1,18 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Calendar, Weight, ArrowRight, User, Phone } from "lucide-react";
 import BottomSheet from "@/components/mobile/BottomSheet";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface ListingCardProps {
   id: string;
+  userId: string;
   userName: string;
   userAvatar?: string;
   departure: string;
@@ -20,6 +25,8 @@ interface ListingCardProps {
 }
 
 const ListingCard = ({
+  id,
+  userId,
   userName,
   userAvatar,
   departure,
@@ -31,6 +38,55 @@ const ListingCard = ({
   destinationImage,
 }: ListingCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleContact = async () => {
+    if (!user) {
+      toast.error("Vous devez être connecté pour contacter un voyageur");
+      navigate('/auth');
+      return;
+    }
+
+    if (user.id === userId) {
+      toast.error("Vous ne pouvez pas contacter votre propre annonce");
+      return;
+    }
+
+    try {
+      // Check if conversation already exists
+      const { data: existingConversation } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('listing_id', id)
+        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+        .single();
+
+      if (existingConversation) {
+        navigate(`/conversation/${existingConversation.id}`);
+        return;
+      }
+
+      // Create new conversation
+      const { data: newConversation, error } = await supabase
+        .from('conversations')
+        .insert({
+          listing_id: id,
+          buyer_id: user.id,
+          seller_id: userId
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+
+      toast.success("Conversation créée");
+      navigate(`/conversation/${newConversation.id}`);
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      toast.error("Erreur lors de la création de la conversation");
+    }
+  };
 
   return (
     <>
@@ -117,7 +173,11 @@ const ListingCard = ({
           </div>
 
           {/* Contact Button */}
-          <Button className="w-full gap-2 bg-gradient-sky hover:opacity-90 transition-opacity" size="lg">
+          <Button 
+            className="w-full gap-2 bg-gradient-sky hover:opacity-90 transition-opacity" 
+            size="lg"
+            onClick={handleContact}
+          >
             <Phone className="h-5 w-5" />
             Contacter le voyageur
           </Button>

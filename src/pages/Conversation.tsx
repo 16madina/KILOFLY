@@ -5,7 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Send } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { ArrowLeft, Send, MapPin, Calendar, Weight, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
 interface Message {
@@ -26,6 +27,7 @@ const Conversation = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [otherUser, setOtherUser] = useState<any>(null);
+  const [listing, setListing] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -85,7 +87,8 @@ const Conversation = () => {
       .select(`
         *,
         buyer:profiles!buyer_id(full_name, avatar_url),
-        seller:profiles!seller_id(full_name, avatar_url)
+        seller:profiles!seller_id(full_name, avatar_url),
+        listings(id, departure, arrival, departure_date, arrival_date, available_kg, price_per_kg)
       `)
       .eq('id', id)
       .single();
@@ -97,6 +100,7 @@ const Conversation = () => {
 
     const other = data.buyer_id === user?.id ? data.seller : data.buyer;
     setOtherUser(other);
+    setListing(data.listings);
   };
 
   const fetchMessages = async () => {
@@ -168,6 +172,34 @@ const Conversation = () => {
           </>
         )}
       </div>
+
+      {/* Listing Context */}
+      {listing && (
+        <div className="px-4 pt-4">
+          <Card className="p-4 bg-muted/50">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Annonce concernée</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin className="h-4 w-4 text-primary" />
+                <span className="font-medium">{listing.departure}</span>
+                <ArrowRight className="h-3 w-3" />
+                <span className="font-medium">{listing.arrival}</span>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  <span>{new Date(listing.departure_date).toLocaleDateString('fr-FR')}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Weight className="h-3 w-3" />
+                  <span>{listing.available_kg} kg</span>
+                </div>
+                <span className="font-semibold text-primary">{listing.price_per_kg}€/kg</span>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-safe">
