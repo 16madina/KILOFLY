@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_users: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocked_users_blocked_id_fkey"
+            columns: ["blocked_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blocked_users_blocker_id_fkey"
+            columns: ["blocker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           buyer_id: string
@@ -195,7 +231,10 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string
+          avg_response_time: number | null
+          bio: string | null
           city: string
+          completed_trips: number | null
           country: string
           created_at: string
           full_name: string
@@ -204,13 +243,18 @@ export type Database = {
           id_submitted_at: string | null
           id_verified: boolean | null
           phone: string
+          phone_verified: boolean | null
+          response_rate: number | null
           terms_accepted: boolean
           terms_accepted_at: string | null
           updated_at: string
         }
         Insert: {
           avatar_url: string
+          avg_response_time?: number | null
+          bio?: string | null
           city: string
+          completed_trips?: number | null
           country: string
           created_at?: string
           full_name: string
@@ -219,13 +263,18 @@ export type Database = {
           id_submitted_at?: string | null
           id_verified?: boolean | null
           phone: string
+          phone_verified?: boolean | null
+          response_rate?: number | null
           terms_accepted?: boolean
           terms_accepted_at?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string
+          avg_response_time?: number | null
+          bio?: string | null
           city?: string
+          completed_trips?: number | null
           country?: string
           created_at?: string
           full_name?: string
@@ -234,11 +283,110 @@ export type Database = {
           id_submitted_at?: string | null
           id_verified?: boolean | null
           phone?: string
+          phone_verified?: boolean | null
+          response_rate?: number | null
           terms_accepted?: boolean
           terms_accepted_at?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      reports: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          reason: string
+          reported_id: string
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          reason: string
+          reported_id: string
+          reporter_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          reason?: string
+          reported_id?: string
+          reporter_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_reported_id_fkey"
+            columns: ["reported_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          listing_id: string
+          rating: number
+          reviewed_id: string
+          reviewer_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          listing_id: string
+          rating: number
+          reviewed_id: string
+          reviewer_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          listing_id?: string
+          rating?: number
+          reviewed_id?: string
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewed_id_fkey"
+            columns: ["reviewed_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

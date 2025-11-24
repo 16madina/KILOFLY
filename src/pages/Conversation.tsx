@@ -10,6 +10,7 @@ import { ArrowLeft, Send, MapPin, Calendar, Weight, ArrowRight, Trash2 } from "l
 import { toast } from "sonner";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import SwipeableCard from "@/components/mobile/SwipeableCard";
+import { ReportDialog } from "@/components/ReportDialog";
 
 interface Message {
   id: string;
@@ -198,6 +199,10 @@ const Conversation = () => {
                 <VerifiedBadge verified={isOtherUserVerified} size="sm" />
               </div>
             </div>
+            <ReportDialog
+              reportedUserId={otherUser.id || ''}
+              reportedUserName={otherUser.full_name}
+            />
           </>
         )}
       </div>
