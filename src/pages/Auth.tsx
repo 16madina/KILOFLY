@@ -166,16 +166,16 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       <Navbar />
 
-      <div className="container flex items-center justify-center py-12 min-h-[calc(100vh-4rem)]">
+      <div className="container px-4 sm:px-6 py-8 flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <div className="w-full max-w-md">
-          <div className="text-center mb-8">
+          <div className="text-center mb-8 animate-fade-in">
             <h1 className="text-4xl font-bold mb-2">
               Bienvenue sur{" "}
               <span className="bg-gradient-sky bg-clip-text text-transparent">
-                KiloShare
+                KiloFly
               </span>
             </h1>
             <p className="text-muted-foreground">
@@ -183,7 +183,7 @@ const Auth = () => {
             </p>
           </div>
 
-          <Card className="shadow-hover">
+          <Card className="shadow-hover animate-scale-in">
             <CardHeader>
               <CardTitle>Authentification</CardTitle>
               <CardDescription>
@@ -198,7 +198,7 @@ const Auth = () => {
                 </TabsList>
 
                 <TabsContent value="login">
-                  <form onSubmit={handleLogin} className="space-y-4">
+                  <form onSubmit={handleLogin} className="space-y-4 pt-4">
                     <div className="space-y-2">
                       <Label htmlFor="login-email">Email</Label>
                       <Input
@@ -208,6 +208,7 @@ const Auth = () => {
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
                         required
+                        className="transition-all duration-200 focus:scale-[1.02]"
                       />
                     </div>
                     <div className="space-y-2">
@@ -218,11 +219,12 @@ const Auth = () => {
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
                         required
+                        className="transition-all duration-200 focus:scale-[1.02]"
                       />
                     </div>
                     <Button
                       type="submit"
-                      className="w-full bg-gradient-sky hover:opacity-90 transition-opacity"
+                      className="w-full bg-gradient-sky hover:opacity-90 transition-all duration-200 hover:scale-[1.02] mt-6"
                       disabled={isLoading}
                     >
                       {isLoading ? "Connexion..." : "Se connecter"}
@@ -231,7 +233,7 @@ const Auth = () => {
                 </TabsContent>
 
                 <TabsContent value="signup">
-                  <form onSubmit={handleSignup} className="space-y-4">
+                  <form onSubmit={handleSignup} className="space-y-4 pt-4 pb-4">
                     <AvatarUpload 
                       value={signupAvatar}
                       onChange={setSignupAvatar}
@@ -346,7 +348,7 @@ const Auth = () => {
                     
                     <Button
                       type="submit"
-                      className="w-full bg-gradient-sky hover:opacity-90 transition-opacity"
+                      className="w-full bg-gradient-sky hover:opacity-90 transition-all duration-200 hover:scale-[1.02] mt-6"
                       disabled={isLoading}
                     >
                       {isLoading ? "Création..." : "Créer un compte"}

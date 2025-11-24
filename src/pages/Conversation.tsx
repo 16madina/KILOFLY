@@ -158,20 +158,21 @@ const Conversation = () => {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-card border-b border-border px-4 py-3 flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-card border-b border-border px-4 sm:px-6 py-3 flex items-center gap-3 animate-fade-in">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => navigate('/messages')}
+          className="transition-all duration-200 hover:scale-110"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         
         {otherUser && (
           <>
-            <Avatar className="h-10 w-10">
+            <Avatar className="h-10 w-10 border-2 border-primary/20 transition-all duration-200 hover:scale-110">
               <AvatarImage src={otherUser.avatar_url || ''} />
-              <AvatarFallback>
+              <AvatarFallback className="bg-gradient-sky text-primary-foreground">
                 {otherUser.full_name?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -187,8 +188,8 @@ const Conversation = () => {
 
       {/* Listing Context */}
       {listing && (
-        <div className="px-4 pt-4">
-          <Card className="p-4 bg-muted/50">
+        <div className="px-4 sm:px-6 pt-4 animate-fade-in">
+          <Card className="p-4 bg-muted/50 transition-all duration-200 hover:shadow-md">
             <p className="text-xs font-medium text-muted-foreground mb-2">Annonce concernée</p>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
@@ -214,27 +215,27 @@ const Conversation = () => {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-safe">
+      <div className="flex-1 overflow-y-auto p-4 sm:px-6 space-y-4 pb-safe">
         {loading ? (
           <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-8 text-muted-foreground animate-fade-in">
             Aucun message pour le moment
           </div>
         ) : (
           messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${
+              className={`flex animate-fade-in ${
                 message.sender_id === user.id ? 'justify-end' : 'justify-start'
               }`}
             >
               <div
-                className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+                className={`max-w-[75%] rounded-2xl px-4 py-2 transition-all duration-200 hover:scale-[1.02] ${
                   message.sender_id === user.id
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-gradient-sky text-primary-foreground shadow-md'
                     : 'bg-muted'
                 }`}
               >
@@ -255,20 +256,21 @@ const Conversation = () => {
       {/* Input */}
       <form
         onSubmit={sendMessage}
-        className="sticky bottom-0 bg-card border-t border-border p-4 pb-safe"
+        className="sticky bottom-0 bg-card border-t border-border p-4 sm:px-6 pb-safe"
       >
         <div className="flex gap-2">
           <Input
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Écrire un message..."
-            className="flex-1"
+            className="flex-1 transition-all duration-200 focus:scale-[1.01]"
             disabled={sendingMessage}
           />
           <Button 
             type="submit" 
             size="icon" 
             disabled={!newMessage.trim() || sendingMessage}
+            className="bg-gradient-sky transition-all duration-200 hover:scale-110"
           >
             <Send className="h-4 w-4" />
           </Button>

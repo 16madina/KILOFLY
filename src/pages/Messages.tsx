@@ -132,11 +132,11 @@ const Messages = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe">
-        <div className="container py-4">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+        <div className="container px-4 sm:px-6 py-4">
+          <h1 className="text-2xl font-bold flex items-center gap-2 animate-fade-in">
             <MessageCircle className="h-6 w-6 text-primary" />
             Messages
           </h1>
@@ -144,12 +144,12 @@ const Messages = () => {
       </header>
 
       {/* Search */}
-      <div className="container py-4">
+      <div className="container px-4 sm:px-6 py-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Rechercher une conversation..."
-            className="pl-10 bg-card"
+            className="pl-10 bg-card transition-all duration-200 focus:scale-[1.02]"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -157,13 +157,13 @@ const Messages = () => {
       </div>
 
       {/* Conversations List */}
-      <div className="container space-y-1">
+      <div className="container px-4 sm:px-6 space-y-2">
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         ) : filteredConversations.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12 animate-fade-in">
             <MessageCircle className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">
               {searchQuery ? "Aucune conversation trouvée" : "Aucun message"}
@@ -182,9 +182,9 @@ const Messages = () => {
               <button
                 key={conversation.id}
                 onClick={() => navigate(`/conversation/${conversation.id}`)}
-                className="w-full flex items-center gap-3 p-4 bg-card hover:bg-muted/50 rounded-xl transition-colors text-left"
+                className="w-full flex items-center gap-3 p-4 bg-card hover:bg-muted/50 rounded-xl transition-all duration-200 hover:scale-[1.01] hover:shadow-md text-left animate-fade-in"
               >
-                <Avatar className="h-12 w-12">
+                <Avatar className="h-12 w-12 border-2 border-primary/20 transition-all duration-200 hover:scale-110">
                   <AvatarImage src={otherUser.avatar_url || ''} />
                   <AvatarFallback className="bg-gradient-sky text-primary-foreground">
                     {otherUser.full_name.charAt(0).toUpperCase()}
@@ -210,7 +210,7 @@ const Messages = () => {
                 </div>
 
                 {unreadCount > 0 && (
-                  <Badge className="bg-primary text-primary-foreground">
+                  <Badge className="bg-primary text-primary-foreground animate-scale-in">
                     {unreadCount}
                   </Badge>
                 )}
