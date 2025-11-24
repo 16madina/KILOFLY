@@ -9,6 +9,7 @@ import Messages from "./pages/Messages";
 import Conversation from "./pages/Conversation";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
+import AdminVerification from "./pages/AdminVerification";
 import NotFound from "./pages/NotFound";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/conversation/:id" element={<Conversation />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/admin/verification" element={<AdminVerification />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

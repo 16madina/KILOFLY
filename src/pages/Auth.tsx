@@ -4,21 +4,48 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import AvatarUpload from "@/components/AvatarUpload";
+import { z } from "zod";
+
+// Validation schema
+const signupSchema = z.object({
+  fullName: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères").max(100),
+  email: z.string().trim().email("Email invalide").max(255),
+  phone: z.string().trim().min(10, "Numéro de téléphone invalide").max(20),
+  country: z.string().trim().min(2, "Pays requis").max(100),
+  city: z.string().trim().min(2, "Ville requise").max(100),
+  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+  confirmPassword: z.string(),
+  avatarUrl: z.string().url("Photo de profil requise").min(1, "Photo de profil requise"),
+  termsAccepted: z.boolean().refine(val => val === true, "Vous devez accepter les conditions")
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Les mots de passe ne correspondent pas",
+  path: ["confirmPassword"]
+});
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [signupName, setSignupName] = useState("");
+  
+  // Signup form state
+  const [signupFullName, setSignupFullName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
+  const [signupPhone, setSignupPhone] = useState("");
+  const [signupCountry, setSignupCountry] = useState("");
+  const [signupCity, setSignupCity] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirm, setSignupConfirm] = useState("");
+  const [signupAvatar, setSignupAvatar] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,28 +71,68 @@ const Auth = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (signupPassword !== signupConfirm) {
-      toast.error("Les mots de passe ne correspondent pas");
-      return;
-    }
-    
-    if (signupPassword.length < 6) {
-      toast.error("Le mot de passe doit contenir au moins 6 caractères");
-      return;
-    }
-    
     setIsLoading(true);
-    
-    const { error } = await signUp(signupEmail, signupPassword, signupName);
-    
-    if (error) {
+
+    try {
+      // Validate form data
+      const formData = {
+        fullName: signupFullName,
+        email: signupEmail,
+        phone: signupPhone,
+        country: signupCountry,
+        city: signupCity,
+        password: signupPassword,
+        confirmPassword: signupConfirm,
+        avatarUrl: signupAvatar,
+        termsAccepted
+      };
+
+      const validation = signupSchema.safeParse(formData);
+      
+      if (!validation.success) {
+        const firstError = validation.error.errors[0];
+        toast.error(firstError.message);
+        setIsLoading(false);
+        return;
+      }
+
+      // Create user account
+      const redirectUrl = `${window.location.origin}/profile`;
+      
+      const { error: signUpError, data } = await supabase.auth.signUp({
+        email: signupEmail,
+        password: signupPassword,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: signupFullName,
+            phone: signupPhone,
+            country: signupCountry,
+            city: signupCity,
+            avatar_url: signupAvatar,
+            terms_accepted: true
+          }
+        }
+      });
+
+      if (signUpError) {
+        toast.error(signUpError.message || "Erreur lors de l'inscription");
+        setIsLoading(false);
+        return;
+      }
+
+      toast.success("Compte créé avec succès! Redirection vers votre profil...");
+      
+      // Wait a bit for the profile to be created
+      setTimeout(() => {
+        navigate('/profile');
+      }, 1500);
+
+    } catch (error: any) {
       toast.error(error.message || "Erreur lors de l'inscription");
-    } else {
-      toast.success("Compte créé avec succès!");
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
@@ -135,18 +202,25 @@ const Auth = () => {
 
                 <TabsContent value="signup">
                   <form onSubmit={handleSignup} className="space-y-4">
+                    <AvatarUpload 
+                      value={signupAvatar}
+                      onChange={setSignupAvatar}
+                      userName={signupFullName || "U"}
+                    />
+                    
                     <div className="space-y-2">
-                      <Label htmlFor="signup-name">Nom complet</Label>
+                      <Label htmlFor="signup-name">Nom complet *</Label>
                       <Input
                         id="signup-name"
                         placeholder="Jean Dupont"
-                        value={signupName}
-                        onChange={(e) => setSignupName(e.target.value)}
+                        value={signupFullName}
+                        onChange={(e) => setSignupFullName(e.target.value)}
                         required
                       />
                     </div>
+                    
                     <div className="space-y-2">
-                      <Label htmlFor="signup-email">Email</Label>
+                      <Label htmlFor="signup-email">Email *</Label>
                       <Input
                         id="signup-email"
                         type="email"
@@ -156,18 +230,57 @@ const Auth = () => {
                         required
                       />
                     </div>
+                    
                     <div className="space-y-2">
-                      <Label htmlFor="signup-password">Mot de passe</Label>
+                      <Label htmlFor="signup-phone">Téléphone *</Label>
+                      <Input
+                        id="signup-phone"
+                        type="tel"
+                        placeholder="+33 6 12 34 56 78"
+                        value={signupPhone}
+                        onChange={(e) => setSignupPhone(e.target.value)}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-country">Pays *</Label>
+                        <Input
+                          id="signup-country"
+                          placeholder="France"
+                          value={signupCountry}
+                          onChange={(e) => setSignupCountry(e.target.value)}
+                          required
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-city">Ville *</Label>
+                        <Input
+                          id="signup-city"
+                          placeholder="Paris"
+                          value={signupCity}
+                          onChange={(e) => setSignupCity(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Mot de passe *</Label>
                       <Input
                         id="signup-password"
                         type="password"
+                        placeholder="Minimum 6 caractères"
                         value={signupPassword}
                         onChange={(e) => setSignupPassword(e.target.value)}
                         required
                       />
                     </div>
+                    
                     <div className="space-y-2">
-                      <Label htmlFor="signup-confirm">Confirmer le mot de passe</Label>
+                      <Label htmlFor="signup-confirm">Confirmer le mot de passe *</Label>
                       <Input
                         id="signup-confirm"
                         type="password"
@@ -176,6 +289,30 @@ const Auth = () => {
                         required
                       />
                     </div>
+                    
+                    <div className="flex items-start space-x-2">
+                      <Checkbox 
+                        id="terms" 
+                        checked={termsAccepted}
+                        onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                        required
+                      />
+                      <label
+                        htmlFor="terms"
+                        className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        J'accepte la{" "}
+                        <a href="/privacy" className="text-primary hover:underline">
+                          politique de confidentialité
+                        </a>{" "}
+                        et les{" "}
+                        <a href="/terms" className="text-primary hover:underline">
+                          conditions d'utilisation
+                        </a>
+                        {" "}*
+                      </label>
+                    </div>
+                    
                     <Button
                       type="submit"
                       className="w-full bg-gradient-sky hover:opacity-90 transition-opacity"
