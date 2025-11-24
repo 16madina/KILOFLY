@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Send, MapPin, Calendar, Weight, ArrowRight } from "lucide-react";
+import { ArrowLeft, Send, MapPin, Calendar, Weight, ArrowRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import VerifiedBadge from "@/components/VerifiedBadge";
+import SwipeableCard from "@/components/mobile/SwipeableCard";
 
 interface Message {
   id: string;
@@ -153,6 +154,21 @@ const Conversation = () => {
     }
   };
 
+  const deleteMessage = async (messageId: string) => {
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .eq('id', messageId);
+
+    if (error) {
+      toast.error("Erreur lors de la suppression");
+      console.error(error);
+    } else {
+      toast.success("Message supprimé");
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -226,28 +242,37 @@ const Conversation = () => {
           </div>
         ) : (
           messages.map((message) => (
-            <div
+            <SwipeableCard
               key={message.id}
-              className={`flex animate-fade-in ${
-                message.sender_id === user.id ? 'justify-end' : 'justify-start'
-              }`}
+              onSwipeLeft={() => deleteMessage(message.id)}
+              leftAction={
+                <div className="flex items-center justify-center w-12 h-12 bg-destructive rounded-full">
+                  <Trash2 className="h-4 w-4 text-destructive-foreground" />
+                </div>
+              }
             >
               <div
-                className={`max-w-[75%] rounded-2xl px-4 py-2 transition-all duration-200 hover:scale-[1.02] ${
-                  message.sender_id === user.id
-                    ? 'bg-gradient-sky text-primary-foreground shadow-md'
-                    : 'bg-muted'
+                className={`flex animate-fade-in ${
+                  message.sender_id === user.id ? 'justify-end' : 'justify-start'
                 }`}
               >
-                <p className="text-sm">{message.content}</p>
-                <p className="text-xs opacity-70 mt-1">
-                  {new Date(message.created_at).toLocaleTimeString('fr-FR', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </p>
+                <div
+                  className={`max-w-[75%] rounded-2xl px-4 py-2 transition-all duration-200 hover:scale-[1.02] ${
+                    message.sender_id === user.id
+                      ? 'bg-gradient-sky text-primary-foreground shadow-md'
+                      : 'bg-muted'
+                  }`}
+                >
+                  <p className="text-sm">{message.content}</p>
+                  <p className="text-xs opacity-70 mt-1">
+                    {new Date(message.created_at).toLocaleTimeString('fr-FR', {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
               </div>
-            </div>
+            </SwipeableCard>
           ))
         )}
         <div ref={messagesEndRef} />

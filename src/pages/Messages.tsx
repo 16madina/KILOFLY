@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, Search } from "lucide-react";
+import { MessageCircle, Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import VerifiedBadge from "@/components/VerifiedBadge";
+import SwipeableCard from "@/components/mobile/SwipeableCard";
 
 interface ConversationData {
   id: string;
@@ -126,6 +127,21 @@ const Messages = () => {
     ).length;
   };
 
+  const deleteConversation = async (conversationId: string) => {
+    const { error } = await supabase
+      .from('conversations')
+      .delete()
+      .eq('id', conversationId);
+
+    if (error) {
+      toast.error("Erreur lors de la suppression");
+      console.error(error);
+    } else {
+      toast.success("Conversation supprimée");
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+    }
+  };
+
   const filteredConversations = conversations.filter(conv => {
     const otherUser = getOtherUser(conv);
     return otherUser.full_name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -179,42 +195,51 @@ const Messages = () => {
             const unreadCount = getUnreadCount(conversation);
             
             return (
-              <button
+              <SwipeableCard
                 key={conversation.id}
-                onClick={() => navigate(`/conversation/${conversation.id}`)}
-                className="w-full flex items-center gap-3 p-4 bg-card hover:bg-muted/50 rounded-xl transition-all duration-200 hover:scale-[1.01] hover:shadow-md text-left animate-fade-in"
-              >
-                <Avatar className="h-12 w-12 border-2 border-primary/20 transition-all duration-200 hover:scale-110">
-                  <AvatarImage src={otherUser.avatar_url || ''} />
-                  <AvatarFallback className="bg-gradient-sky text-primary-foreground">
-                    {otherUser.full_name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <h3 className="font-semibold truncate">{otherUser.full_name}</h3>
-                      <VerifiedBadge verified={otherUser.id_verified || false} size="sm" />
-                    </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {new Date(conversation.updated_at).toLocaleDateString('fr-FR', {
-                        day: 'numeric',
-                        month: 'short'
-                      })}
-                    </span>
+                onSwipeLeft={() => deleteConversation(conversation.id)}
+                leftAction={
+                  <div className="flex items-center justify-center w-16 h-16 bg-destructive rounded-full">
+                    <Trash2 className="h-5 w-5 text-destructive-foreground" />
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {lastMessage}
-                  </p>
-                </div>
+                }
+              >
+                <button
+                  onClick={() => navigate(`/conversation/${conversation.id}`)}
+                  className="w-full flex items-center gap-3 p-4 bg-card hover:bg-muted/50 rounded-xl transition-all duration-200 hover:scale-[1.01] hover:shadow-md text-left animate-fade-in"
+                >
+                  <Avatar className="h-12 w-12 border-2 border-primary/20 transition-all duration-200 hover:scale-110">
+                    <AvatarImage src={otherUser.avatar_url || ''} />
+                    <AvatarFallback className="bg-gradient-sky text-primary-foreground">
+                      {otherUser.full_name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
 
-                {unreadCount > 0 && (
-                  <Badge className="bg-primary text-primary-foreground animate-scale-in">
-                    {unreadCount}
-                  </Badge>
-                )}
-              </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <h3 className="font-semibold truncate">{otherUser.full_name}</h3>
+                        <VerifiedBadge verified={otherUser.id_verified || false} size="sm" />
+                      </div>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(conversation.updated_at).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'short'
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {lastMessage}
+                    </p>
+                  </div>
+
+                  {unreadCount > 0 && (
+                    <Badge className="bg-primary text-primary-foreground animate-scale-in">
+                      {unreadCount}
+                    </Badge>
+                  )}
+                </button>
+              </SwipeableCard>
             );
           })
         )}
