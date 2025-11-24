@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,8 +8,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, MapPin, Phone, Mail, Upload, CheckCircle, Clock, XCircle, Shield } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { User, MapPin, Phone, Mail, Upload, CheckCircle, Clock, XCircle, Shield, Star, AlertTriangle, Edit } from "lucide-react";
 import { toast } from "sonner";
+import { TrustScore } from "@/components/TrustScore";
+import { ProfileStats } from "@/components/ProfileStats";
+import { ReviewCard } from "@/components/ReviewCard";
+import VerifiedBadge from "@/components/VerifiedBadge";
+import AvatarUpload from "@/components/AvatarUpload";
 
 interface Profile {
   full_name: string;
@@ -20,6 +26,12 @@ interface Profile {
   id_document_url: string | null;
   id_verified: boolean;
   id_submitted_at: string | null;
+  bio: string | null;
+  phone_verified: boolean;
+  response_rate: number;
+  avg_response_time: number | null;
+  completed_trips: number;
+  created_at: string;
 }
 
 const Profile = () => {
@@ -29,6 +41,10 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [averageRating, setAverageRating] = useState(0);
+  const [editingBio, setEditingBio] = useState(false);
+  const [bioText, setBioText] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -38,6 +54,7 @@ const Profile = () => {
 
     fetchProfile();
     checkAdminRole();
+    fetchReviews();
   }, [user, navigate]);
 
   const checkAdminRole = async () => {
@@ -67,9 +84,69 @@ const Profile = () => {
       console.error(error);
     } else {
       setProfile(data);
+      setBioText(data.bio || "");
     }
 
     setLoading(false);
+  };
+
+  const fetchReviews = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("reviews")
+      .select(`
+        *,
+        reviewer:profiles!reviews_reviewer_id_fkey(full_name, avatar_url)
+      `)
+      .eq("reviewed_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setReviews(data);
+      if (data.length > 0) {
+        const avg = data.reduce((sum, review) => sum + review.rating, 0) / data.length;
+        setAverageRating(Math.round(avg * 10) / 10);
+      }
+    }
+  };
+
+  const calculateTrustScore = () => {
+    if (!profile) return 0;
+    let score = 0;
+    
+    if (profile.id_verified) score += 30;
+    if (profile.phone_verified) score += 10;
+    if (user?.email_confirmed_at) score += 10;
+    
+    score += Math.min(reviews.length * 5, 25);
+    
+    const monthsSinceMember = Math.floor(
+      (Date.now() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24 * 30)
+    );
+    score += Math.min(monthsSinceMember * 5, 15);
+    
+    score += Math.min(profile.completed_trips * 10, 30);
+    
+    return Math.min(score, 100);
+  };
+
+  const updateBio = async () => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ bio: bioText })
+      .eq("id", user.id);
+
+    if (error) {
+      toast.error("Impossible de mettre à jour la bio");
+      return;
+    }
+
+    setProfile({ ...profile!, bio: bioText });
+    setEditingBio(false);
+    toast.success("Bio mise à jour avec succès");
   };
 
   const uploadIdDocument = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -207,46 +284,94 @@ const Profile = () => {
 
         {/* Profile Header */}
         <Card className="mb-6 transition-all duration-200 hover:shadow-lg">
-          <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row items-center gap-6">
+          <CardContent className="pt-6 space-y-4">
+            <div className="flex items-start gap-4">
               <Avatar className="h-24 w-24 border-4 border-primary/20 transition-all duration-200 hover:scale-105">
                 <AvatarImage src={profile.avatar_url} />
                 <AvatarFallback className="bg-gradient-sky text-primary-foreground text-2xl">
                   {profile.full_name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              
-              <div className="flex-1 text-center sm:text-left">
-                <h1 className="text-2xl font-bold mb-2 animate-fade-in">{profile.full_name}</h1>
-                <div className="flex flex-wrap gap-2 justify-center sm:justify-start text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1 transition-colors duration-200 hover:text-foreground">
-                    <MapPin className="h-4 w-4" />
-                    {profile.city}, {profile.country}
-                  </div>
-                  <div className="flex items-center gap-1 transition-colors duration-200 hover:text-foreground">
-                    <Phone className="h-4 w-4" />
-                    {profile.phone}
-                  </div>
-                  <div className="flex items-center gap-1 transition-colors duration-200 hover:text-foreground">
-                    <Mail className="h-4 w-4" />
-                    {user?.email}
-                  </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-2xl font-bold">{profile.full_name}</h2>
+                  <VerifiedBadge verified={profile.id_verified} />
                 </div>
+                <p className="text-sm text-muted-foreground mb-2">{user?.email}</p>
+                
+                {averageRating > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 ${
+                            i < Math.floor(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm font-semibold">{averageRating}</span>
+                    <span className="text-xs text-muted-foreground">({reviews.length} avis)</span>
+                  </div>
+                )}
               </div>
-              
-              <Badge variant={status.color} className="flex items-center gap-2 animate-scale-in">
-                {status.icon}
-                {status.text}
-              </Badge>
             </div>
+
+            <TrustScore score={calculateTrustScore()} />
+
+            {/* Bio Section */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold">À propos</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingBio(!editingBio)}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                </div>
+                {editingBio ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={bioText}
+                      onChange={(e) => setBioText(e.target.value)}
+                      placeholder="Parlez de vous..."
+                      className="min-h-[100px]"
+                    />
+                    <div className="flex gap-2">
+                      <Button onClick={updateBio} size="sm">Enregistrer</Button>
+                      <Button onClick={() => setEditingBio(false)} variant="outline" size="sm">
+                        Annuler
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {profile.bio || "Aucune description pour le moment"}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Statistics */}
+            <ProfileStats
+              memberSince={profile.created_at}
+              completedTrips={profile.completed_trips}
+              responseRate={profile.response_rate}
+              avgResponseTime={profile.avg_response_time}
+            />
           </CardContent>
         </Card>
 
         {/* Tabs */}
         <Tabs defaultValue="identity" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="identity">Vérifier votre identité</TabsTrigger>
-            <TabsTrigger value="info">Informations</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="identity">Identité</TabsTrigger>
+            <TabsTrigger value="reviews">Avis ({reviews.length})</TabsTrigger>
+            <TabsTrigger value="info">Infos</TabsTrigger>
           </TabsList>
           
           <TabsContent value="identity" className="mt-6">
@@ -341,8 +466,34 @@ const Profile = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="reviews" className="mt-6 space-y-4">
+            {reviews.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Star className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">Aucun avis pour le moment</p>
+                </CardContent>
+              </Card>
+            ) : (
+              reviews.map((review) => (
+                <ReviewCard key={review.id} review={review} />
+              ))
+            )}
+          </TabsContent>
           
-          <TabsContent value="info" className="mt-6">
+          <TabsContent value="info" className="mt-6 space-y-4">
+            <Card className="bg-destructive/5 border-destructive/20">
+              <CardContent className="p-4">
+                <Link to="/prohibited-items">
+                  <Button variant="ghost" className="w-full justify-start text-destructive">
+                    <AlertTriangle className="w-5 h-5 mr-2" />
+                    Voir les articles interdits
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Mes informations</CardTitle>
