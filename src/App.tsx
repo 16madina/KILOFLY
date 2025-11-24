@@ -19,34 +19,36 @@ import { AuthProvider } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <div className="relative">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/post" element={<PostListing />} />
-              <Route path="/messages" element={<Messages />} />
-              <Route path="/conversation/:id" element={<Conversation />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/prohibited-items" element={<ProhibitedItems />} />
-              <Route path="/admin/verification" element={<AdminVerification />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <MobileBottomNav />
-          </div>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <div className="relative">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/post" element={<PostListing />} />
+                <Route path="/messages" element={<Messages />} />
+                <Route path="/conversation/:id" element={<Conversation />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/prohibited-items" element={<ProhibitedItems />} />
+                <Route path="/admin/verification" element={<AdminVerification />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <MobileBottomNav />
+            </div>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
