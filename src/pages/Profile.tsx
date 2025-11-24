@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { User, MapPin, Phone, Mail, Upload, CheckCircle, Clock, XCircle, Shield, Star, AlertTriangle, Edit } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { User, MapPin, Phone, Mail, Upload, CheckCircle, Clock, XCircle, Shield, Star, AlertTriangle, Edit, FileText, HelpCircle, Settings, LogOut, Package, Truck, Send } from "lucide-react";
 import { toast } from "sonner";
 import { TrustScore } from "@/components/TrustScore";
 import { ProfileStats } from "@/components/ProfileStats";
@@ -46,6 +47,9 @@ const Profile = () => {
   const [averageRating, setAverageRating] = useState(0);
   const [editingBio, setEditingBio] = useState(false);
   const [bioText, setBioText] = useState("");
+  const [isTraveler, setIsTraveler] = useState(true);
+  const [isForwarder, setIsForwarder] = useState(false);
+  const [wantsToSendPackage, setWantsToSendPackage] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -391,11 +395,12 @@ const Profile = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="identity" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="identity">Identité</TabsTrigger>
             <TabsTrigger value="phone">Téléphone</TabsTrigger>
+            <TabsTrigger value="verification">Vérification</TabsTrigger>
             <TabsTrigger value="reviews">Avis ({reviews.length})</TabsTrigger>
-            <TabsTrigger value="info">Infos</TabsTrigger>
+            <TabsTrigger value="more">Plus</TabsTrigger>
           </TabsList>
           
           <TabsContent value="identity" className="mt-6">
@@ -499,6 +504,51 @@ const Profile = () => {
             />
           </TabsContent>
 
+          <TabsContent value="verification" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Type de profil</CardTitle>
+                <CardDescription>
+                  Sélectionnez votre utilisation de la plateforme
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between py-3 border-b">
+                  <div className="flex items-center gap-3">
+                    <Package className="w-5 h-5 text-primary" />
+                    <div>
+                      <p className="font-medium">Je suis voyageur</p>
+                      <p className="text-sm text-muted-foreground">Je transporte des colis</p>
+                    </div>
+                  </div>
+                  <Switch checked={isTraveler} onCheckedChange={setIsTraveler} />
+                </div>
+                
+                <div className="flex items-center justify-between py-3 border-b">
+                  <div className="flex items-center gap-3">
+                    <Truck className="w-5 h-5 text-primary" />
+                    <div>
+                      <p className="font-medium">Je suis transitaire professionnel</p>
+                      <p className="text-sm text-muted-foreground">Service de transport</p>
+                    </div>
+                  </div>
+                  <Switch checked={isForwarder} onCheckedChange={setIsForwarder} />
+                </div>
+                
+                <div className="flex items-center justify-between py-3">
+                  <div className="flex items-center gap-3">
+                    <Send className="w-5 h-5 text-primary" />
+                    <div>
+                      <p className="font-medium">Je veux envoyer un colis</p>
+                      <p className="text-sm text-muted-foreground">Rechercher un transporteur</p>
+                    </div>
+                  </div>
+                  <Switch checked={wantsToSendPackage} onCheckedChange={setWantsToSendPackage} />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="reviews" className="mt-6 space-y-4">
             {reviews.length === 0 ? (
               <Card>
@@ -514,15 +564,63 @@ const Profile = () => {
             )}
           </TabsContent>
           
-          <TabsContent value="info" className="mt-6 space-y-4">
-            <Card className="bg-destructive/5 border-destructive/20">
-              <CardContent className="p-4">
-                <Link to="/prohibited-items">
-                  <Button variant="ghost" className="w-full justify-start text-destructive">
-                    <AlertTriangle className="w-5 h-5 mr-2" />
-                    Voir les articles interdits
+          <TabsContent value="more" className="mt-6 space-y-4">
+            <Card>
+              <CardContent className="p-2 space-y-2">
+                <Link to="/my-listings">
+                  <Button variant="ghost" className="w-full justify-start">
+                    <Package className="w-5 h-5 mr-3 text-primary" />
+                    Mes annonces
                   </Button>
                 </Link>
+                
+                <Link to="/my-transactions">
+                  <Button variant="ghost" className="w-full justify-start">
+                    <FileText className="w-5 h-5 mr-3 text-primary" />
+                    Mes transactions
+                  </Button>
+                </Link>
+                
+                <Link to="/account-security">
+                  <Button variant="ghost" className="w-full justify-start">
+                    <Shield className="w-5 h-5 mr-3 text-primary" />
+                    Sécurité du compte
+                  </Button>
+                </Link>
+                
+                <Link to="/settings">
+                  <Button variant="ghost" className="w-full justify-start">
+                    <Settings className="w-5 h-5 mr-3 text-primary" />
+                    Paramètres
+                  </Button>
+                </Link>
+                
+                <Link to="/support">
+                  <Button variant="ghost" className="w-full justify-start">
+                    <HelpCircle className="w-5 h-5 mr-3 text-primary" />
+                    Support & aide
+                  </Button>
+                </Link>
+                
+                <Link to="/prohibited-items">
+                  <Button variant="ghost" className="w-full justify-start">
+                    <AlertTriangle className="w-5 h-5 mr-3 text-destructive" />
+                    Articles interdits
+                  </Button>
+                </Link>
+                
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    navigate('/auth');
+                    toast.success('Déconnexion réussie');
+                  }}
+                >
+                  <LogOut className="w-5 h-5 mr-3" />
+                  Déconnexion
+                </Button>
               </CardContent>
             </Card>
 
