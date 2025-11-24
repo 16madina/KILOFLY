@@ -56,6 +56,62 @@ export type Database = {
           },
         ]
       }
+      listings: {
+        Row: {
+          arrival: string
+          arrival_date: string
+          available_kg: number
+          created_at: string
+          departure: string
+          departure_date: string
+          description: string | null
+          destination_image: string | null
+          id: string
+          price_per_kg: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          arrival: string
+          arrival_date: string
+          available_kg: number
+          created_at?: string
+          departure: string
+          departure_date: string
+          description?: string | null
+          destination_image?: string | null
+          id?: string
+          price_per_kg: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          arrival?: string
+          arrival_date?: string
+          available_kg?: number
+          created_at?: string
+          departure?: string
+          departure_date?: string
+          description?: string | null
+          destination_image?: string | null
+          id?: string
+          price_per_kg?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
