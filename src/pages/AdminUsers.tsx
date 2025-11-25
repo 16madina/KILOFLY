@@ -290,17 +290,35 @@ const AdminUsers = () => {
 
     setProcessing(true);
 
-    await supabase.rpc('send_notification', {
-      p_user_id: selectedUser.id,
-      p_title: "⚠️ Compte suspendu",
-      p_message: "Votre compte a été suspendu par un administrateur. Contactez le support pour plus d'informations.",
-      p_type: 'warning'
-    });
+    try {
+      // Insert into banned_users table
+      const { error: banError } = await supabase
+        .from('banned_users')
+        .insert({
+          user_id: selectedUser.id,
+          banned_by: user!.id,
+          reason: 'Banni par l\'administration'
+        });
 
-    await logAdminAction('ban', selectedUser.id, 'Compte suspendu');
-    toast.success("Utilisateur banni et notifié");
-    setBanDialog(false);
-    setProcessing(false);
+      if (banError) throw banError;
+
+      // Send notification to user
+      await supabase.rpc('send_notification', {
+        p_user_id: selectedUser.id,
+        p_title: "⚠️ Compte suspendu",
+        p_message: "Votre compte a été suspendu par un administrateur. Contactez le support pour plus d'informations.",
+        p_type: 'warning'
+      });
+
+      await logAdminAction('ban', selectedUser.id, 'Compte suspendu');
+      toast.success("Utilisateur banni et notifié");
+      setBanDialog(false);
+    } catch (error: any) {
+      console.error("Error banning user:", error);
+      toast.error("Erreur lors du bannissement");
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleWarnUser = async (userId: string) => {
