@@ -1,12 +1,24 @@
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Privacy = () => {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background pb-20">
       <Navbar />
       
-      <div className="container py-8 max-w-4xl">
+      <div className="container py-8 max-w-4xl px-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(-1)}
+          className="mb-4 rounded-full"
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </Button>
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl">Politique de Confidentialité</CardTitle>
@@ -16,7 +28,7 @@ const Privacy = () => {
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <h2>1. Introduction</h2>
             <p>
-              Chez KiloShare, nous nous engageons à protéger votre vie privée et vos données personnelles. 
+              Chez KiloFly, nous nous engageons à protéger votre vie privée et vos données personnelles. 
               Cette politique de confidentialité explique comment nous collectons, utilisons et protégeons 
               vos informations lorsque vous utilisez notre plateforme de partage de capacité de bagages.
             </p>
@@ -98,7 +110,7 @@ const Privacy = () => {
             <h2>10. Contact</h2>
             <p>
               Pour toute question concernant cette politique de confidentialité ou vos données personnelles, 
-              contactez-nous à : <strong>privacy@kiloshare.com</strong>
+              contactez-nous à : <strong>privacy@kilofly.com</strong>
             </p>
           </CardContent>
         </Card>

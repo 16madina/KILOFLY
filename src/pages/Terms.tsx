@@ -1,12 +1,24 @@
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Terms = () => {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background pb-20">
       <Navbar />
       
-      <div className="container py-8 max-w-4xl">
+      <div className="container py-8 max-w-4xl px-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(-1)}
+          className="mb-4 rounded-full"
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </Button>
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl">Conditions d'Utilisation</CardTitle>
@@ -16,25 +28,25 @@ const Terms = () => {
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <h2>1. Acceptation des Conditions</h2>
             <p>
-              En utilisant KiloShare, vous acceptez d'être lié par ces conditions d'utilisation. 
+              En utilisant KiloFly, vous acceptez d'être lié par ces conditions d'utilisation. 
               Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser notre plateforme.
             </p>
 
             <h2>2. Description du Service</h2>
             <p>
-              KiloShare est une plateforme de mise en relation entre :
+              KiloFly est une plateforme de mise en relation entre :
             </p>
             <ul>
               <li><strong>Voyageurs</strong> : personnes disposant d'espace bagages disponible lors de leurs voyages</li>
               <li><strong>Expéditeurs</strong> : personnes souhaitant envoyer des colis via des voyageurs</li>
             </ul>
             <p>
-              KiloShare agit uniquement comme intermédiaire et n'est pas responsable des transactions 
+              KiloFly agit uniquement comme intermédiaire et n'est pas responsable des transactions 
               entre utilisateurs.
             </p>
 
             <h2>3. Conditions d'Inscription</h2>
-            <p>Pour utiliser KiloShare, vous devez :</p>
+            <p>Pour utiliser KiloFly, vous devez :</p>
             <ul>
               <li>Avoir au moins 18 ans</li>
               <li>Fournir des informations exactes et à jour</li>
@@ -100,13 +112,13 @@ const Terms = () => {
             <h2>9. Paiements et Tarifs</h2>
             <p>
               Les tarifs sont librement fixés entre voyageurs et expéditeurs. 
-              KiloShare ne prélève aucune commission sur les transactions directes. 
+              KiloFly prélève une commission de 5% sur toutes les transactions. 
               Les utilisateurs sont responsables de leurs arrangements financiers.
             </p>
 
             <h2>10. Limitation de Responsabilité</h2>
             <p>
-              KiloShare n'est pas responsable de :
+              KiloFly n'est pas responsable de :
             </p>
             <ul>
               <li>La perte, le vol ou les dommages des colis</li>
@@ -118,7 +130,7 @@ const Terms = () => {
 
             <h2>11. Propriété Intellectuelle</h2>
             <p>
-              Le contenu de KiloShare (logo, design, textes) est protégé par les droits d'auteur. 
+              Le contenu de KiloFly (logo, design, textes) est protégé par les droits d'auteur. 
               Toute reproduction sans autorisation est interdite.
             </p>
 
@@ -150,13 +162,13 @@ const Terms = () => {
             <h2>15. Contact</h2>
             <p>
               Pour toute question concernant ces conditions d'utilisation, contactez-nous à : 
-              <strong>legal@kiloshare.com</strong>
+              <strong>legal@kilofly.com</strong>
             </p>
 
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mt-8">
               <p className="font-semibold text-destructive mb-2">⚠️ Important</p>
               <p className="text-sm">
-                En utilisant KiloShare, vous reconnaissez avoir lu, compris et accepté 
+                En utilisant KiloFly, vous reconnaissez avoir lu, compris et accepté 
                 l'intégralité de ces conditions d'utilisation. Vous êtes responsable de 
                 vous assurer que votre utilisation de la plateforme est conforme aux lois 
                 de votre pays et du pays de destination.
