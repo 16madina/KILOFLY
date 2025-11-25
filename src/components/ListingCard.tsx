@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { MapPin, Calendar, Weight, ArrowRight, User, Phone, Heart, Package, AlertCircle } from "lucide-react";
 import BottomSheet from "@/components/mobile/BottomSheet";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,6 +58,7 @@ const ListingCard = ({
   const [contactLoading, setContactLoading] = useState(false);
   const [trustScore, setTrustScore] = useState(0);
   const [requestedKg, setRequestedKg] = useState<number>(1);
+  const [itemDescription, setItemDescription] = useState<string>("");
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -97,15 +99,15 @@ const ListingCard = ({
     }
   };
 
-  const handleContact = async () => {
+  const handleReservation = async () => {
     if (!user) {
-      toast.error("Vous devez être connecté pour contacter un voyageur");
+      toast.error("Vous devez être connecté pour faire une réservation");
       navigate('/auth');
       return;
     }
 
     if (user.id === userId) {
-      toast.error("Vous ne pouvez pas contacter votre propre annonce");
+      toast.error("Vous ne pouvez pas réserver votre propre annonce");
       return;
     }
 
@@ -119,55 +121,37 @@ const ListingCard = ({
       return;
     }
 
+    if (!itemDescription.trim()) {
+      toast.error("Veuillez décrire les articles que vous souhaitez envoyer");
+      return;
+    }
+
     setContactLoading(true);
 
     try {
-      // Check if conversation already exists
-      const { data: existingConversation } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('listing_id', id)
-        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-        .single();
-
-      if (existingConversation) {
-        // Send initial message with booking request
-        await supabase.from('messages').insert({
-          conversation_id: existingConversation.id,
-          sender_id: user.id,
-          content: `Bonjour, je souhaite réserver ${requestedKg} kg pour un montant total de ${totalPrice}€.`,
-        });
-        
-        toast.success("Message de réservation envoyé");
-        navigate(`/conversation/${existingConversation.id}`);
-        return;
-      }
-
-      // Create new conversation
-      const { data: newConversation, error } = await supabase
-        .from('conversations')
+      // Create reservation
+      const { error: reservationError } = await supabase
+        .from("reservations")
         .insert({
           listing_id: id,
           buyer_id: user.id,
-          seller_id: userId
-        })
-        .select('id')
-        .single();
+          seller_id: userId,
+          requested_kg: requestedKg,
+          total_price: totalPrice,
+          item_description: itemDescription,
+        });
 
-      if (error) throw error;
+      if (reservationError) throw reservationError;
 
-      // Send initial message with booking request
-      await supabase.from('messages').insert({
-        conversation_id: newConversation.id,
-        sender_id: user.id,
-        content: `Bonjour, je souhaite réserver ${requestedKg} kg pour un montant total de ${totalPrice}€.`,
-      });
-
-      toast.success("Demande de réservation envoyée");
-      navigate(`/conversation/${newConversation.id}`);
+      toast.success("Demande de réservation envoyée avec succès");
+      toast.info("Le vendeur recevra une notification et pourra approuver votre demande");
+      
+      setIsDetailOpen(false);
+      setRequestedKg(1);
+      setItemDescription("");
     } catch (error) {
-      console.error('Error creating conversation:', error);
-      toast.error("Erreur lors de la création de la conversation");
+      console.error('Error creating reservation:', error);
+      toast.error("Erreur lors de l'envoi de la demande");
     } finally {
       setContactLoading(false);
     }
@@ -373,6 +357,24 @@ const ListingCard = ({
                 </Button>
               </div>
 
+              {/* Item Description */}
+              <div className="space-y-2">
+                <Label htmlFor="item-description" className="text-sm">
+                  Description des articles <span className="text-red-500">*</span>
+                </Label>
+                <Textarea
+                  id="item-description"
+                  placeholder="Décrivez les articles que vous souhaitez envoyer (type, poids approximatif, dimensions, etc.)"
+                  value={itemDescription}
+                  onChange={(e) => setItemDescription(e.target.value)}
+                  rows={4}
+                  className="resize-none"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Soyez précis pour aider le voyageur à évaluer votre demande
+                </p>
+              </div>
+
               {/* Price Calculation */}
               <div className="space-y-2 pt-2 border-t border-border">
                 <div className="flex justify-between text-sm">
@@ -392,19 +394,19 @@ const ListingCard = ({
             </div>
           </div>
 
-          {/* Contact Button */}
+          {/* Reservation Button */}
           <Button 
             className="w-full gap-2 bg-gradient-sky hover:opacity-90 transition-opacity" 
             size="lg"
-            onClick={handleContact}
-            disabled={contactLoading}
+            onClick={handleReservation}
+            disabled={contactLoading || !itemDescription.trim()}
           >
             <Phone className="h-5 w-5" />
-            {contactLoading ? "Envoi en cours..." : `Réserver ${requestedKg} kg (${totalPrice}€)`}
+            {contactLoading ? "Envoi en cours..." : `Envoyer la demande de réservation`}
           </Button>
           
           <p className="text-xs text-center text-muted-foreground">
-            Un message avec votre demande sera envoyé au voyageur
+            Le vendeur recevra une notification et pourra approuver ou refuser votre demande
           </p>
         </div>
       </BottomSheet>

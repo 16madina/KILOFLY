@@ -26,7 +26,8 @@ import {
   Shield,
   Settings as SettingsIcon,
   HelpCircle,
-  FileText
+  FileText,
+  CalendarCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -379,6 +380,19 @@ const Profile = () => {
                   <Receipt className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <span className="font-medium">Mes transactions</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Card>
+          </Link>
+
+          {/* Mes réservations */}
+          <Link to="/my-reservations">
+            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center">
+                  <CalendarCheck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <span className="font-medium">Mes réservations</span>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </Card>

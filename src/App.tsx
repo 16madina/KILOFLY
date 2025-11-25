@@ -19,6 +19,7 @@ import AdminReports from "./pages/AdminReports";
 import Settings from "./pages/Settings";
 import MyListings from "./pages/MyListings";
 import MyTransactions from "./pages/MyTransactions";
+import MyReservations from "./pages/MyReservations";
 import AccountSecurity from "./pages/AccountSecurity";
 import TrustScoreInfo from "./pages/TrustScoreInfo";
 import AdminTransactions from "./pages/AdminTransactions";
@@ -63,11 +64,14 @@ function App() {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/my-listings" element={<MyListings />} />
                   <Route path="/my-transactions" element={<MyTransactions />} />
+                  <Route path="/my-reservations" element={<MyReservations />} />
                   <Route path="/user-transactions" element={<UserTransactions />} />
                   <Route path="/admin/transactions" element={<AdminTransactions />} />
                   <Route path="/account-security" element={<AccountSecurity />} />
                   <Route path="/privacy-settings" element={<PrivacySettings />} />
                   <Route path="/trust-score-info" element={<TrustScoreInfo />} />
+                  <Route path="/favorites" element={<Favorites />} />
+                  <Route path="/route-alerts" element={<RouteAlerts />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
