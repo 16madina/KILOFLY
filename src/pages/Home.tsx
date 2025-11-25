@@ -1,7 +1,8 @@
 import ListingCard from "@/components/ListingCard";
+import Navbar from "@/components/Navbar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plane } from "lucide-react";
+import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
@@ -102,17 +103,7 @@ const Home = () => {
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="min-h-screen bg-background pb-32">
-        {/* Mobile Header */}
-        <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe">
-          <div className="container px-4 sm:px-6 py-4 flex items-center gap-3">
-            <div className="rounded-lg bg-gradient-sky p-2 transition-all duration-200 hover:scale-110">
-              <Plane className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <h1 className="text-xl font-bold bg-gradient-sky bg-clip-text text-transparent">
-              KiloFly
-            </h1>
-          </div>
-        </header>
+        <Navbar />
 
         {/* Hero Section */}
         <section className="relative overflow-hidden">
