@@ -38,6 +38,9 @@ const SplashScreen = ({ onFinish }: { onFinish: () => void }) => {
             className="h-48 w-auto object-contain drop-shadow-2xl"
           />
         </div>
+        <h2 className="text-2xl font-semibold text-white/95 tracking-wide animate-fade-in [animation-delay:300ms]">
+          Chaque Kilo compte
+        </h2>
         <div className="flex gap-2.5">
           <div className="h-2.5 w-2.5 rounded-full bg-white/90 shadow-lg animate-bounce [animation-delay:0ms]"></div>
           <div className="h-2.5 w-2.5 rounded-full bg-white/90 shadow-lg animate-bounce [animation-delay:150ms]"></div>
