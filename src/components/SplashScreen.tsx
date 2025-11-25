@@ -35,7 +35,7 @@ const SplashScreen = ({ onFinish }: { onFinish: () => void }) => {
           <img
             src={kiloFlyLogo}
             alt="KiloFly"
-            className="h-32 w-auto object-contain drop-shadow-2xl"
+            className="h-48 w-auto object-contain drop-shadow-2xl"
           />
         </div>
         <div className="flex gap-2.5">
