@@ -190,6 +190,7 @@ export type Database = {
       }
       listings: {
         Row: {
+          allowed_items: string[] | null
           arrival: string
           arrival_date: string
           available_kg: number
@@ -200,11 +201,13 @@ export type Database = {
           destination_image: string | null
           id: string
           price_per_kg: number
+          prohibited_items: string[] | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          allowed_items?: string[] | null
           arrival: string
           arrival_date: string
           available_kg: number
@@ -215,11 +218,13 @@ export type Database = {
           destination_image?: string | null
           id?: string
           price_per_kg: number
+          prohibited_items?: string[] | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          allowed_items?: string[] | null
           arrival?: string
           arrival_date?: string
           available_kg?: number
@@ -230,6 +235,7 @@ export type Database = {
           destination_image?: string | null
           id?: string
           price_per_kg?: number
+          prohibited_items?: string[] | null
           status?: string
           updated_at?: string
           user_id?: string
