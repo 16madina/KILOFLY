@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AvatarUpload from "@/components/AvatarUpload";
 import { z } from "zod";
+import kiloFlyLogo from "@/assets/kilofly-logo.png";
 
 // Validation schema - avatar validation removed since upload happens after signup
 const signupSchema = z.object({
@@ -172,12 +173,13 @@ const Auth = () => {
       <div className="container px-4 sm:px-6 py-8 flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <div className="w-full max-w-md">
           <div className="text-center mb-8 animate-fade-in">
-            <h1 className="text-4xl font-bold mb-2">
-              Bienvenue sur{" "}
-              <span className="bg-gradient-sky bg-clip-text text-transparent">
-                KiloFly
-              </span>
-            </h1>
+            <div className="flex justify-center mb-4">
+              <img 
+                src={kiloFlyLogo} 
+                alt="KiloFly" 
+                className="h-16 w-auto object-contain"
+              />
+            </div>
             <p className="text-muted-foreground">
               Connectez-vous pour accéder à toutes les fonctionnalités
             </p>

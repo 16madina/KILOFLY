@@ -1,9 +1,10 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Plane, Plus, User, LogOut } from "lucide-react";
+import { Plus, User, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import kiloFlyLogo from "@/assets/kilofly-logo.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,13 +23,12 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 font-bold text-xl">
-          <div className="rounded-lg bg-gradient-sky p-2">
-            <Plane className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="bg-gradient-sky bg-clip-text text-transparent">
-            KiloFly
-          </span>
+        <Link to="/" className="flex items-center gap-2">
+          <img 
+            src={kiloFlyLogo} 
+            alt="KiloFly" 
+            className="h-10 w-auto object-contain transition-transform hover:scale-105"
+          />
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
