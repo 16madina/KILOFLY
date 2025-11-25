@@ -259,17 +259,20 @@ const ListingCard = ({
           </Badge>
         </div>
         <div className="absolute bottom-3 left-3 right-3">
-          <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2 flex items-center gap-2">
-            <Avatar className="h-8 w-8 border-2 border-background flex-shrink-0">
-              <AvatarImage src={userAvatar} />
-              <AvatarFallback className="bg-gradient-sky text-primary-foreground text-xs">
-                {userName.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0 flex items-center gap-1.5">
-              <p className="font-semibold text-foreground text-sm truncate flex-1">{userName}</p>
-              {isVerified && <VerifiedBadge verified={isVerified} size="sm" />}
+          <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2.5 space-y-2">
+            <div className="flex items-center gap-2">
+              <Avatar className="h-8 w-8 border-2 border-background flex-shrink-0">
+                <AvatarImage src={userAvatar} />
+                <AvatarFallback className="bg-gradient-sky text-primary-foreground text-xs">
+                  {userName.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                <p className="font-semibold text-foreground text-sm truncate flex-1">{userName}</p>
+                {isVerified && <VerifiedBadge verified={isVerified} size="sm" />}
+              </div>
             </div>
+            <TrustScore score={trustScore} className="scale-90 origin-left" />
           </div>
         </div>
       </div>
