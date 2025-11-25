@@ -5,8 +5,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Navbar from "@/components/Navbar";
-import { ArrowLeft, TrendingUp, DollarSign, Package, Users } from "lucide-react";
+import { ArrowLeft, TrendingUp, Package, Users, Search, Filter } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -35,10 +37,17 @@ interface Transaction {
 
 export default function AdminTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+  
+  // Filters
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [minAmount, setMinAmount] = useState("");
+  const [maxAmount, setMaxAmount] = useState("");
 
   useEffect(() => {
     checkAdminAndFetchTransactions();
@@ -87,12 +96,44 @@ export default function AdminTransactions() {
       if (error) throw error;
 
       setTransactions(data as any);
+      setFilteredTransactions(data as any);
     } catch (error) {
       console.error("Error fetching transactions:", error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Apply filters
+  useEffect(() => {
+    let filtered = [...transactions];
+
+    // Status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(t => t.status === statusFilter);
+    }
+
+    // Search query (buyer, seller, or route)
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(t => 
+        t.buyer.full_name.toLowerCase().includes(query) ||
+        t.seller.full_name.toLowerCase().includes(query) ||
+        t.listing.departure.toLowerCase().includes(query) ||
+        t.listing.arrival.toLowerCase().includes(query)
+      );
+    }
+
+    // Amount range filter
+    if (minAmount) {
+      filtered = filtered.filter(t => t.amount >= parseFloat(minAmount));
+    }
+    if (maxAmount) {
+      filtered = filtered.filter(t => t.amount <= parseFloat(maxAmount));
+    }
+
+    setFilteredTransactions(filtered);
+  }, [transactions, statusFilter, searchQuery, minAmount, maxAmount]);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -116,12 +157,12 @@ export default function AdminTransactions() {
     );
   };
 
-  const totalRevenue = transactions
+  const totalRevenue = filteredTransactions
     .filter((t) => t.status === "completed")
     .reduce((sum, t) => sum + t.platform_commission, 0);
 
-  const totalTransactions = transactions.length;
-  const completedTransactions = transactions.filter((t) => t.status === "completed").length;
+  const totalTransactions = filteredTransactions.length;
+  const completedTransactions = filteredTransactions.filter((t) => t.status === "completed").length;
 
   if (loading) {
     return (
@@ -207,20 +248,110 @@ export default function AdminTransactions() {
           </Card>
         </div>
 
+        {/* Filters */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filtres de recherche
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Search */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Rechercher</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Nom, ville, trajet..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Statut</label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tous les statuts" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les statuts</SelectItem>
+                    <SelectItem value="completed">Complété</SelectItem>
+                    <SelectItem value="pending">En attente</SelectItem>
+                    <SelectItem value="cancelled">Annulé</SelectItem>
+                    <SelectItem value="refunded">Remboursé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Min Amount */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Montant minimum (€)</label>
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  value={minAmount}
+                  onChange={(e) => setMinAmount(e.target.value)}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+
+              {/* Max Amount */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Montant maximum (€)</label>
+                <Input
+                  type="number"
+                  placeholder="1000.00"
+                  value={maxAmount}
+                  onChange={(e) => setMaxAmount(e.target.value)}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            {/* Reset Filters Button */}
+            {(statusFilter !== "all" || searchQuery || minAmount || maxAmount) && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setStatusFilter("all");
+                  setSearchQuery("");
+                  setMinAmount("");
+                  setMaxAmount("");
+                }}
+                className="w-full"
+              >
+                Réinitialiser les filtres
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Transactions List */}
         <Card>
           <CardHeader>
-            <CardTitle>Historique des Transactions</CardTitle>
+            <CardTitle>Historique des Transactions ({filteredTransactions.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            {transactions.length === 0 ? (
+            {filteredTransactions.length === 0 ? (
               <div className="text-center py-12">
                 <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Aucune transaction pour le moment</p>
+                <p className="text-muted-foreground">
+                  {transactions.length === 0 
+                    ? "Aucune transaction pour le moment"
+                    : "Aucune transaction ne correspond aux filtres"}
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
-                {transactions.map((transaction) => (
+                {filteredTransactions.map((transaction) => (
                   <Card key={transaction.id}>
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between mb-4">
