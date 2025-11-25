@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import VerifiedBadge from "@/components/VerifiedBadge";
+import { TrustScore } from "@/components/TrustScore";
 import { 
   ChevronLeft,
   ChevronRight,
@@ -63,6 +64,7 @@ const Profile = () => {
   });
   const [isAdmin, setIsAdmin] = useState(false);
   const [verificationExpanded, setVerificationExpanded] = useState(false);
+  const [trustScore, setTrustScore] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -120,6 +122,15 @@ const Profile = () => {
       averageRating: avgRating,
       followers: 0 // TODO: implement followers system
     });
+
+    // Calculate trust score
+    let calculatedScore = 0;
+    if (data.id_verified) calculatedScore += 30;
+    if (data.phone_verified) calculatedScore += 20;
+    calculatedScore += (data.completed_trips || 0) * 2;
+    calculatedScore += (avgRating / 5) * 30;
+    calculatedScore += ((data.response_rate || 0) / 100) * 20;
+    setTrustScore(Math.min(100, Math.round(calculatedScore)));
 
     setLoading(false);
   };
@@ -199,6 +210,12 @@ const Profile = () => {
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold">{profile.full_name}</h1>
           <p className="text-sm text-muted-foreground">{user?.email}</p>
+          
+          {/* Trust Score Badge */}
+          <div className="flex justify-center py-2">
+            <TrustScore score={trustScore} />
+          </div>
+          
           <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4" />
             <span>{profile.city}, {profile.country}</span>
