@@ -4,8 +4,13 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Package, Receipt, ShieldCheck, AlertTriangle, TrendingUp } from "lucide-react";
+import { Users, Package, Receipt, ShieldCheck, AlertTriangle, TrendingUp, Mail, Ban, UserX } from "lucide-react";
 import { toast } from "sonner";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { format, subDays, startOfDay, endOfDay } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface Stats {
   totalUsers: number;
@@ -16,6 +21,25 @@ interface Stats {
   totalTransactions: number;
   totalRevenue: number;
   pendingReports: number;
+  totalBanned: number;
+}
+
+interface ChartData {
+  date: string;
+  emails: number;
+  bans: number;
+  warnings: number;
+}
+
+interface BannedUser {
+  id: string;
+  user_id: string;
+  reason: string | null;
+  banned_at: string;
+  is_active: boolean;
+  profiles?: {
+    full_name: string;
+  };
 }
 
 const AdminDashboard = () => {
@@ -31,8 +55,13 @@ const AdminDashboard = () => {
     activeListings: 0,
     totalTransactions: 0,
     totalRevenue: 0,
-    pendingReports: 0
+    pendingReports: 0,
+    totalBanned: 0
   });
+  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([]);
+  const [showBannedDialog, setShowBannedDialog] = useState(false);
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     checkAdminRole();
@@ -59,6 +88,8 @@ const AdminDashboard = () => {
 
     setIsAdmin(true);
     fetchStats();
+    fetchChartData();
+    fetchBannedUsers();
   };
 
   const fetchStats = async () => {
@@ -107,6 +138,12 @@ const AdminDashboard = () => {
       .select('*', { count: 'exact', head: true })
       .eq('status', 'pending');
 
+    // Banned users
+    const { count: bannedCount } = await supabase
+      .from('banned_users')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true);
+
     setStats({
       totalUsers: usersCount || 0,
       verifiedUsers: verifiedCount || 0,
@@ -115,10 +152,115 @@ const AdminDashboard = () => {
       activeListings: activeListings || 0,
       totalTransactions,
       totalRevenue,
-      pendingReports: reportsCount || 0
+      pendingReports: reportsCount || 0,
+      totalBanned: bannedCount || 0
     });
 
     setLoading(false);
+  };
+
+  const fetchChartData = async () => {
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = subDays(new Date(), 6 - i);
+      return {
+        date: format(date, 'dd MMM', { locale: fr }),
+        startDate: startOfDay(date),
+        endDate: endOfDay(date)
+      };
+    });
+
+    const chartDataPromises = last7Days.map(async ({ date, startDate, endDate }) => {
+      const { count: emails } = await supabase
+        .from('admin_actions')
+        .select('*', { count: 'exact', head: true })
+        .eq('action_type', 'email')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      const { count: bans } = await supabase
+        .from('admin_actions')
+        .select('*', { count: 'exact', head: true })
+        .eq('action_type', 'ban')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      const { count: warnings } = await supabase
+        .from('admin_actions')
+        .select('*', { count: 'exact', head: true })
+        .eq('action_type', 'warn')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      return {
+        date,
+        emails: emails || 0,
+        bans: bans || 0,
+        warnings: warnings || 0
+      };
+    });
+
+    const data = await Promise.all(chartDataPromises);
+    setChartData(data);
+  };
+
+  const fetchBannedUsers = async () => {
+    const { data: banned } = await supabase
+      .from('banned_users')
+      .select('*')
+      .eq('is_active', true)
+      .order('banned_at', { ascending: false });
+
+    if (banned && banned.length > 0) {
+      const userIds = banned.map(b => b.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      
+      const enrichedBanned = banned.map(ban => ({
+        ...ban,
+        profiles: profileMap.get(ban.user_id) || { full_name: 'Utilisateur inconnu' }
+      }));
+
+      setBannedUsers(enrichedBanned);
+    } else {
+      setBannedUsers([]);
+    }
+  };
+
+  const handleUnban = async (bannedUserId: string, userId: string) => {
+    setProcessing(true);
+
+    try {
+      const { error } = await supabase
+        .from('banned_users')
+        .update({ 
+          is_active: false,
+          unbanned_at: new Date().toISOString()
+        })
+        .eq('id', bannedUserId);
+
+      if (error) throw error;
+
+      // Send notification to user
+      await supabase.rpc('send_notification', {
+        p_user_id: userId,
+        p_title: "✅ Compte réactivé",
+        p_message: "Votre compte a été réactivé par l'administration.",
+        p_type: 'success'
+      });
+
+      toast.success("Utilisateur débanni avec succès");
+      fetchBannedUsers();
+      fetchStats();
+    } catch (error: any) {
+      console.error("Error unbanning user:", error);
+      toast.error("Erreur lors du débannissement");
+    } finally {
+      setProcessing(false);
+    }
   };
 
   if (!isAdmin || loading) {
@@ -145,7 +287,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Utilisateurs</CardTitle>
@@ -195,6 +337,65 @@ const AdminDashboard = () => {
               <p className="text-xs text-muted-foreground">
                 Vérifications & signalements
               </p>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setShowBannedDialog(true)}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Bannis</CardTitle>
+              <UserX className="h-4 w-4 text-destructive" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-destructive">{stats.totalBanned}</div>
+              <p className="text-xs text-muted-foreground">
+                Voir la liste
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                Actions Admin (7 derniers jours)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="emails" stroke="#3b82f6" name="Emails" />
+                  <Line type="monotone" dataKey="warnings" stroke="#f59e0b" name="Avertissements" />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Ban className="h-5 w-5" />
+                Bannissements (7 derniers jours)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="bans" fill="#ef4444" name="Bannissements" />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
@@ -281,6 +482,53 @@ const AdminDashboard = () => {
             </Card>
           </Link>
         </div>
+
+        {/* Banned Users Dialog */}
+        <Dialog open={showBannedDialog} onOpenChange={setShowBannedDialog}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <UserX className="h-5 w-5 text-destructive" />
+                Utilisateurs bannis ({bannedUsers.length})
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {bannedUsers.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Aucun utilisateur banni
+                </p>
+              ) : (
+                bannedUsers.map((banned) => (
+                  <Card key={banned.id}>
+                    <CardContent className="py-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-semibold">{banned.profiles?.full_name}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Banni le: {format(new Date(banned.banned_at), 'dd MMMM yyyy à HH:mm', { locale: fr })}
+                          </p>
+                          {banned.reason && (
+                            <p className="text-sm mt-2 bg-muted p-2 rounded">
+                              Raison: {banned.reason}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUnban(banned.id, banned.user_id)}
+                          disabled={processing}
+                        >
+                          Débannir
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
