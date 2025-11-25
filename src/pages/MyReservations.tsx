@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Package, Calendar, MapPin, User, Check, X, Clock } from "lucide-react";
+import { ArrowLeft, Package, Calendar, MapPin, User, Check, X, Clock, Truck, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,7 @@ interface Reservation {
   requested_kg: number;
   total_price: number;
   item_description: string;
-  status: "pending" | "approved" | "rejected" | "cancelled";
+  status: "pending" | "approved" | "rejected" | "cancelled" | "in_progress" | "delivered";
   created_at: string;
   buyer?: {
     full_name: string;
@@ -122,6 +122,40 @@ const MyReservations = () => {
     }
   };
 
+  const handleMarkInProgress = async (reservationId: string) => {
+    try {
+      const { error } = await supabase
+        .from("reservations")
+        .update({ status: "in_progress" })
+        .eq("id", reservationId);
+
+      if (error) throw error;
+
+      toast.success("Réservation marquée en cours de transport");
+      fetchReservations();
+    } catch (error) {
+      console.error("Error marking in progress:", error);
+      toast.error("Erreur lors de la mise à jour");
+    }
+  };
+
+  const handleMarkDelivered = async (reservationId: string) => {
+    try {
+      const { error } = await supabase
+        .from("reservations")
+        .update({ status: "delivered" })
+        .eq("id", reservationId);
+
+      if (error) throw error;
+
+      toast.success("Livraison confirmée ! 🎉");
+      fetchReservations();
+    } catch (error) {
+      console.error("Error marking delivered:", error);
+      toast.error("Erreur lors de la confirmation");
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
@@ -132,6 +166,10 @@ const MyReservations = () => {
         return <Badge variant="secondary" className="bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/20"><X className="h-3 w-3 mr-1" />Refusée</Badge>;
       case "cancelled":
         return <Badge variant="secondary" className="bg-gray-500/10 text-gray-700 dark:text-gray-300 border-gray-500/20">Annulée</Badge>;
+      case "in_progress":
+        return <Badge variant="secondary" className="bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20"><Truck className="h-3 w-3 mr-1" />En transit</Badge>;
+      case "delivered":
+        return <Badge variant="secondary" className="bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Livrée</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -213,24 +251,48 @@ const MyReservations = () => {
           </div>
 
           {/* Actions */}
-          {isReceived && reservation.status === "pending" && (
-            <div className="flex gap-2 pt-2">
-              <Button
-                className="flex-1 bg-green-600 hover:bg-green-700"
-                onClick={() => handleApprove(reservation.id)}
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Approuver
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={() => handleReject(reservation.id)}
-              >
-                <X className="h-4 w-4 mr-2" />
-                Refuser
-              </Button>
-            </div>
+          {isReceived && (
+            <>
+              {reservation.status === "pending" && (
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    onClick={() => handleApprove(reservation.id)}
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    Approuver
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={() => handleReject(reservation.id)}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Refuser
+                  </Button>
+                </div>
+              )}
+              
+              {reservation.status === "approved" && (
+                <Button
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  onClick={() => handleMarkInProgress(reservation.id)}
+                >
+                  <Truck className="h-4 w-4 mr-2" />
+                  Marquer "En cours de transport"
+                </Button>
+              )}
+              
+              {reservation.status === "in_progress" && (
+                <Button
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                  onClick={() => handleMarkDelivered(reservation.id)}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Confirmer la livraison
+                </Button>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
