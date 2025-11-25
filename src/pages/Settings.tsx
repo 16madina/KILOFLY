@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, ChevronRight, Shield, Globe } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shield, Globe, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const Settings = () => {
@@ -42,6 +42,15 @@ const Settings = () => {
           <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
             <Shield className="w-5 h-5 text-primary" />
             <span className="flex-1 text-left font-medium">Sécurité</span>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </Link>
+
+        {/* Transactions */}
+        <Link to="/user-transactions">
+          <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+            <DollarSign className="w-5 h-5 text-primary" />
+            <span className="flex-1 text-left font-medium">Mes transactions</span>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
         </Link>
