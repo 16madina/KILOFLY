@@ -5,9 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import { 
   ChevronLeft,
+  ChevronRight,
   Bell,
   Share2,
   MapPin,
@@ -17,9 +19,13 @@ import {
   Star,
   Users,
   CheckCircle2,
-  Edit,
+  User,
+  ShieldCheck,
+  Receipt,
+  Shield,
   Settings as SettingsIcon,
-  Shield
+  HelpCircle,
+  FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -56,6 +62,7 @@ const Profile = () => {
     followers: 0
   });
   const [isAdmin, setIsAdmin] = useState(false);
+  const [verificationExpanded, setVerificationExpanded] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -272,34 +279,140 @@ const Profile = () => {
           )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-4">
-          <Button variant="outline" className="w-full" asChild>
-            <Link to="/settings">
-              <Edit className="h-4 w-4 mr-2" />
-              Modifier
-            </Link>
-          </Button>
-          <Button variant="outline" className="w-full" asChild>
-            <Link to="/settings">
-              <SettingsIcon className="h-4 w-4 mr-2" />
-              Paramètres
-            </Link>
-          </Button>
-        </div>
+        {/* Navigation Sections */}
+        <div className="space-y-2">
+          {/* Informations personnelles */}
+          <Link to="/settings">
+            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                  <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <span className="font-medium">Informations personnelles</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Card>
+          </Link>
 
-        {/* Admin Panel Button */}
-        {isAdmin && (
-          <Button 
-            className="w-full bg-orange-600 hover:bg-orange-700 text-white"
-            asChild
-          >
-            <Link to="/admin/verification">
-              <Shield className="h-4 w-4 mr-2" />
-              Panneau d'administration
-            </Link>
-          </Button>
-        )}
+          {/* Vérification */}
+          <Card className="p-4">
+            <button
+              onClick={() => setVerificationExpanded(!verificationExpanded)}
+              className="w-full flex items-center justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                  <ShieldCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <span className="font-medium">Vérification</span>
+              </div>
+              <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform ${verificationExpanded ? 'rotate-90' : ''}`} />
+            </button>
+            
+            {verificationExpanded && (
+              <div className="mt-4 space-y-3 pl-13">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Je suis voyageur</span>
+                  <Switch />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Je suis transitaire professionnel</span>
+                  <Switch />
+                </div>
+                <button className="w-full text-left text-sm text-primary hover:underline">
+                  Je veux envoyer un colis
+                </button>
+              </div>
+            )}
+          </Card>
+
+          {/* Mes annonces */}
+          <Link to="/my-listings">
+            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+                  <Package className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <span className="font-medium">Mes annonces</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Card>
+          </Link>
+
+          {/* Mes transactions */}
+          <Link to="/my-transactions">
+            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                  <Receipt className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <span className="font-medium">Mes transactions</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Card>
+          </Link>
+
+          {/* Sécurité du compte */}
+          <Link to="/account-security">
+            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                  <Shield className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <span className="font-medium">Sécurité du compte</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Card>
+          </Link>
+
+          {/* Paramètres */}
+          <Link to="/settings">
+            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-900/20 flex items-center justify-center">
+                  <SettingsIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <span className="font-medium">Paramètres</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Card>
+          </Link>
+
+          {/* Support & aide */}
+          <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
+                <HelpCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <span className="font-medium">Support & aide</span>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </Card>
+
+          {/* Documents */}
+          <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center">
+                <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <span className="font-medium">Documents</span>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </Card>
+
+          {/* Admin Panel Button */}
+          {isAdmin && (
+            <Button 
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+              asChild
+            >
+              <Link to="/admin/verification">
+                <Shield className="h-4 w-4 mr-2" />
+                Panneau d'administration
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
