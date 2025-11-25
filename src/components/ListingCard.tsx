@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { MapPin, Calendar, Weight, ArrowRight, User, Phone, Heart, Package, AlertCircle } from "lucide-react";
 import BottomSheet from "@/components/mobile/BottomSheet";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,8 +56,12 @@ const ListingCard = ({
   const [isVerified, setIsVerified] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
   const [trustScore, setTrustScore] = useState(0);
+  const [requestedKg, setRequestedKg] = useState<number>(1);
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Calculate total price
+  const totalPrice = requestedKg * pricePerKg;
 
   useEffect(() => {
     fetchUserVerification();
@@ -103,6 +109,16 @@ const ListingCard = ({
       return;
     }
 
+    if (requestedKg > availableKg) {
+      toast.error(`Quantité maximale disponible: ${availableKg} kg`);
+      return;
+    }
+
+    if (requestedKg < 1) {
+      toast.error("La quantité doit être d'au moins 1 kg");
+      return;
+    }
+
     setContactLoading(true);
 
     try {
@@ -115,7 +131,14 @@ const ListingCard = ({
         .single();
 
       if (existingConversation) {
-        toast.success("Redirection vers la conversation");
+        // Send initial message with booking request
+        await supabase.from('messages').insert({
+          conversation_id: existingConversation.id,
+          sender_id: user.id,
+          content: `Bonjour, je souhaite réserver ${requestedKg} kg pour un montant total de ${totalPrice}€.`,
+        });
+        
+        toast.success("Message de réservation envoyé");
         navigate(`/conversation/${existingConversation.id}`);
         return;
       }
@@ -133,7 +156,14 @@ const ListingCard = ({
 
       if (error) throw error;
 
-      toast.success("Conversation créée avec succès");
+      // Send initial message with booking request
+      await supabase.from('messages').insert({
+        conversation_id: newConversation.id,
+        sender_id: user.id,
+        content: `Bonjour, je souhaite réserver ${requestedKg} kg pour un montant total de ${totalPrice}€.`,
+      });
+
+      toast.success("Demande de réservation envoyée");
       navigate(`/conversation/${newConversation.id}`);
     } catch (error) {
       console.error('Error creating conversation:', error);
@@ -292,6 +322,76 @@ const ListingCard = ({
             </div>
           )}
 
+          <Separator />
+
+          {/* Réservation Section */}
+          <div className="space-y-4 p-4 bg-primary/5 rounded-lg border border-primary/10">
+            <h4 className="font-semibold text-lg">Réserver des kilos</h4>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="kg-input" className="text-sm">
+                  Quantité souhaitée (kg)
+                </Label>
+                <span className="text-xs text-muted-foreground">
+                  Maximum: {availableKg} kg
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setRequestedKg(Math.max(1, requestedKg - 1))}
+                  disabled={requestedKg <= 1}
+                >
+                  -
+                </Button>
+                
+                <Input
+                  id="kg-input"
+                  type="number"
+                  value={requestedKg}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 1;
+                    setRequestedKg(Math.min(availableKg, Math.max(1, value)));
+                  }}
+                  min={1}
+                  max={availableKg}
+                  className="text-center text-lg font-bold"
+                />
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setRequestedKg(Math.min(availableKg, requestedKg + 1))}
+                  disabled={requestedKg >= availableKg}
+                >
+                  +
+                </Button>
+              </div>
+
+              {/* Price Calculation */}
+              <div className="space-y-2 pt-2 border-t border-border">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Prix par kg:</span>
+                  <span className="font-medium">{pricePerKg}€</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Quantité:</span>
+                  <span className="font-medium">{requestedKg} kg</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total:</span>
+                  <span className="text-primary">{totalPrice}€</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Contact Button */}
           <Button 
             className="w-full gap-2 bg-gradient-sky hover:opacity-90 transition-opacity" 
@@ -300,8 +400,12 @@ const ListingCard = ({
             disabled={contactLoading}
           >
             <Phone className="h-5 w-5" />
-            {contactLoading ? "Chargement..." : "Contacter le voyageur"}
+            {contactLoading ? "Envoi en cours..." : `Réserver ${requestedKg} kg (${totalPrice}€)`}
           </Button>
+          
+          <p className="text-xs text-center text-muted-foreground">
+            Un message avec votre demande sera envoyé au voyageur
+          </p>
         </div>
       </BottomSheet>
 
