@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Plane, Plus, User, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,14 +31,16 @@ const Navbar = () => {
           </span>
         </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
+          
           {user && (
             <>
               <NotificationBell />
-              <Link to="/post">
-                <Button variant="default" className="gap-2">
+              <Link to="/post" className="hidden sm:block">
+                <Button variant="default" className="gap-2 bg-gradient-sky hover:opacity-90 transition-opacity">
                   <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Poster une annonce</span>
+                  <span>Poster une annonce</span>
                 </Button>
               </Link>
             </>
@@ -46,16 +49,16 @@ const Navbar = () => {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
+                <Button variant="outline" size="icon" className="transition-transform hover:scale-105">
                   <User className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate('/profile')}>
+              <DropdownMenuContent align="end" className="animate-fade-in">
+                <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
                   <User className="mr-2 h-4 w-4" />
                   Profil
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleSignOut}>
+                <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   Déconnexion
                 </DropdownMenuItem>
@@ -63,7 +66,7 @@ const Navbar = () => {
             </DropdownMenu>
           ) : (
             <Link to="/auth">
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" className="transition-transform hover:scale-105">
                 <User className="h-4 w-4" />
               </Button>
             </Link>
