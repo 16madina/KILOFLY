@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import ReservationTimeline from "@/components/ReservationTimeline";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -47,6 +48,28 @@ const MyReservations = () => {
   useEffect(() => {
     if (user) {
       fetchReservations();
+      
+      // Setup real-time subscription for reservations
+      const channel = supabase
+        .channel('reservations-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'reservations',
+            filter: `buyer_id=eq.${user.id},seller_id=eq.${user.id}`,
+          },
+          () => {
+            // Refetch when any reservation changes
+            fetchReservations();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 
@@ -235,6 +258,14 @@ const MyReservations = () => {
               <span className="text-sm text-muted-foreground">Prix total</span>
               <span className="font-bold text-primary">{reservation.total_price.toFixed(2)}€</span>
             </div>
+          </div>
+
+          <Separator />
+
+          {/* Reservation Timeline */}
+          <div>
+            <h4 className="text-sm font-medium mb-3">Suivi de la réservation</h4>
+            <ReservationTimeline status={reservation.status} />
           </div>
 
           <Separator />
