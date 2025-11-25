@@ -13,6 +13,11 @@ import { supabase } from "@/integrations/supabase/client";
 import AvatarUpload from "@/components/AvatarUpload";
 import { z } from "zod";
 import kiloFlyLogo from "@/assets/kilofly-logo.png";
+import { CountrySelect } from "@/components/CountrySelect";
+import { CitySelect } from "@/components/CitySelect";
+import { UserTypeSelect } from "@/components/UserTypeSelect";
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 // Validation schema - avatar validation removed since upload happens after signup
 const signupSchema = z.object({
@@ -23,6 +28,7 @@ const signupSchema = z.object({
   city: z.string().trim().min(2, "Ville requise").max(100),
   password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
   confirmPassword: z.string(),
+  userType: z.enum(['traveler', 'shipper'], { required_error: "Type de compte requis" }),
   termsAccepted: z.boolean().refine(val => val === true, "Vous devez accepter les conditions")
 }).refine(data => data.password === data.confirmPassword, {
   message: "Les mots de passe ne correspondent pas",
@@ -44,6 +50,7 @@ const Auth = () => {
   const [signupConfirm, setSignupConfirm] = useState("");
   const [signupAvatar, setSignupAvatar] = useState("");
   const [signupAvatarFile, setSignupAvatarFile] = useState<File | null>(null);
+  const [signupUserType, setSignupUserType] = useState<"traveler" | "shipper">("traveler");
   const [termsAccepted, setTermsAccepted] = useState(false);
   
   const { user, signIn } = useAuth();
@@ -91,6 +98,7 @@ const Auth = () => {
         city: signupCity,
         password: signupPassword,
         confirmPassword: signupConfirm,
+        userType: signupUserType,
         termsAccepted
       };
       const validation = signupSchema.safeParse(validationData);
@@ -116,6 +124,7 @@ const Auth = () => {
             country: signupCountry,
             city: signupCity,
             avatar_url: '', // Will be updated after upload
+            user_type: signupUserType,
             terms_accepted: true
           }
         }
@@ -144,10 +153,13 @@ const Auth = () => {
             .from('avatars')
             .getPublicUrl(filePath);
 
-          // Update profile with avatar URL
+          // Update profile with avatar URL and user type
           await supabase
             .from('profiles')
-            .update({ avatar_url: publicUrl })
+            .update({ 
+              avatar_url: publicUrl,
+              user_type: signupUserType
+            })
             .eq('id', data.user.id);
         }
       }
@@ -243,6 +255,11 @@ const Auth = () => {
                       onFileSelect={setSignupAvatarFile}
                     />
                     
+                    <UserTypeSelect
+                      value={signupUserType}
+                      onChange={(value) => setSignupUserType(value as "traveler" | "shipper")}
+                    />
+                    
                     <div className="space-y-2">
                       <Label htmlFor="signup-name">Nom complet *</Label>
                       <Input
@@ -266,40 +283,33 @@ const Auth = () => {
                       />
                     </div>
                     
+                    <CountrySelect
+                      value={signupCountry}
+                      onChange={(country, dialCode) => {
+                        setSignupCountry(country);
+                        setSignupPhone(dialCode + " ");
+                      }}
+                      required
+                    />
+                    
+                    <CitySelect
+                      countryName={signupCountry}
+                      value={signupCity}
+                      onChange={setSignupCity}
+                      required
+                    />
+                    
                     <div className="space-y-2">
                       <Label htmlFor="signup-phone">Téléphone *</Label>
-                      <Input
+                      <PhoneInput
                         id="signup-phone"
-                        type="tel"
-                        placeholder="+33 6 12 34 56 78"
+                        international
+                        defaultCountry="FR"
                         value={signupPhone}
-                        onChange={(e) => setSignupPhone(e.target.value)}
+                        onChange={(value) => setSignupPhone(value || "")}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                         required
                       />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-country">Pays *</Label>
-                        <Input
-                          id="signup-country"
-                          placeholder="France"
-                          value={signupCountry}
-                          onChange={(e) => setSignupCountry(e.target.value)}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-city">Ville *</Label>
-                        <Input
-                          id="signup-city"
-                          placeholder="Paris"
-                          value={signupCity}
-                          onChange={(e) => setSignupCity(e.target.value)}
-                          required
-                        />
-                      </div>
                     </div>
                     
                     <div className="space-y-2">

@@ -397,6 +397,7 @@ export type Database = {
           terms_accepted: boolean
           terms_accepted_at: string | null
           updated_at: string
+          user_type: string | null
         }
         Insert: {
           avatar_url: string
@@ -417,6 +418,7 @@ export type Database = {
           terms_accepted?: boolean
           terms_accepted_at?: string | null
           updated_at?: string
+          user_type?: string | null
         }
         Update: {
           avatar_url?: string
@@ -437,6 +439,7 @@ export type Database = {
           terms_accepted?: boolean
           terms_accepted_at?: string | null
           updated_at?: string
+          user_type?: string | null
         }
         Relationships: []
       }
