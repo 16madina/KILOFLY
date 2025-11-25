@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Package, Calendar, MapPin, User, Check, X, Clock, Truck, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Package, Calendar, MapPin, User, Check, X, Clock, Truck, CheckCircle2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ReservationTimeline from "@/components/ReservationTimeline";
+import ReservationChat from "@/components/ReservationChat";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -44,6 +47,8 @@ const MyReservations = () => {
   const [sentReservations, setSentReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"received" | "sent">("received");
+  const [chatOpen, setChatOpen] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -162,6 +167,11 @@ const MyReservations = () => {
     }
   };
 
+  const handleOpenChat = (reservation: Reservation) => {
+    setSelectedReservation(reservation);
+    setChatOpen(true);
+  };
+
   const handleMarkDelivered = async (reservationId: string) => {
     try {
       const { error } = await supabase
@@ -201,6 +211,15 @@ const MyReservations = () => {
   const renderReservationCard = (reservation: Reservation, isReceived: boolean) => {
     const otherUser = isReceived ? reservation.buyer : reservation.seller;
     const listing = reservation.listing;
+    const UnreadBadge = () => {
+      const unreadCount = useUnreadMessages(reservation.id);
+      if (unreadCount === 0) return null;
+      return (
+        <Badge variant="destructive" className="ml-2">
+          {unreadCount}
+        </Badge>
+      );
+    };
 
     return (
       <Card key={reservation.id} className="overflow-hidden">
@@ -325,6 +344,19 @@ const MyReservations = () => {
               )}
             </>
           )}
+
+          {/* Chat Button - Available for all statuses except cancelled/rejected */}
+          {!["rejected", "cancelled"].includes(reservation.status) && (
+            <Button
+              variant="outline"
+              className="w-full mt-2"
+              onClick={() => handleOpenChat(reservation)}
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Discuter sur cette réservation
+              <UnreadBadge />
+            </Button>
+          )}
         </CardContent>
       </Card>
     );
@@ -399,6 +431,35 @@ const MyReservations = () => {
           )
         )}
       </div>
+
+      {/* Chat Dialog */}
+      <Dialog open={chatOpen} onOpenChange={setChatOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Discussion - Réservation</DialogTitle>
+          </DialogHeader>
+          {selectedReservation && (
+            <ReservationChat
+              reservationId={selectedReservation.id}
+              otherUserId={
+                activeTab === "received"
+                  ? selectedReservation.buyer_id
+                  : selectedReservation.seller_id
+              }
+              otherUserName={
+                activeTab === "received"
+                  ? selectedReservation.buyer?.full_name || "Acheteur"
+                  : selectedReservation.seller?.full_name || "Vendeur"
+              }
+              otherUserAvatar={
+                activeTab === "received"
+                  ? selectedReservation.buyer?.avatar_url
+                  : selectedReservation.seller?.avatar_url
+              }
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
