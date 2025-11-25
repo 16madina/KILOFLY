@@ -6,14 +6,20 @@ import { useState, useEffect } from "react";
 
 const Root = () => {
   const [showSplash, setShowSplash] = useState(true);
+  const [showApp, setShowApp] = useState(false);
+
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+    // Small delay before showing app for smooth transition
+    setTimeout(() => setShowApp(true), 100);
+  };
 
   return (
     <>
-      {showSplash ? (
-        <SplashScreen onFinish={() => setShowSplash(false)} />
-      ) : (
+      {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
+      <div className={`transition-opacity duration-500 ${showApp ? "opacity-100" : "opacity-0"}`}>
         <App />
-      )}
+      </div>
     </>
   );
 };
