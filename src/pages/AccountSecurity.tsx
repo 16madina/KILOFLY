@@ -255,9 +255,12 @@ const AccountSecurity = () => {
                 Découvrez comment nous protégeons et utilisons vos données personnelles
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex gap-2">
               <Button variant="outline" onClick={() => navigate('/privacy')}>
                 Consulter la politique
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/privacy-settings')}>
+                Paramètres de confidentialité
               </Button>
             </CardContent>
           </Card>
@@ -300,6 +303,10 @@ const AccountSecurity = () => {
                   <li>Historique des transactions</li>
                   <li>Vérifications et badges obtenus</li>
                 </ul>
+                <p className="mt-3 text-xs">
+                  Conforme aux exigences RGPD, iOS App Store et Google Play Store. 
+                  Pour toute question : <a href="mailto:privacy@kilofly.com" className="text-primary underline">privacy@kilofly.com</a>
+                </p>
               </div>
               <Button onClick={handleDataExport} disabled={loading} className="w-full">
                 <Download className="w-4 h-4 mr-2" />

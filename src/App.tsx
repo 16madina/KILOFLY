@@ -26,6 +26,8 @@ import UserTransactions from "./pages/UserTransactions";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminListings from "./pages/AdminListings";
+import PrivacySettings from "./pages/PrivacySettings";
+import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -62,11 +64,13 @@ function App() {
                   <Route path="/user-transactions" element={<UserTransactions />} />
                   <Route path="/admin/transactions" element={<AdminTransactions />} />
                   <Route path="/account-security" element={<AccountSecurity />} />
+                  <Route path="/privacy-settings" element={<PrivacySettings />} />
                   <Route path="/trust-score-info" element={<TrustScoreInfo />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <MobileBottomNav />
+                <CookieConsent />
               </div>
             </AuthProvider>
           </BrowserRouter>

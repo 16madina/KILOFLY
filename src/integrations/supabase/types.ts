@@ -288,6 +288,53 @@ export type Database = {
           },
         ]
       }
+      privacy_settings: {
+        Row: {
+          allow_data_sharing: boolean
+          cookie_analytics: boolean
+          cookie_essential: boolean
+          cookie_marketing: boolean
+          created_at: string
+          id: string
+          listing_visibility: string
+          profile_visibility: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allow_data_sharing?: boolean
+          cookie_analytics?: boolean
+          cookie_essential?: boolean
+          cookie_marketing?: boolean
+          created_at?: string
+          id?: string
+          listing_visibility?: string
+          profile_visibility?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allow_data_sharing?: boolean
+          cookie_analytics?: boolean
+          cookie_essential?: boolean
+          cookie_marketing?: boolean
+          created_at?: string
+          id?: string
+          listing_visibility?: string
+          profile_visibility?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "privacy_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string
