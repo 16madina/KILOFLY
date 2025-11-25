@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Calendar, Weight, ArrowRight, User, Phone } from "lucide-react";
+import { MapPin, Calendar, Weight, ArrowRight, User, Phone, Heart } from "lucide-react";
 import BottomSheet from "@/components/mobile/BottomSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,6 +24,8 @@ interface ListingCardProps {
   availableKg: number;
   pricePerKg: number;
   destinationImage?: string;
+  isFavorited?: boolean;
+  onFavoriteToggle?: () => void;
 }
 
 const ListingCard = ({
@@ -38,6 +40,8 @@ const ListingCard = ({
   availableKg,
   pricePerKg,
   destinationImage,
+  isFavorited = false,
+  onFavoriteToggle,
 }: ListingCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -129,6 +133,13 @@ const ListingCard = ({
       toast.error("Erreur lors de la création de la conversation");
     } finally {
       setContactLoading(false);
+    }
+  };
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onFavoriteToggle) {
+      onFavoriteToggle();
     }
   };
 
@@ -235,7 +246,22 @@ const ListingCard = ({
         </div>
       </BottomSheet>
 
-      <Card className="overflow-hidden transition-all hover:shadow-hover group">
+      <Card className="overflow-hidden transition-all hover:shadow-hover group relative">
+      {/* Favorite Button */}
+      {onFavoriteToggle && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-2 right-2 z-10 bg-background/80 backdrop-blur-sm hover:bg-background/90 rounded-full"
+          onClick={handleFavoriteClick}
+        >
+          <Heart 
+            className={`h-5 w-5 transition-colors ${
+              isFavorited ? 'fill-red-500 text-red-500' : 'text-muted-foreground'
+            }`} 
+          />
+        </Button>
+      )}
       <div className="relative h-40 overflow-hidden">
         {destinationImage ? (
           <img 
@@ -320,3 +346,4 @@ const ListingCard = ({
 };
 
 export default ListingCard;
+export { ListingCard };

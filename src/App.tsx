@@ -27,6 +27,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminListings from "./pages/AdminListings";
 import PrivacySettings from "./pages/PrivacySettings";
+import Favorites from "./pages/Favorites";
+import RouteAlerts from "./pages/RouteAlerts";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";

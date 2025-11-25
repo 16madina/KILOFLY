@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, ChevronRight, Shield, Globe, DollarSign } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shield, Globe, DollarSign, Heart, MapPin, Eye, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const Settings = () => {
@@ -51,6 +51,51 @@ const Settings = () => {
           <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
             <DollarSign className="w-5 h-5 text-primary" />
             <span className="flex-1 text-left font-medium">Mes transactions</span>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </Link>
+
+        {/* Privacy Settings */}
+        <Link to="/privacy-settings">
+          <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+            <Eye className="w-5 h-5 text-purple-500" />
+            <span className="flex-1 text-left font-medium">Paramètres de confidentialité</span>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </Link>
+
+        {/* Favorites */}
+        <Link to="/favorites">
+          <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+            <Heart className="w-5 h-5 text-red-500" />
+            <span className="flex-1 text-left font-medium">Mes Favoris</span>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </Link>
+
+        {/* Route Alerts */}
+        <Link to="/route-alerts">
+          <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+            <MapPin className="w-5 h-5 text-green-500" />
+            <span className="flex-1 text-left font-medium">Alertes de Routes</span>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </Link>
+
+        {/* Privacy Policy */}
+        <Link to="/privacy">
+          <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+            <FileText className="w-5 h-5 text-blue-500" />
+            <span className="flex-1 text-left font-medium">Politique de confidentialité</span>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </Link>
+
+        {/* Terms */}
+        <Link to="/terms">
+          <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+            <FileText className="w-5 h-5 text-cyan-500" />
+            <span className="flex-1 text-left font-medium">Conditions d'utilisation</span>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
         </Link>

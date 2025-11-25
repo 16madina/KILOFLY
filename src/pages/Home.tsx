@@ -13,6 +13,9 @@ import parisImg from "@/assets/destinations/paris.jpg";
 import dakarImg from "@/assets/destinations/dakar.jpg";
 import torontoImg from "@/assets/destinations/toronto.jpg";
 import lomeImg from "@/assets/destinations/lome.jpg";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface Listing {
   id: string;
@@ -36,10 +39,78 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [searchDeparture, setSearchDeparture] = useState("");
   const [searchArrival, setSearchArrival] = useState("");
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchListings();
-  }, []);
+    if (user) {
+      fetchFavorites();
+    }
+  }, [user]);
+
+  const fetchFavorites = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('listing_id')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      const favoriteIds = new Set(data?.map(f => f.listing_id) || []);
+      setFavorites(favoriteIds);
+    } catch (error) {
+      console.error('Error fetching favorites:', error);
+    }
+  };
+
+  const handleToggleFavorite = async (listingId: string) => {
+    if (!user) {
+      toast.error('Connectez-vous pour sauvegarder des favoris');
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      if (favorites.has(listingId)) {
+        // Remove from favorites
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('listing_id', listingId);
+
+        if (error) throw error;
+
+        const newFavorites = new Set(favorites);
+        newFavorites.delete(listingId);
+        setFavorites(newFavorites);
+        toast.success('Retiré des favoris');
+      } else {
+        // Add to favorites
+        const { error } = await supabase
+          .from('favorites')
+          .insert({
+            user_id: user.id,
+            listing_id: listingId,
+          });
+
+        if (error) throw error;
+
+        const newFavorites = new Set(favorites);
+        newFavorites.add(listingId);
+        setFavorites(newFavorites);
+        toast.success('Ajouté aux favoris');
+      }
+    } catch (error: any) {
+      console.error('Error toggling favorite:', error);
+      toast.error('Erreur lors de la modification');
+    }
+  };
 
   const fetchListings = async (departure?: string, arrival?: string) => {
     setLoading(true);
@@ -194,6 +265,8 @@ const Home = () => {
                   availableKg={listing.available_kg}
                   pricePerKg={listing.price_per_kg}
                   destinationImage={listing.destination_image || getDestinationImage(listing.arrival)}
+                  isFavorited={favorites.has(listing.id)}
+                  onFavoriteToggle={() => handleToggleFavorite(listing.id)}
                 />
               ))}
             </div>
