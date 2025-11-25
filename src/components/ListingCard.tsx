@@ -272,7 +272,7 @@ const ListingCard = ({
                 {isVerified && <VerifiedBadge verified={isVerified} size="sm" />}
               </div>
             </div>
-            <TrustScore score={trustScore} className="scale-90 origin-left" />
+            <TrustScore score={trustScore} className="scale-75 origin-left animate-fade-in" />
           </div>
         </div>
       </div>
