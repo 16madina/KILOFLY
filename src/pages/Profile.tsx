@@ -239,44 +239,52 @@ const Profile = () => {
         </Card>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="p-4 space-y-2">
-            <div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
-              <Package className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{stats.activeListings}</p>
-              <p className="text-sm text-muted-foreground">Annonces actives</p>
-            </div>
-          </Card>
-
-          <Card className="p-4 space-y-2">
-            <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{stats.soldItems}</p>
-              <p className="text-sm text-muted-foreground">Articles vendus</p>
+        <div className="grid grid-cols-4 gap-2">
+          <Card className="p-3">
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+                <Package className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div className="text-center">
+                <p className="text-xl font-bold">{stats.activeListings}</p>
+                <p className="text-xs text-muted-foreground">Annonces actives</p>
+              </div>
             </div>
           </Card>
 
-          <Card className="p-4 space-y-2">
-            <div className="w-12 h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
-              <Star className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</p>
-              <p className="text-sm text-muted-foreground">Note moyenne</p>
+          <Card className="p-3">
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="text-center">
+                <p className="text-xl font-bold">{stats.soldItems}</p>
+                <p className="text-xs text-muted-foreground">Articles vendus</p>
+              </div>
             </div>
           </Card>
 
-          <Card className="p-4 space-y-2">
-            <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
-              <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <Card className="p-3">
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
+                <Star className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <div className="text-center">
+                <p className="text-xl font-bold">{stats.averageRating.toFixed(1)}</p>
+                <p className="text-xs text-muted-foreground">Note moyenne</p>
+              </div>
             </div>
-            <div>
-              <p className="text-2xl font-bold">{stats.followers}</p>
-              <p className="text-sm text-muted-foreground">Abonnés</p>
+          </Card>
+
+          <Card className="p-3">
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="text-center">
+                <p className="text-xl font-bold">{stats.followers}</p>
+                <p className="text-xs text-muted-foreground">Abonnés</p>
+              </div>
             </div>
           </Card>
         </div>
