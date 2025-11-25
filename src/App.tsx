@@ -23,6 +23,9 @@ import AccountSecurity from "./pages/AccountSecurity";
 import TrustScoreInfo from "./pages/TrustScoreInfo";
 import AdminTransactions from "./pages/AdminTransactions";
 import UserTransactions from "./pages/UserTransactions";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminUsers from "./pages/AdminUsers";
+import AdminListings from "./pages/AdminListings";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -48,6 +51,9 @@ function App() {
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/prohibited-items" element={<ProhibitedItems />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/users" element={<AdminUsers />} />
+                  <Route path="/admin/listings" element={<AdminListings />} />
                   <Route path="/admin/verification" element={<AdminVerification />} />
                   <Route path="/admin/reports" element={<AdminReports />} />
                   <Route path="/settings" element={<Settings />} />

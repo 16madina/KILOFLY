@@ -426,26 +426,17 @@ const Profile = () => {
 
           {/* Admin Panel Button */}
           {isAdmin && (
-            <>
-              <Button 
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white"
-                asChild
-              >
-                <Link to="/admin/verification">
-                  <Shield className="h-4 w-4 mr-2" />
-                  Panneau d'administration - Vérification
-                </Link>
-              </Button>
-              <Button 
-                className="w-full bg-primary hover:bg-primary/90 text-white"
-                asChild
-              >
-                <Link to="/admin/transactions">
-                  <Receipt className="h-4 w-4 mr-2" />
-                  Admin - Transactions & Revenus
-                </Link>
-              </Button>
-            </>
+            <Link to="/admin">
+              <Card className="p-4 flex items-center justify-between bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90 transition-opacity cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                    <Shield className="h-5 w-5" />
+                  </div>
+                  <span className="font-medium">Panneau d'Administration</span>
+                </div>
+                <ChevronRight className="h-5 w-5" />
+              </Card>
+            </Link>
           )}
         </div>
       </div>
