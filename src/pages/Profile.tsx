@@ -213,7 +213,9 @@ const Profile = () => {
           
           {/* Trust Score Badge */}
           <div className="flex justify-center py-2">
-            <TrustScore score={trustScore} />
+            <button onClick={() => navigate('/trust-score-info')} className="transition-transform hover:scale-105">
+              <TrustScore score={trustScore} />
+            </button>
           </div>
           
           <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
