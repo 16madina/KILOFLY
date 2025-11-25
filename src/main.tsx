@@ -9,8 +9,11 @@ const Root = () => {
 
   return (
     <>
-      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
-      <App />
+      {showSplash ? (
+        <SplashScreen onFinish={() => setShowSplash(false)} />
+      ) : (
+        <App />
+      )}
     </>
   );
 };
