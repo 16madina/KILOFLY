@@ -2,6 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
+/* React Phone Number Input Styles */
+.PhoneInput {
+  display: flex;
+  align-items: center;
+}
+
+.PhoneInputInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.875rem;
+  color: hsl(var(--foreground));
+}
+
+.PhoneInputInput::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+.PhoneInputCountry {
+  margin-right: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.PhoneInputCountryIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.PhoneInputCountrySelect {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: hsl(var(--foreground));
+}
+
+.PhoneInputCountrySelectArrow {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: 0.25rem;
+  opacity: 0.5;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
