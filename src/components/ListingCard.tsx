@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import VerifiedBadge from "@/components/VerifiedBadge";
+import { TrustScore } from "@/components/TrustScore";
 
 interface ListingCardProps {
   id: string;
@@ -41,6 +42,7 @@ const ListingCard = ({
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
+  const [trustScore, setTrustScore] = useState(0);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -51,11 +53,31 @@ const ListingCard = ({
   const fetchUserVerification = async () => {
     const { data } = await supabase
       .from('profiles')
-      .select('id_verified')
+      .select('id_verified, phone_verified, completed_trips, response_rate')
       .eq('id', userId)
       .single();
     
-    setIsVerified(data?.id_verified || false);
+    if (data) {
+      setIsVerified(data.id_verified || false);
+      
+      // Calculate trust score
+      const { data: reviews } = await supabase
+        .from('reviews')
+        .select('rating')
+        .eq('reviewed_id', userId);
+      
+      const avgRating = reviews && reviews.length > 0
+        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+        : 0;
+      
+      let calculatedScore = 0;
+      if (data.id_verified) calculatedScore += 30;
+      if (data.phone_verified) calculatedScore += 20;
+      calculatedScore += (data.completed_trips || 0) * 2;
+      calculatedScore += (avgRating / 5) * 30;
+      calculatedScore += ((data.response_rate || 0) / 100) * 20;
+      setTrustScore(Math.min(100, Math.round(calculatedScore)));
+    }
   };
 
   const handleContact = async () => {
@@ -131,6 +153,7 @@ const ListingCard = ({
                 <p className="font-semibold text-lg">{userName}</p>
                 <VerifiedBadge verified={isVerified} size="sm" />
               </div>
+              <TrustScore score={trustScore} className="mb-1" />
               <p className="text-sm text-muted-foreground">
                 {isVerified ? "Voyageur vérifié" : "En attente de vérification"}
               </p>
