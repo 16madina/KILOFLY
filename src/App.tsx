@@ -21,6 +21,8 @@ import MyListings from "./pages/MyListings";
 import MyTransactions from "./pages/MyTransactions";
 import AccountSecurity from "./pages/AccountSecurity";
 import TrustScoreInfo from "./pages/TrustScoreInfo";
+import AdminTransactions from "./pages/AdminTransactions";
+import UserTransactions from "./pages/UserTransactions";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -51,6 +53,8 @@ function App() {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/my-listings" element={<MyListings />} />
                   <Route path="/my-transactions" element={<MyTransactions />} />
+                  <Route path="/user-transactions" element={<UserTransactions />} />
+                  <Route path="/admin/transactions" element={<AdminTransactions />} />
                   <Route path="/account-security" element={<AccountSecurity />} />
                   <Route path="/trust-score-info" element={<TrustScoreInfo />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

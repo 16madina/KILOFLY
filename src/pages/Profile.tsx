@@ -363,7 +363,7 @@ const Profile = () => {
           </Link>
 
           {/* Mes transactions */}
-          <Link to="/my-transactions">
+          <Link to="/user-transactions">
             <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
@@ -425,15 +425,26 @@ const Profile = () => {
 
           {/* Admin Panel Button */}
           {isAdmin && (
-            <Button 
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white"
-              asChild
-            >
-              <Link to="/admin/verification">
-                <Shield className="h-4 w-4 mr-2" />
-                Panneau d'administration
-              </Link>
-            </Button>
+            <>
+              <Button 
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                asChild
+              >
+                <Link to="/admin/verification">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Panneau d'administration - Vérification
+                </Link>
+              </Button>
+              <Button 
+                className="w-full bg-primary hover:bg-primary/90 text-white"
+                asChild
+              >
+                <Link to="/admin/transactions">
+                  <Receipt className="h-4 w-4 mr-2" />
+                  Admin - Transactions & Revenus
+                </Link>
+              </Button>
+            </>
           )}
         </div>
       </div>
