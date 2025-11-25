@@ -31,6 +31,7 @@ import {
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useTrustScoreNotifications } from "@/hooks/useTrustScoreNotifications";
 
 interface Profile {
   full_name: string;
@@ -65,6 +66,9 @@ const Profile = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [verificationExpanded, setVerificationExpanded] = useState(false);
   const [trustScore, setTrustScore] = useState(0);
+  
+  // Hook pour les notifications de score de confiance
+  useTrustScoreNotifications(trustScore);
 
   useEffect(() => {
     if (!user) {

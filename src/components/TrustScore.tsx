@@ -18,7 +18,7 @@ export const TrustScore = ({ score, className }: TrustScoreProps) => {
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <div className={`${trust.color} text-white px-3 py-1 rounded-full flex items-center gap-1.5 text-sm font-semibold`}>
+      <div className={`${trust.color} text-white px-3 py-1 rounded-full flex items-center gap-1.5 text-sm font-semibold transition-all duration-300 hover:scale-105`}>
         <Shield className="w-4 h-4" />
         <span>{trust.icon} {trust.level}</span>
       </div>
