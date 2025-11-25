@@ -4,7 +4,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Calendar, Weight, ArrowRight, User, Phone, Heart } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { MapPin, Calendar, Weight, ArrowRight, User, Phone, Heart, Package, AlertCircle } from "lucide-react";
 import BottomSheet from "@/components/mobile/BottomSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,6 +27,9 @@ interface ListingCardProps {
   destinationImage?: string;
   isFavorited?: boolean;
   onFavoriteToggle?: () => void;
+  allowedItems?: string[];
+  prohibitedItems?: string[];
+  description?: string;
 }
 
 const ListingCard = ({
@@ -42,6 +46,9 @@ const ListingCard = ({
   destinationImage,
   isFavorited = false,
   onFavoriteToggle,
+  allowedItems = [],
+  prohibitedItems = [],
+  description,
 }: ListingCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -232,6 +239,58 @@ const ListingCard = ({
               </p>
             </div>
           </div>
+
+          {/* Description */}
+          {description && (
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">Description</h4>
+              <p className="text-sm text-foreground whitespace-pre-wrap">{description}</p>
+            </div>
+          )}
+
+          <Separator />
+
+          {/* Objets autorisés */}
+          {allowedItems.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                <Package className="h-4 w-4 text-green-500" />
+                Objets acceptés
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {allowedItems.map((item) => (
+                  <Badge
+                    key={item}
+                    variant="secondary"
+                    className="bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/20"
+                  >
+                    {item}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Objets interdits */}
+          {prohibitedItems.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-red-500" />
+                Objets refusés
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {prohibitedItems.map((item) => (
+                  <Badge
+                    key={item}
+                    variant="secondary"
+                    className="bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/20"
+                  >
+                    {item}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Contact Button */}
           <Button 

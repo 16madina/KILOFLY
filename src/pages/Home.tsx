@@ -28,6 +28,8 @@ interface Listing {
   price_per_kg: number;
   destination_image: string | null;
   description: string | null;
+  allowed_items: unknown;
+  prohibited_items: unknown;
   profiles: {
     full_name: string;
     avatar_url: string;
@@ -267,6 +269,9 @@ const Home = () => {
                   destinationImage={listing.destination_image || getDestinationImage(listing.arrival)}
                   isFavorited={favorites.has(listing.id)}
                   onFavoriteToggle={() => handleToggleFavorite(listing.id)}
+                  allowedItems={listing.allowed_items as string[] || []}
+                  prohibitedItems={listing.prohibited_items as string[] || []}
+                  description={listing.description || undefined}
                 />
               ))}
             </div>
