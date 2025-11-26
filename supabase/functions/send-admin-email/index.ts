@@ -24,7 +24,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { to, subject, message }: EmailRequest = await req.json();
 
     const emailResponse = await resend.emails.send({
-      from: "KiloFly Admin <admin@resend.dev>",
+      from: "KiloFly <noreply@kiloflyapp.com>",
       to: [to],
       subject: subject,
       html: `
