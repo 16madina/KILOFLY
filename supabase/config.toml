@@ -1,1 +1,10 @@
 project_id = "yuhbvzjniylkruaylxzz"
+
+[functions.send-admin-email]
+verify_jwt = true
+
+[functions.send-admin-sms]
+verify_jwt = true
+
+[functions.verify-id-document]
+verify_jwt = true

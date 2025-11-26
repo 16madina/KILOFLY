@@ -31,6 +31,7 @@ import AdminListings from "./pages/AdminListings";
 import PrivacySettings from "./pages/PrivacySettings";
 import Favorites from "./pages/Favorites";
 import RouteAlerts from "./pages/RouteAlerts";
+import VerifyIdentity from "./pages/VerifyIdentity";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -74,6 +75,7 @@ function App() {
                   <Route path="/trust-score-info" element={<TrustScoreInfo />} />
                   <Route path="/favorites" element={<Favorites />} />
                   <Route path="/route-alerts" element={<RouteAlerts />} />
+                  <Route path="/verify-identity" element={<VerifyIdentity />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
