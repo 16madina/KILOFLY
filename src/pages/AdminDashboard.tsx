@@ -402,6 +402,22 @@ const AdminDashboard = () => {
 
         {/* Quick Links */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Link to="/admin/email">
+            <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  Envoi d'Emails
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Envoyer des emails à vos utilisateurs avec Resend
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+
           <Link to="/admin/users">
             <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
               <CardHeader>
