@@ -25,27 +25,37 @@ interface UserProfile {
 const emailTemplates = {
   custom: "Message personnalisé",
   warning: "Avertissement",
+  confirmation: "Confirmation",
   welcome: "Bienvenue",
   verification: "Vérification requise",
   update: "Mise à jour importante"
 };
 
-const templateContents: Record<string, { subject: string; body: string }> = {
+const templateContents: Record<string, { subject: string; body: string; type: string }> = {
   warning: {
     subject: "⚠️ Avertissement - KiloFly",
-    body: "Bonjour,\n\nNous vous contactons pour vous informer que votre comportement sur KiloFly nécessite notre attention.\n\nVeuillez respecter nos conditions d'utilisation pour continuer à profiter de nos services.\n\nCordialement,\nL'équipe KiloFly"
+    body: "Bonjour,\n\nNous vous contactons pour vous informer que votre comportement sur KiloFly nécessite notre attention.\n\nVeuillez respecter nos conditions d'utilisation pour continuer à profiter de nos services.\n\nCordialement,\nL'équipe KiloFly",
+    type: "warning"
+  },
+  confirmation: {
+    subject: "✓ Confirmation de votre action - KiloFly",
+    body: "Bonjour,\n\nNous vous confirmons que votre action a été effectuée avec succès sur KiloFly.\n\nMerci d'utiliser notre plateforme.\n\nCordialement,\nL'équipe KiloFly",
+    type: "confirmation"
   },
   welcome: {
     subject: "🎉 Bienvenue sur KiloFly !",
-    body: "Bonjour,\n\nNous sommes ravis de vous accueillir sur KiloFly, la plateforme qui connecte voyageurs et expéditeurs !\n\nN'hésitez pas à explorer toutes les fonctionnalités et à nous contacter si vous avez des questions.\n\nBon voyage avec KiloFly !\n\nCordialement,\nL'équipe KiloFly"
+    body: "Bonjour,\n\nNous sommes ravis de vous accueillir sur KiloFly, la plateforme qui connecte voyageurs et expéditeurs !\n\nN'hésitez pas à explorer toutes les fonctionnalités et à nous contacter si vous avez des questions.\n\nBon voyage avec KiloFly !\n\nCordialement,\nL'équipe KiloFly",
+    type: "welcome"
   },
   verification: {
     subject: "🔒 Vérification d'identité requise - KiloFly",
-    body: "Bonjour,\n\nPour utiliser pleinement toutes les fonctionnalités de KiloFly et publier des annonces, veuillez compléter la vérification de votre identité dans votre profil.\n\nCette étape est essentielle pour garantir la sécurité de tous nos utilisateurs.\n\nCordialement,\nL'équipe KiloFly"
+    body: "Bonjour,\n\nPour utiliser pleinement toutes les fonctionnalités de KiloFly et publier des annonces, veuillez compléter la vérification de votre identité dans votre profil.\n\nCette étape est essentielle pour garantir la sécurité de tous nos utilisateurs.\n\nCordialement,\nL'équipe KiloFly",
+    type: "default"
   },
   update: {
     subject: "📢 Mise à jour importante - KiloFly",
-    body: "Bonjour,\n\nNous souhaitons vous informer d'une mise à jour importante concernant la plateforme KiloFly.\n\n[Ajoutez ici les détails de la mise à jour]\n\nMerci de votre confiance.\n\nCordialement,\nL'équipe KiloFly"
+    body: "Bonjour,\n\nNous souhaitons vous informer d'une mise à jour importante concernant la plateforme KiloFly.\n\n[Ajoutez ici les détails de la mise à jour]\n\nMerci de votre confiance.\n\nCordialement,\nL'équipe KiloFly",
+    type: "default"
   }
 };
 
@@ -161,11 +171,16 @@ const AdminEmail = () => {
 
     try {
       if (recipientType === "single") {
+        const templateType = selectedTemplate !== "custom" && templateContents[selectedTemplate]?.type 
+          ? templateContents[selectedTemplate].type 
+          : 'default';
+
         const { error } = await supabase.functions.invoke('send-admin-email', {
           body: {
             to: singleRecipientEmail,
             subject: subject,
-            message: message
+            message: message,
+            template: templateType
           }
         });
 
@@ -180,12 +195,17 @@ const AdminEmail = () => {
         let successCount = 0;
         let errorCount = 0;
 
+        const templateType = selectedTemplate !== "custom" && templateContents[selectedTemplate]?.type 
+          ? templateContents[selectedTemplate].type 
+          : 'default';
+
         for (const userProfile of selectedUsersList) {
           const { error } = await supabase.functions.invoke('send-admin-email', {
             body: {
               to: userProfile.email || userProfile.id,
               subject: subject,
-              message: message
+              message: message,
+              template: templateType
             }
           });
 
