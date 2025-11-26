@@ -20,6 +20,9 @@ interface PendingVerification {
   id_document_url: string;
   id_submitted_at: string;
   email: string;
+  verification_method: string | null;
+  verification_notes: string | null;
+  ai_confidence_score: number | null;
 }
 
 const AdminVerification = () => {
@@ -93,7 +96,14 @@ const AdminVerification = () => {
 
     const { error } = await supabase
       .from('profiles')
-      .update({ id_verified: approved })
+      .update({ 
+        id_verified: approved,
+        verification_method: approved ? 'manual_approved' : 'manual_rejected',
+        verified_at: approved ? new Date().toISOString() : null,
+        verification_notes: approved 
+          ? '✅ Document vérifié manuellement par un administrateur'
+          : '❌ Document rejeté par un administrateur - Veuillez soumettre un nouveau document valide'
+      })
       .eq('id', userId);
 
     if (error) {
@@ -196,6 +206,37 @@ const AdminVerification = () => {
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
+                  {/* AI Verification Status */}
+                  {verification.verification_method && (
+                    <div className={`p-4 rounded-lg ${
+                      verification.verification_method === 'ai_flagged' 
+                        ? 'bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
+                        : 'bg-blue-100 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
+                    }`}>
+                      <div className="flex items-start gap-3">
+                        <span className="text-2xl mt-0.5">🤖</span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm mb-1">
+                            {verification.verification_method === 'ai_flagged' 
+                              ? '⚠️ Document signalé par l\'IA pour révision manuelle'
+                              : '🔄 En cours d\'analyse automatique'
+                            }
+                          </p>
+                          {verification.ai_confidence_score !== null && (
+                            <p className="text-sm mb-2">
+                              Score de confiance IA: {(verification.ai_confidence_score * 100).toFixed(0)}%
+                            </p>
+                          )}
+                          {verification.verification_notes && (
+                            <div className="text-xs opacity-90 whitespace-pre-line">
+                              {verification.verification_notes}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="rounded-lg border p-4 bg-muted/50">
                     <img 
                       src={verification.id_document_url} 

@@ -379,6 +379,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ai_confidence_score: number | null
           avatar_url: string
           avg_response_time: number | null
           bio: string | null
@@ -398,8 +399,12 @@ export type Database = {
           terms_accepted_at: string | null
           updated_at: string
           user_type: string | null
+          verification_method: string | null
+          verification_notes: string | null
+          verified_at: string | null
         }
         Insert: {
+          ai_confidence_score?: number | null
           avatar_url: string
           avg_response_time?: number | null
           bio?: string | null
@@ -419,8 +424,12 @@ export type Database = {
           terms_accepted_at?: string | null
           updated_at?: string
           user_type?: string | null
+          verification_method?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
         }
         Update: {
+          ai_confidence_score?: number | null
           avatar_url?: string
           avg_response_time?: number | null
           bio?: string | null
@@ -440,6 +449,9 @@ export type Database = {
           terms_accepted_at?: string | null
           updated_at?: string
           user_type?: string | null
+          verification_method?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
         }
         Relationships: []
       }

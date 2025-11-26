@@ -435,16 +435,23 @@ const Profile = () => {
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </Card>
 
-          {/* Documents */}
-          <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+          {/* Identity Verification */}
+          <Link to="/verify-identity">
+            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium">Vérification d'identité</span>
+                  {!profile.id_verified && (
+                    <span className="text-xs text-muted-foreground">🤖 Vérification automatique IA</span>
+                  )}
+                </div>
               </div>
-              <span className="font-medium">Documents</span>
-            </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </Card>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Card>
+          </Link>
 
           {/* Admin Panel Button */}
           {isAdmin && (
