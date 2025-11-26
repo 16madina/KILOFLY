@@ -44,6 +44,60 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_verification_feedback: {
+        Row: {
+          admin_decision: string
+          admin_id: string
+          ai_confidence: number
+          ai_decision: string
+          ai_notes: string | null
+          created_at: string
+          document_url: string
+          feedback_notes: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          admin_decision: string
+          admin_id: string
+          ai_confidence: number
+          ai_decision: string
+          ai_notes?: string | null
+          created_at?: string
+          document_url: string
+          feedback_notes?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          admin_decision?: string
+          admin_id?: string
+          ai_confidence?: number
+          ai_decision?: string
+          ai_notes?: string | null
+          created_at?: string
+          document_url?: string
+          feedback_notes?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_verification_feedback_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_verification_feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       banned_users: {
         Row: {
           banned_at: string

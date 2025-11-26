@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import AdminVerification from "./pages/AdminVerification";
+import AdminAIAnalytics from "./pages/AdminAIAnalytics";
 import NotFound from "./pages/NotFound";
 import ProhibitedItems from "./pages/ProhibitedItems";
 import AdminReports from "./pages/AdminReports";
@@ -63,6 +64,7 @@ function App() {
                   <Route path="/admin/users" element={<AdminUsers />} />
                   <Route path="/admin/listings" element={<AdminListings />} />
                   <Route path="/admin/verification" element={<AdminVerification />} />
+                  <Route path="/admin/ai-analytics" element={<AdminAIAnalytics />} />
                   <Route path="/admin/reports" element={<AdminReports />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/my-listings" element={<MyListings />} />
