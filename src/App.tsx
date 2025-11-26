@@ -25,6 +25,7 @@ import TrustScoreInfo from "./pages/TrustScoreInfo";
 import AdminTransactions from "./pages/AdminTransactions";
 import UserTransactions from "./pages/UserTransactions";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminEmail from "./pages/AdminEmail";
 import AdminUsers from "./pages/AdminUsers";
 import AdminListings from "./pages/AdminListings";
 import PrivacySettings from "./pages/PrivacySettings";
@@ -57,6 +58,7 @@ function App() {
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/prohibited-items" element={<ProhibitedItems />} />
                   <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/email" element={<AdminEmail />} />
                   <Route path="/admin/users" element={<AdminUsers />} />
                   <Route path="/admin/listings" element={<AdminListings />} />
                   <Route path="/admin/verification" element={<AdminVerification />} />
