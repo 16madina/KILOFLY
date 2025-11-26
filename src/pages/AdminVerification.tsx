@@ -94,6 +94,10 @@ const AdminVerification = () => {
   const handleVerification = async (userId: string, approved: boolean) => {
     setProcessing(userId);
 
+    // Get the user's current verification data for feedback tracking
+    const verification = pendingVerifications.find(v => v.id === userId);
+    const wasAIFlagged = verification?.verification_method === 'ai_flagged';
+
     const { error } = await supabase
       .from('profiles')
       .update({ 
@@ -113,12 +117,28 @@ const AdminVerification = () => {
       return;
     }
 
+    // Enregistrer le feedback pour l'apprentissage de l'IA si c'était une décision IA
+    if (wasAIFlagged && user && verification) {
+      await supabase
+        .from('ai_verification_feedback')
+        .insert({
+          user_id: userId,
+          document_url: verification.id_document_url,
+          ai_decision: verification.verification_method || 'ai_flagged',
+          ai_confidence: verification.ai_confidence_score || 0,
+          ai_notes: verification.verification_notes || '',
+          admin_decision: approved ? 'manual_approved' : 'manual_rejected',
+          admin_id: user.id,
+          feedback_notes: `Admin ${approved ? 'approuvé' : 'rejeté'} un document signalé par l'IA`
+        });
+    }
+
     // Send notification to user
     const notificationTitle = approved 
       ? "✅ Identité vérifiée" 
       : "❌ Document rejeté";
     const notificationMessage = approved
-      ? "Votre document d'identité a été vérifié avec succès. Vous pouvez maintenant utiliser toutes les fonctionnalités de KiloShare."
+      ? "Votre document d'identité a été vérifié avec succès. Vous pouvez maintenant utiliser toutes les fonctionnalités de KiloFly."
       : "Votre document d'identité a été rejeté. Veuillez soumettre un document valide et lisible.";
     const notificationType = approved ? 'success' : 'error';
 

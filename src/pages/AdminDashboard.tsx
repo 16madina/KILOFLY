@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Package, Receipt, ShieldCheck, AlertTriangle, TrendingUp, Mail, Ban, UserX } from "lucide-react";
+import { Users, Package, Receipt, ShieldCheck, AlertTriangle, TrendingUp, Mail, Ban, UserX, Bot } from "lucide-react";
 import { toast } from "sonner";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
@@ -461,6 +461,22 @@ const AdminDashboard = () => {
               <CardContent>
                 <p className="text-sm text-muted-foreground">
                   {stats.pendingVerifications} documents en attente
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link to="/admin/ai-analytics">
+            <Card className="hover:bg-muted/50 transition-colors cursor-pointer bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-purple-600" />
+                  Analytics IA
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Statistiques de vérification automatique
                 </p>
               </CardContent>
             </Card>
