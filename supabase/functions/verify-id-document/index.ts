@@ -31,6 +31,42 @@ serve(async (req) => {
 
     console.log('Starting AI verification for user:', userId);
 
+    // Extract the file path from the public URL
+    const urlPath = new URL(documentUrl).pathname;
+    const filePath = urlPath.replace('/storage/v1/object/public/id-documents/', '');
+    
+    console.log('Downloading document from storage:', filePath);
+    
+    // Download the image from Supabase storage using service role key
+    const { data: fileData, error: downloadError } = await supabase
+      .storage
+      .from('id-documents')
+      .download(filePath);
+
+    if (downloadError || !fileData) {
+      console.error('Error downloading file:', downloadError);
+      throw new Error('Failed to download document from storage');
+    }
+
+    // Convert the blob to base64
+    const arrayBuffer = await fileData.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    let binaryString = '';
+    for (let i = 0; i < uint8Array.length; i++) {
+      binaryString += String.fromCharCode(uint8Array[i]);
+    }
+    const base64Image = btoa(binaryString);
+    
+    // Detect image mime type from file extension
+    const extension = filePath.split('.').pop()?.toLowerCase() || 'png';
+    const mimeType = extension === 'jpg' || extension === 'jpeg' ? 'image/jpeg' : 
+                    extension === 'png' ? 'image/png' : 
+                    extension === 'webp' ? 'image/webp' : 'image/jpeg';
+    
+    const base64DataUrl = `data:${mimeType};base64,${base64Image}`;
+    
+    console.log('Image converted to base64, size:', base64Image.length, 'mime type:', mimeType);
+
     // Call Lovable AI with vision capabilities to analyze the ID document
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -68,13 +104,12 @@ Be strict but fair. Auto-approve only documents that are clearly valid with no r
               {
                 type: 'image_url',
                 image_url: {
-                  url: documentUrl
+                  url: base64DataUrl
                 }
               }
             ]
           }
-        ],
-        temperature: 0.2,
+        ]
       }),
     });
 
