@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, Search, Trash2 } from "lucide-react";
+import { MessageCircle, Search, Trash2, Package } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import SwipeableCard from "@/components/mobile/SwipeableCard";
 
 interface ConversationData {
   id: string;
+  type: 'conversation' | 'reservation';
   buyer_id: string;
   seller_id: string;
   updated_at: string;
@@ -31,6 +32,14 @@ interface ConversationData {
     sender_id: string;
     read: boolean;
   }>;
+  reservation?: {
+    requested_kg: number;
+    status: string;
+    listing?: {
+      departure: string;
+      arrival: string;
+    };
+  };
 }
 
 const Messages = () => {
@@ -48,7 +57,7 @@ const Messages = () => {
 
     fetchConversations();
 
-    // Subscribe to conversation updates
+    // Subscribe to conversation and reservation updates
     const channel = supabase
       .channel('conversations-updates')
       .on(
@@ -73,6 +82,28 @@ const Messages = () => {
           fetchConversations();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reservations'
+        },
+        () => {
+          fetchConversations();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'reservation_messages'
+        },
+        () => {
+          fetchConversations();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -85,25 +116,77 @@ const Messages = () => {
 
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from('conversations')
-      .select(`
-        *,
-        buyer:profiles!buyer_id(full_name, avatar_url, id_verified),
-        seller:profiles!seller_id(full_name, avatar_url, id_verified),
-        messages(content, created_at, sender_id, read)
-      `)
-      .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-      .order('updated_at', { ascending: false });
+    try {
+      // Fetch regular conversations
+      const { data: conversationsData, error: conversationsError } = await supabase
+        .from('conversations')
+        .select(`
+          *,
+          buyer:profiles!buyer_id(full_name, avatar_url, id_verified),
+          seller:profiles!seller_id(full_name, avatar_url, id_verified),
+          messages(content, created_at, sender_id, read)
+        `)
+        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+        .order('updated_at', { ascending: false });
 
-    if (error) {
+      if (conversationsError) throw conversationsError;
+
+      // Fetch reservations with messages
+      const { data: reservationsData, error: reservationsError } = await supabase
+        .from('reservations')
+        .select(`
+          id,
+          buyer_id,
+          seller_id,
+          updated_at,
+          requested_kg,
+          status,
+          buyer:profiles!buyer_id(full_name, avatar_url, id_verified),
+          seller:profiles!seller_id(full_name, avatar_url, id_verified),
+          listing:listings!listing_id(departure, arrival),
+          reservation_messages:reservation_messages(content, created_at, sender_id, read)
+        `)
+        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+        .neq('status', 'rejected')
+        .neq('status', 'cancelled')
+        .order('updated_at', { ascending: false });
+
+      if (reservationsError) throw reservationsError;
+
+      // Transform conversations
+      const transformedConversations = (conversationsData || []).map((conv: any) => ({
+        ...conv,
+        type: 'conversation' as const,
+      }));
+
+      // Transform reservations
+      const transformedReservations = (reservationsData || []).map((res: any) => ({
+        id: res.id,
+        type: 'reservation' as const,
+        buyer_id: res.buyer_id,
+        seller_id: res.seller_id,
+        updated_at: res.updated_at,
+        buyer: res.buyer,
+        seller: res.seller,
+        messages: res.reservation_messages || [],
+        reservation: {
+          requested_kg: res.requested_kg,
+          status: res.status,
+          listing: res.listing,
+        },
+      }));
+
+      // Combine and sort by updated_at
+      const allConversations = [...transformedConversations, ...transformedReservations]
+        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+
+      setConversations(allConversations);
+    } catch (error) {
       toast.error("Erreur lors du chargement des conversations");
       console.error(error);
-    } else {
-      setConversations(data as ConversationData[]);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const getOtherUser = (conv: ConversationData) => {
@@ -197,17 +280,32 @@ const Messages = () => {
             return (
               <SwipeableCard
                 key={conversation.id}
-                onSwipeLeft={() => deleteConversation(conversation.id)}
-                leftAction={
+                onSwipeLeft={conversation.type === 'conversation' ? () => deleteConversation(conversation.id) : undefined}
+                leftAction={conversation.type === 'conversation' ? (
                   <div className="flex items-center justify-center w-16 h-16 bg-destructive rounded-full">
                     <Trash2 className="h-5 w-5 text-destructive-foreground" />
                   </div>
-                }
+                ) : undefined}
               >
                 <button
-                  onClick={() => navigate(`/conversation/${conversation.id}`)}
+                  onClick={() => {
+                    if (conversation.type === 'conversation') {
+                      navigate(`/conversation/${conversation.id}`);
+                    } else {
+                      navigate('/my-reservations');
+                    }
+                  }}
                   className="w-full flex items-center gap-3 p-4 bg-card hover:bg-muted/50 rounded-xl transition-all duration-200 hover:scale-[1.01] hover:shadow-md text-left animate-fade-in"
                 >
+                  {conversation.type === 'reservation' && (
+                    <div className="absolute top-2 right-2">
+                      <Badge variant="secondary" className="bg-primary/10 text-primary">
+                        <Package className="h-3 w-3 mr-1" />
+                        Réservation
+                      </Badge>
+                    </div>
+                  )}
+                  
                   <Avatar className="h-12 w-12 border-2 border-primary/20 transition-all duration-200 hover:scale-110">
                     <AvatarImage src={otherUser.avatar_url || ''} />
                     <AvatarFallback className="bg-gradient-sky text-primary-foreground">
@@ -228,6 +326,11 @@ const Messages = () => {
                         })}
                       </span>
                     </div>
+                    {conversation.type === 'reservation' && conversation.reservation?.listing && (
+                      <p className="text-xs text-primary mb-1">
+                        {conversation.reservation.listing.departure} → {conversation.reservation.listing.arrival} • {conversation.reservation.requested_kg} kg
+                      </p>
+                    )}
                     <p className="text-sm text-muted-foreground truncate">
                       {lastMessage}
                     </p>
