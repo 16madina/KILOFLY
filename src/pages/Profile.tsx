@@ -28,7 +28,8 @@ import {
   HelpCircle,
   FileText,
   CalendarCheck,
-  AlertCircle
+  AlertCircle,
+  Mail
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -68,6 +69,7 @@ const Profile = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [verificationExpanded, setVerificationExpanded] = useState(false);
   const [trustScore, setTrustScore] = useState(0);
+  const [resendingEmail, setResendingEmail] = useState(false);
   
   // Hook pour les notifications de score de confiance
   useTrustScoreNotifications(trustScore);
@@ -147,6 +149,34 @@ const Profile = () => {
     navigate('/auth');
   };
 
+  const handleResendVerificationEmail = async () => {
+    if (!user?.email) return;
+    
+    setResendingEmail(true);
+    
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: user.email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/profile`
+      }
+    });
+    
+    if (error) {
+      toast.error("Erreur lors de l'envoi de l'email");
+    } else {
+      toast.success("Email de vérification envoyé ! Vérifiez votre boîte de réception.");
+    }
+    
+    setResendingEmail(false);
+  };
+
+  const isVerificationIncomplete = () => {
+    const emailVerified = user?.email_confirmed_at != null;
+    const idVerified = profile?.id_verified || false;
+    return !emailVerified || !idVerified;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex justify-center items-center">
@@ -196,6 +226,34 @@ const Profile = () => {
       </div>
 
       <div className="container px-4 py-6 max-w-2xl mx-auto space-y-6 animate-fade-in">
+        {/* Verification Incomplete Alert */}
+        {isVerificationIncomplete() && (
+          <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
+            <div className="p-4">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                  <Shield className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                    Complétez votre vérification
+                  </h3>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
+                    Finalisez les étapes de vérification pour débloquer toutes les fonctionnalités de KiloFly.
+                  </p>
+                  <Button
+                    onClick={() => navigate('/onboarding')}
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Continuer la vérification
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Profile Avatar with Badge */}
         <div className="flex justify-center mb-4">
           <div className="relative">
@@ -299,9 +357,20 @@ const Profile = () => {
               <span>Email vérifié</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 text-sm">
-              <AlertCircle className="h-4 w-4" />
-              <span>Email non vérifié</span>
+            <div className="flex flex-col gap-2 w-full max-w-xs mx-auto">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 text-sm justify-center">
+                <AlertCircle className="h-4 w-4" />
+                <span>Email non vérifié</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResendVerificationEmail}
+                disabled={resendingEmail}
+                className="w-full"
+              >
+                {resendingEmail ? "Envoi..." : "Renvoyer l'email"}
+              </Button>
             </div>
           )}
           {profile.phone_verified && (

@@ -164,11 +164,11 @@ const Auth = () => {
         }
       }
 
-      toast.success("Compte créé avec succès! Redirection vers votre profil...");
+      toast.success("Compte créé avec succès! Redirection vers la page de vérification...");
       
       // Wait a bit for the profile to be created
       setTimeout(() => {
-        navigate('/profile');
+        navigate('/onboarding');
       }, 1500);
 
     } catch (error: any) {
