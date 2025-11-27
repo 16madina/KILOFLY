@@ -104,7 +104,11 @@ const PostListing = () => {
       .eq("id", user.id)
       .single();
 
-    setIsVerified(profile?.id_verified || false);
+    // Check both email verification AND ID verification
+    const emailVerified = !!user.email_confirmed_at;
+    const idVerified = profile?.id_verified || false;
+    
+    setIsVerified(emailVerified && idVerified);
   };
   
   const handleAddAllowedItem = (item: string) => {
@@ -147,7 +151,7 @@ const PostListing = () => {
     e.preventDefault();
     
     if (!isVerified) {
-      toast.error("Vous devez vérifier votre identité avant de poster une annonce");
+      toast.error("Vous devez vérifier votre email et votre identité avant de poster une annonce");
       navigate("/profile");
       return;
     }
@@ -529,17 +533,21 @@ const PostListing = () => {
                 <Alert variant="destructive" className="mb-4 animate-fade-in">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription className="flex flex-col gap-3">
-                    <p className="font-medium">Vérification d'identité requise</p>
+                    <p className="font-medium">Vérification requise (2 étapes)</p>
                     <p className="text-sm">
-                      Pour garantir la sécurité de tous les utilisateurs, vous devez vérifier votre identité avant de poster une annonce.
+                      Pour poster une annonce, vous devez compléter 2 vérifications:
+                      <br />
+                      1. <strong>Email</strong> - Vérifiez votre boîte mail
+                      <br />
+                      2. <strong>Identité</strong> - Téléversez votre pièce d'identité
                     </p>
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate("/profile")}
+                      onClick={() => navigate("/verify-identity")}
                       className="w-full transition-all duration-200 hover:scale-[1.02]"
                     >
-                      Vérifier mon identité
+                      Compléter mes vérifications
                     </Button>
                   </AlertDescription>
                 </Alert>

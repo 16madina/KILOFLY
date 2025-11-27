@@ -27,7 +27,8 @@ import {
   Settings as SettingsIcon,
   HelpCircle,
   FileText,
-  CalendarCheck
+  CalendarCheck,
+  AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -292,10 +293,15 @@ const Profile = () => {
 
         {/* Verification Badges */}
         <div className="flex flex-wrap gap-2 justify-center">
-          {user?.email && (
+          {user?.email_confirmed_at ? (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm">
               <CheckCircle2 className="h-4 w-4" />
               <span>Email vérifié</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 text-sm">
+              <AlertCircle className="h-4 w-4" />
+              <span>Email non vérifié</span>
             </div>
           )}
           {profile.phone_verified && (

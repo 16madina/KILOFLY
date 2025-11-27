@@ -106,6 +106,22 @@ const ListingCard = ({
       return;
     }
 
+    // Check if user's email is verified and ID is verified
+    const { data: currentUserProfile } = await supabase
+      .from('profiles')
+      .select('id_verified')
+      .eq('id', user.id)
+      .single();
+
+    const emailVerified = !!user.email_confirmed_at;
+    const idVerified = currentUserProfile?.id_verified || false;
+
+    if (!emailVerified || !idVerified) {
+      toast.error("Vous devez vérifier votre email et votre identité avant de réserver");
+      navigate('/verify-identity');
+      return;
+    }
+
     if (user.id === userId) {
       toast.error("Vous ne pouvez pas réserver votre propre annonce");
       return;
