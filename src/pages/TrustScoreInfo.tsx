@@ -8,7 +8,7 @@ const TrustScoreInfo = () => {
   const navigate = useNavigate();
 
   const badges = [
-    { level: "Bronze", color: "from-orange-400 to-orange-600", range: "0-39", icon: "🥉" },
+    { level: "Bronze", color: "from-orange-400 to-orange-600", range: "10-39", icon: "🥉" },
     { level: "Argent", color: "from-gray-300 to-gray-400", range: "40-59", icon: "🥈" },
     { level: "Or", color: "from-yellow-400 to-yellow-600", range: "60-79", icon: "⭐" },
     { level: "Platine", color: "from-purple-500 to-pink-500", range: "80-100", icon: "🏆" },
@@ -143,9 +143,16 @@ const TrustScoreInfo = () => {
               <div>
                 <div className="flex justify-between mb-2 text-sm">
                   <span>Nouveau membre</span>
-                  <span className="font-semibold">0 pts - Bronze 🥉</span>
+                  <span className="font-semibold">0 pts - Pas de badge</span>
                 </div>
                 <Progress value={0} className="h-2" />
+              </div>
+              <div>
+                <div className="flex justify-between mb-2 text-sm">
+                  <span>Première vérification complétée</span>
+                  <span className="font-semibold">20 pts - Bronze 🥉</span>
+                </div>
+                <Progress value={20} className="h-2" />
               </div>
               <div>
                 <div className="flex justify-between mb-2 text-sm">
