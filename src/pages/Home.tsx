@@ -411,10 +411,13 @@ const Home = () => {
 
         {/* Currency Converter Button */}
         <section className="container px-4 sm:px-6 py-4">
-          <div className="flex justify-center">
+          <div className="flex justify-start">
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="outline" className="gap-2">
+                <Button 
+                  variant="outline" 
+                  className="gap-2 animate-pulse hover:animate-none shadow-lg hover:shadow-xl transition-all duration-300 border-primary/50 hover:border-primary"
+                >
                   <TrendingUp className="h-4 w-4" />
                   Calculateur de devises
                 </Button>
