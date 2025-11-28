@@ -1,5 +1,6 @@
-import ListingCard from "@/components/ListingCard";
+import AnimatedListingCard from "@/components/mobile/AnimatedListingCard";
 import Navbar from "@/components/Navbar";
+import { SkeletonShimmer } from "@/components/ui/skeleton-shimmer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
@@ -243,18 +244,29 @@ const Home = () => {
           </div>
 
           {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Chargement des annonces...</p>
+            <div className="flex flex-col gap-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="rounded-2xl overflow-hidden bg-card shadow-card">
+                  <SkeletonShimmer className="h-48 w-full rounded-none" />
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <SkeletonShimmer className="h-10 w-10 rounded-full" />
+                      <SkeletonShimmer className="h-4 w-32" />
+                    </div>
+                    <SkeletonShimmer className="h-4 w-full" />
+                    <SkeletonShimmer className="h-4 w-2/3" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : listings.length === 0 ? (
             <div className="text-center py-12 animate-fade-in">
               <p className="text-muted-foreground">Aucune annonce disponible pour le moment.</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3 animate-fade-in">
-              {listings.map((listing) => (
-                <ListingCard
+            <div className="flex flex-col gap-3">
+              {listings.map((listing, index) => (
+                <AnimatedListingCard
                   key={listing.id}
                   id={listing.id}
                   userId={listing.user_id}
@@ -272,6 +284,7 @@ const Home = () => {
                   allowedItems={listing.allowed_items as string[] || []}
                   prohibitedItems={listing.prohibited_items as string[] || []}
                   description={listing.description || undefined}
+                  index={index}
                 />
               ))}
             </div>

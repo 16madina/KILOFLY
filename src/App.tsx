@@ -2,8 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { AnimatePresence, motion } from "framer-motion";
+import { isIOS } from "@/lib/platform";
 import Home from "./pages/Home";
 import PostListing from "./pages/PostListing";
 import Messages from "./pages/Messages";
@@ -41,22 +43,50 @@ import { AuthProvider } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
-function App() {
+const AnimatedRoutes = () => {
+  const location = useLocation();
+  
+  const pageVariants = isIOS()
+    ? {
+        // iOS style - slide from right
+        initial: { x: "100%", opacity: 0 },
+        animate: { x: 0, opacity: 1 },
+        exit: { x: "-30%", opacity: 0 },
+      }
+    : {
+        // Android style - fade up
+        initial: { y: 20, opacity: 0 },
+        animate: { y: 0, opacity: 1 },
+        exit: { y: -20, opacity: 0 },
+      };
+
+  const pageTransition = {
+    type: "tween" as const,
+    ease: [0.4, 0, 0.2, 1] as const,
+    duration: 0.3,
+  };
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AuthProvider>
-              <div className="relative">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/post" element={<PostListing />} />
-                  <Route path="/messages" element={<Messages />} />
-                  <Route path="/conversation/:id" element={<Conversation />} />
-                  <Route path="/profile" element={<Profile />} />
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route
+          path="/"
+          element={
+            <motion.div
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={pageTransition}
+            >
+              <Home />
+            </motion.div>
+          }
+        />
+        <Route path="/post" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><PostListing /></motion.div>} />
+        <Route path="/messages" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Messages /></motion.div>} />
+        <Route path="/conversation/:id" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Conversation /></motion.div>} />
+        <Route path="/profile" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Profile /></motion.div>} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/onboarding" element={<Onboarding />} />
                   <Route path="/privacy" element={<Privacy />} />
@@ -82,9 +112,24 @@ function App() {
                   <Route path="/route-alerts" element={<RouteAlerts />} />
                   <Route path="/verify-identity" element={<VerifyIdentity />} />
                   <Route path="/faq" element={<FAQ />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><NotFound /></motion.div>} />
+      </Routes>
+    </AnimatePresence>
+  );
+};
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <div className="relative">
+                <AnimatedRoutes />
                 <MobileBottomNav />
                 <CookieConsent />
               </div>
