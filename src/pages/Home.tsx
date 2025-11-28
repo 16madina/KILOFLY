@@ -24,7 +24,7 @@ import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { CurrencyConverter } from "@/components/CurrencyConverter";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 interface Listing {
   id: string;
@@ -374,52 +374,56 @@ const Home = () => {
           </div>
         </section>
 
-        {/* How It Works & Currency Converter Section */}
+        {/* How It Works Section */}
         <section className="container px-4 sm:px-6 py-6">
-          <Tabs defaultValue="steps" className="w-full max-w-3xl mx-auto">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="steps" className="text-sm">Comment ça marche</TabsTrigger>
-              <TabsTrigger value="converter" className="text-sm">Convertisseur</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="steps">
-              <div className="flex items-center justify-center gap-4 sm:gap-8">
-                <div className="flex flex-col items-center text-center flex-1">
-                  <div className="mb-2 p-2 bg-gradient-sky rounded-full">
-                    <Search className="h-5 w-5 text-white" />
-                  </div>
-                  <h3 className="text-sm font-semibold mb-1">1. Rechercher</h3>
-                  <p className="text-xs text-muted-foreground hidden sm:block">
-                    Trouvez un voyageur qui part vers votre destination
-                  </p>
-                </div>
-
-                <div className="flex flex-col items-center text-center flex-1">
-                  <div className="mb-2 p-2 bg-gradient-sky rounded-full">
-                    <CreditCard className="h-5 w-5 text-white" />
-                  </div>
-                  <h3 className="text-sm font-semibold mb-1">2. Réserver & Payer</h3>
-                  <p className="text-xs text-muted-foreground hidden sm:block">
-                    Réservez les kilos et payez en toute sécurité
-                  </p>
-                </div>
-
-                <div className="flex flex-col items-center text-center flex-1">
-                  <div className="mb-2 p-2 bg-gradient-sky rounded-full">
-                    <Package className="h-5 w-5 text-white" />
-                  </div>
-                  <h3 className="text-sm font-semibold mb-1">3. Recevoir</h3>
-                  <p className="text-xs text-muted-foreground hidden sm:block">
-                    Récupérez vos colis à destination en toute tranquillité
-                  </p>
-                </div>
+          <div className="flex items-center justify-center gap-4 sm:gap-8 max-w-3xl mx-auto">
+            <div className="flex flex-col items-center text-center flex-1">
+              <div className="mb-2 p-2 bg-gradient-sky rounded-full">
+                <Search className="h-5 w-5 text-white" />
               </div>
-            </TabsContent>
-            
-            <TabsContent value="converter">
-              <CurrencyConverter />
-            </TabsContent>
-          </Tabs>
+              <h3 className="text-sm font-semibold mb-1">1. Rechercher</h3>
+              <p className="text-xs text-muted-foreground hidden sm:block">
+                Trouvez un voyageur qui part vers votre destination
+              </p>
+            </div>
+
+            <div className="flex flex-col items-center text-center flex-1">
+              <div className="mb-2 p-2 bg-gradient-sky rounded-full">
+                <CreditCard className="h-5 w-5 text-white" />
+              </div>
+              <h3 className="text-sm font-semibold mb-1">2. Réserver & Payer</h3>
+              <p className="text-xs text-muted-foreground hidden sm:block">
+                Réservez les kilos et payez en toute sécurité
+              </p>
+            </div>
+
+            <div className="flex flex-col items-center text-center flex-1">
+              <div className="mb-2 p-2 bg-gradient-sky rounded-full">
+                <Package className="h-5 w-5 text-white" />
+              </div>
+              <h3 className="text-sm font-semibold mb-1">3. Recevoir</h3>
+              <p className="text-xs text-muted-foreground hidden sm:block">
+                Récupérez vos colis à destination en toute tranquillité
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Currency Converter Button */}
+        <section className="container px-4 sm:px-6 py-4">
+          <div className="flex justify-center">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Calculateur de devises
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <CurrencyConverter />
+              </DialogContent>
+            </Dialog>
+          </div>
         </section>
 
         {/* Listings Section */}
