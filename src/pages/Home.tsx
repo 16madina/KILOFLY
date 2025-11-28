@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar";
 import { SkeletonShimmer } from "@/components/ui/skeleton-shimmer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, Plane, ShieldCheck, CreditCard, Package, Users, TrendingUp, Plus, CalendarIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
@@ -17,6 +17,13 @@ import lomeImg from "@/assets/destinations/lome.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface Listing {
   id: string;
@@ -42,16 +49,40 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [searchDeparture, setSearchDeparture] = useState("");
   const [searchArrival, setSearchArrival] = useState("");
+  const [departureDate, setDepartureDate] = useState<Date>();
+  const [arrivalDate, setArrivalDate] = useState<Date>();
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [stats, setStats] = useState({ totalTrips: 0, totalMembers: 0 });
   const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchListings();
+    fetchStats();
     if (user) {
       fetchFavorites();
     }
   }, [user]);
+
+  const fetchStats = async () => {
+    try {
+      const { count: tripsCount } = await supabase
+        .from('reservations')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'delivered');
+
+      const { count: membersCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      setStats({
+        totalTrips: tripsCount || 0,
+        totalMembers: membersCount || 0
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
 
   const fetchFavorites = async () => {
     if (!user) return;
@@ -179,6 +210,22 @@ const Home = () => {
       <div className="min-h-screen bg-background pb-32">
         <Navbar />
 
+        {/* Stats Bar */}
+        <div className="bg-gradient-sky text-white py-3">
+          <div className="container px-4 sm:px-6">
+            <div className="flex items-center justify-center gap-8 text-sm">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                <span className="font-semibold">{stats.totalTrips}+ voyages réussis</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="font-semibold">{stats.totalMembers}+ membres actifs</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Hero Section */}
         <section className="relative overflow-hidden">
           <div 
@@ -189,6 +236,18 @@ const Home = () => {
           </div>
           
           <div className="relative container px-4 sm:px-6 py-12 md:py-20">
+            {/* Post Listing Button */}
+            <div className="flex justify-end mb-4">
+              <Button
+                onClick={() => navigate('/post-listing')}
+                className="bg-gradient-sky hover:opacity-90 transition-all duration-200 hover:scale-105"
+                size="lg"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Poster une annonce
+              </Button>
+            </div>
+
             <div className="max-w-3xl mx-auto text-center space-y-4 animate-fade-in">
               <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
                 Partagez vos kilos,{" "}
@@ -212,6 +271,40 @@ const Home = () => {
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   />
                 </div>
+
+                {/* Date Departure */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "h-12 justify-start text-left font-normal bg-card shadow-card hover:bg-card transition-all duration-200 hover:scale-[1.02]",
+                        !departureDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-5 w-5" />
+                      {departureDate ? format(departureDate, "PPP", { locale: fr }) : <span>Date de départ</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={departureDate}
+                      onSelect={setDepartureDate}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                {/* Plane Icon */}
+                <div className="flex justify-center -my-1">
+                  <div className="bg-gradient-sky rounded-full p-2">
+                    <Plane className="h-5 w-5 text-white rotate-90" />
+                  </div>
+                </div>
+
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
@@ -222,6 +315,33 @@ const Home = () => {
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   />
                 </div>
+
+                {/* Date Arrival */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "h-12 justify-start text-left font-normal bg-card shadow-card hover:bg-card transition-all duration-200 hover:scale-[1.02]",
+                        !arrivalDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-5 w-5" />
+                      {arrivalDate ? format(arrivalDate, "PPP", { locale: fr }) : <span>Date d'arrivée</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={arrivalDate}
+                      onSelect={setArrivalDate}
+                      disabled={(date) => date < (departureDate || new Date())}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+
                 <Button 
                   size="lg" 
                   className="h-12 w-full bg-gradient-sky hover:opacity-90 transition-all duration-200 hover:scale-[1.02] text-base font-semibold"
@@ -231,6 +351,70 @@ const Home = () => {
                 </Button>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Trust Badges */}
+        <section className="container px-4 sm:px-6 py-6 -mt-4">
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Badge variant="secondary" className="py-2 px-4 text-sm">
+              <ShieldCheck className="h-4 w-4 mr-2" />
+              Voyageurs vérifiés
+            </Badge>
+            <Badge variant="secondary" className="py-2 px-4 text-sm">
+              <CreditCard className="h-4 w-4 mr-2" />
+              Paiement sécurisé Stripe
+            </Badge>
+            <Badge variant="secondary" className="py-2 px-4 text-sm">
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Commission 5% seulement
+            </Badge>
+          </div>
+        </section>
+
+        {/* How It Works Section */}
+        <section className="container px-4 sm:px-6 py-12">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold mb-2">Comment ça marche ?</h2>
+            <p className="text-muted-foreground">Envoyez vos colis en 3 étapes simples</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <Card className="text-center border-2 hover:shadow-lg transition-all duration-200 hover:scale-105">
+              <CardContent className="pt-6">
+                <div className="mb-4 inline-block p-4 bg-gradient-sky rounded-full">
+                  <Search className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">1. Rechercher</h3>
+                <p className="text-muted-foreground">
+                  Trouvez un voyageur qui part vers votre destination
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center border-2 hover:shadow-lg transition-all duration-200 hover:scale-105">
+              <CardContent className="pt-6">
+                <div className="mb-4 inline-block p-4 bg-gradient-sky rounded-full">
+                  <CreditCard className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">2. Réserver & Payer</h3>
+                <p className="text-muted-foreground">
+                  Réservez les kilos et payez en toute sécurité
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center border-2 hover:shadow-lg transition-all duration-200 hover:scale-105">
+              <CardContent className="pt-6">
+                <div className="mb-4 inline-block p-4 bg-gradient-sky rounded-full">
+                  <Package className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">3. Recevoir</h3>
+                <p className="text-muted-foreground">
+                  Récupérez vos colis à destination en toute tranquillité
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </section>
 
@@ -244,7 +428,7 @@ const Home = () => {
           </div>
 
           {loading ? (
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="rounded-2xl overflow-hidden bg-card shadow-card">
                   <SkeletonShimmer className="h-48 w-full rounded-none" />
@@ -264,8 +448,8 @@ const Home = () => {
               <p className="text-muted-foreground">Aucune annonce disponible pour le moment.</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {listings.map((listing, index) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {listings.slice(0, 3).map((listing, index) => (
                 <AnimatedListingCard
                   key={listing.id}
                   id={listing.id}
@@ -287,6 +471,18 @@ const Home = () => {
                   index={index}
                 />
               ))}
+            </div>
+          )}
+          
+          {!loading && listings.length > 3 && (
+            <div className="mt-6 text-center">
+              <Button 
+                variant="outline"
+                size="lg"
+                className="hover:scale-105 transition-transform duration-200"
+              >
+                Voir toutes les annonces
+              </Button>
             </div>
           )}
         </section>
