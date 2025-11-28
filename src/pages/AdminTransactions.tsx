@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Navbar from "@/components/Navbar";
 import { ArrowLeft, TrendingUp, Package, Users, Search, Filter } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
+import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface Transaction {
   id: string;
@@ -35,6 +36,12 @@ interface Transaction {
   };
 }
 
+interface RevenueChartData {
+  date: string;
+  revenus: number;
+  transactions: number;
+}
+
 export default function AdminTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
@@ -48,10 +55,19 @@ export default function AdminTransactions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [minAmount, setMinAmount] = useState("");
   const [maxAmount, setMaxAmount] = useState("");
+  
+  // Chart data
+  const [revenueChartData, setRevenueChartData] = useState<RevenueChartData[]>([]);
 
   useEffect(() => {
     checkAdminAndFetchTransactions();
   }, [user]);
+  
+  useEffect(() => {
+    if (transactions.length > 0) {
+      generateRevenueChartData();
+    }
+  }, [transactions]);
 
   const checkAdminAndFetchTransactions = async () => {
     if (!user) {
@@ -102,6 +118,37 @@ export default function AdminTransactions() {
     } finally {
       setLoading(false);
     }
+  };
+  
+  const generateRevenueChartData = () => {
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = subDays(new Date(), 6 - i);
+      return {
+        date: format(date, 'dd MMM', { locale: fr }),
+        startDate: startOfDay(date),
+        endDate: endOfDay(date),
+        revenus: 0,
+        transactions: 0
+      };
+    });
+
+    transactions.forEach(transaction => {
+      const transactionDate = new Date(transaction.created_at);
+      const dayData = last7Days.find(day => 
+        transactionDate >= day.startDate && transactionDate <= day.endDate
+      );
+      
+      if (dayData && transaction.status === 'completed') {
+        dayData.revenus += transaction.platform_commission;
+        dayData.transactions += 1;
+      }
+    });
+
+    setRevenueChartData(last7Days.map(({ date, revenus, transactions }) => ({
+      date,
+      revenus: Number(revenus.toFixed(2)),
+      transactions
+    })));
   };
 
   // Apply filters
@@ -163,6 +210,16 @@ export default function AdminTransactions() {
 
   const totalTransactions = filteredTransactions.length;
   const completedTransactions = filteredTransactions.filter((t) => t.status === "completed").length;
+  const pendingTransactions = filteredTransactions.filter((t) => t.status === "pending").length;
+  const averageCommission = completedTransactions > 0 ? totalRevenue / completedTransactions : 0;
+  
+  // Status distribution for pie chart
+  const statusDistribution = [
+    { name: 'Complétées', value: completedTransactions, color: 'hsl(var(--primary))' },
+    { name: 'En attente', value: pendingTransactions, color: 'hsl(var(--secondary))' },
+    { name: 'Annulées', value: filteredTransactions.filter(t => t.status === 'cancelled').length, color: 'hsl(var(--destructive))' },
+    { name: 'Remboursées', value: filteredTransactions.filter(t => t.status === 'refunded').length, color: 'hsl(var(--muted))' }
+  ].filter(item => item.value > 0);
 
   if (loading) {
     return (
@@ -207,7 +264,7 @@ export default function AdminTransactions() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Revenus Totaux</CardTitle>
@@ -216,7 +273,7 @@ export default function AdminTransactions() {
             <CardContent>
               <div className="text-2xl font-bold">{totalRevenue.toFixed(2)} €</div>
               <p className="text-xs text-muted-foreground">
-                Commission de 5% sur les transactions
+                Commission de 5%
               </p>
             </CardContent>
           </Card>
@@ -229,21 +286,175 @@ export default function AdminTransactions() {
             <CardContent>
               <div className="text-2xl font-bold">{totalTransactions}</div>
               <p className="text-xs text-muted-foreground">
-                Toutes les transactions
+                Toutes périodes confondues
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Transactions Complétées</CardTitle>
+              <CardTitle className="text-sm font-medium">Taux de Complétion</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{completedTransactions}</div>
+              <div className="text-2xl font-bold">{totalTransactions > 0 ? ((completedTransactions / totalTransactions) * 100).toFixed(1) : 0}%</div>
               <p className="text-xs text-muted-foreground">
-                {((completedTransactions / totalTransactions) * 100).toFixed(1)}% du total
+                {completedTransactions} complétées
               </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Commission Moyenne</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{averageCommission.toFixed(2)} €</div>
+              <p className="text-xs text-muted-foreground">
+                Par transaction complétée
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Revenus des 7 derniers jours
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={revenueChartData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="date" className="text-xs" />
+                  <YAxis className="text-xs" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="revenus" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={2}
+                    name="Revenus (€)" 
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Transactions par jour
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={revenueChartData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="date" className="text-xs" />
+                  <YAxis className="text-xs" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend />
+                  <Bar 
+                    dataKey="transactions" 
+                    fill="hsl(var(--primary))" 
+                    name="Transactions" 
+                    radius={[8, 8, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Distribution par Statut
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={statusDistribution}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={100}
+                    fill="hsl(var(--primary))"
+                    dataKey="value"
+                  >
+                    {statusDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Top 5 Routes Rentables
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {(() => {
+                  const routeRevenue = filteredTransactions
+                    .filter(t => t.status === 'completed')
+                    .reduce((acc, t) => {
+                      const route = `${t.listing.departure} → ${t.listing.arrival}`;
+                      acc[route] = (acc[route] || 0) + t.platform_commission;
+                      return acc;
+                    }, {} as Record<string, number>);
+                  
+                  return Object.entries(routeRevenue)
+                    .sort(([, a], [, b]) => b - a)
+                    .slice(0, 5)
+                    .map(([route, revenue]) => (
+                      <div key={route} className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{route}</span>
+                        <span className="text-sm font-bold text-primary">{revenue.toFixed(2)} €</span>
+                      </div>
+                    ));
+                })()}
+                {filteredTransactions.filter(t => t.status === 'completed').length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Aucune transaction complétée
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
