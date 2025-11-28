@@ -17,6 +17,7 @@ interface PaymentRequest {
   buyerEmail: string;
   sellerName: string;
   route: string;
+  currency?: string;
 }
 
 serve(async (req) => {
@@ -25,7 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const { reservationId, amount, buyerEmail, sellerName, route }: PaymentRequest = await req.json();
+    const { reservationId, amount, buyerEmail, sellerName, route, currency }: PaymentRequest = await req.json();
 
     console.log('Creating payment intent for reservation:', reservationId);
 
@@ -36,7 +37,7 @@ serve(async (req) => {
     // Create Stripe Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
-      currency: 'eur',
+      currency: currency ? currency.toLowerCase() : 'eur',
       receipt_email: buyerEmail,
       description: `KiloFly - Transport ${route} avec ${sellerName}`,
       metadata: {

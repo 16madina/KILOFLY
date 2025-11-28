@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import { Currency, CURRENCY_NAMES, CURRENCY_SYMBOLS } from "@/lib/currency";
 
 // Validation schema
 const listingSchema = z.object({
@@ -76,6 +77,7 @@ const PostListing = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
+  const [currency, setCurrency] = useState<Currency>("EUR");
   
   // Allowed items state
   const [selectedAllowedItems, setSelectedAllowedItems] = useState<string[]>([]);
@@ -189,6 +191,7 @@ const PostListing = () => {
         arrival_date: validatedData.arrival_date,
         available_kg: validatedData.available_kg,
         price_per_kg: validatedData.price_per_kg,
+        currency,
         description: validatedData.description || null,
         allowed_items: validatedData.allowed_items,
         prohibited_items: validatedData.prohibited_items,
@@ -324,17 +327,35 @@ const PostListing = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="price">Prix par kg (€)</Label>
-                    <Input
-                      id="price"
-                      name="price"
-                      type="number"
-                      placeholder="ex: 8"
-                      min="1"
-                      max="1000"
-                      required
-                      className="transition-all duration-200 focus:scale-[1.02]"
-                    />
+                    <Label htmlFor="price">Prix par kg</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="price"
+                        name="price"
+                        type="number"
+                        placeholder="ex: 8"
+                        min="1"
+                        max="100000"
+                        required
+                        className="flex-1 transition-all duration-200 focus:scale-[1.02]"
+                      />
+                      <Select value={currency} onValueChange={(value) => setCurrency(value as Currency)}>
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="EUR">
+                            {CURRENCY_SYMBOLS.EUR} EUR
+                          </SelectItem>
+                          <SelectItem value="USD">
+                            {CURRENCY_SYMBOLS.USD} USD
+                          </SelectItem>
+                          <SelectItem value="XOF">
+                            {CURRENCY_SYMBOLS.XOF} CFA
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </div>
