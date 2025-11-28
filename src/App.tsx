@@ -34,6 +34,7 @@ import PrivacySettings from "./pages/PrivacySettings";
 import Favorites from "./pages/Favorites";
 import RouteAlerts from "./pages/RouteAlerts";
 import VerifyIdentity from "./pages/VerifyIdentity";
+import FAQ from "./pages/FAQ";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -80,6 +81,7 @@ function App() {
                   <Route path="/favorites" element={<Favorites />} />
                   <Route path="/route-alerts" element={<RouteAlerts />} />
                   <Route path="/verify-identity" element={<VerifyIdentity />} />
+                  <Route path="/faq" element={<FAQ />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

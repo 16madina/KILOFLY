@@ -109,6 +109,20 @@ const Terms = () => {
               <li>D'éventuelles poursuites judiciaires</li>
             </ul>
 
+            <h3 className="text-xl font-semibold mt-6">8.1 Politique de tolérance zéro</h3>
+            <p>
+              KiloFly applique une politique de tolérance zéro concernant :
+            </p>
+            <ul>
+              <li>Le contenu inapproprié, offensant ou illégal</li>
+              <li>Les comportements abusifs envers d'autres utilisateurs</li>
+              <li>Toute violation des règles de la communauté</li>
+            </ul>
+            <p>
+              <strong>Tout contenu signalé sera examiné et supprimé dans un délai de 24 heures maximum.</strong> 
+              L'utilisateur responsable du contenu inapproprié sera immédiatement banni de la plateforme.
+            </p>
+
             <h2>9. Paiements et Tarifs</h2>
             <p>
               Les tarifs sont librement fixés entre voyageurs et expéditeurs. 
