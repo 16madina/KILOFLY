@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { MapPin, Calendar, Weight, DollarSign, ArrowLeft, AlertCircle, Package, X, Plus, Check } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
@@ -75,6 +75,9 @@ const COMMON_PROHIBITED_ITEMS = [
 
 const PostListing = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editingId = searchParams.get("edit");
+  
   const [loading, setLoading] = useState(false);
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [currency, setCurrency] = useState<Currency>("EUR");
@@ -87,9 +90,23 @@ const PostListing = () => {
   const [selectedProhibitedItems, setSelectedProhibitedItems] = useState<string[]>([]);
   const [customProhibitedItem, setCustomProhibitedItem] = useState("");
   
+  // Form data state for editing
+  const [formData, setFormData] = useState({
+    departure: "",
+    arrival: "",
+    departure_date: "",
+    arrival_date: "",
+    available_kg: "",
+    price_per_kg: "",
+    description: "",
+  });
+  
   useEffect(() => {
     checkVerificationStatus();
-  }, []);
+    if (editingId) {
+      loadListingData();
+    }
+  }, [editingId]);
 
   const checkVerificationStatus = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -111,6 +128,38 @@ const PostListing = () => {
     const idVerified = profile?.id_verified || false;
     
     setIsVerified(emailVerified && idVerified);
+  };
+
+  const loadListingData = async () => {
+    if (!editingId) return;
+
+    const { data, error } = await supabase
+      .from("listings")
+      .select("*")
+      .eq("id", editingId)
+      .single();
+
+    if (error) {
+      toast.error("Erreur lors du chargement de l'annonce");
+      console.error(error);
+      navigate("/my-listings");
+      return;
+    }
+
+    if (data) {
+      setFormData({
+        departure: data.departure,
+        arrival: data.arrival,
+        departure_date: data.departure_date,
+        arrival_date: data.arrival_date,
+        available_kg: data.available_kg.toString(),
+        price_per_kg: data.price_per_kg.toString(),
+        description: data.description || "",
+      });
+      setCurrency(data.currency as Currency);
+      setSelectedAllowedItems(data.allowed_items || []);
+      setSelectedProhibitedItems(data.prohibited_items || []);
+    }
   };
   
   const handleAddAllowedItem = (item: string) => {
@@ -171,36 +220,60 @@ const PostListing = () => {
 
     try {
       // Validate form data
+      const formDataObj = new FormData(e.currentTarget);
       const validatedData = listingSchema.parse({
-        departure: formData.get("departure") as string,
-        arrival: formData.get("arrival") as string,
-        departure_date: formData.get("departure-date") as string,
-        arrival_date: formData.get("arrival-date") as string,
-        available_kg: parseFloat(formData.get("kg") as string),
-        price_per_kg: parseFloat(formData.get("price") as string),
-        description: formData.get("notes") as string || undefined,
+        departure: formDataObj.get("departure") as string,
+        arrival: formDataObj.get("arrival") as string,
+        departure_date: formDataObj.get("departure-date") as string,
+        arrival_date: formDataObj.get("arrival-date") as string,
+        available_kg: parseFloat(formDataObj.get("kg") as string),
+        price_per_kg: parseFloat(formDataObj.get("price") as string),
+        description: formDataObj.get("notes") as string || undefined,
         allowed_items: selectedAllowedItems,
         prohibited_items: selectedProhibitedItems,
       });
 
-      const { error } = await supabase.from("listings").insert({
-        user_id: user.id,
-        departure: validatedData.departure,
-        arrival: validatedData.arrival,
-        departure_date: validatedData.departure_date,
-        arrival_date: validatedData.arrival_date,
-        available_kg: validatedData.available_kg,
-        price_per_kg: validatedData.price_per_kg,
-        currency,
-        description: validatedData.description || null,
-        allowed_items: validatedData.allowed_items,
-        prohibited_items: validatedData.prohibited_items,
-      });
+      if (editingId) {
+        // Update existing listing
+        const { error } = await supabase
+          .from("listings")
+          .update({
+            departure: validatedData.departure,
+            arrival: validatedData.arrival,
+            departure_date: validatedData.departure_date,
+            arrival_date: validatedData.arrival_date,
+            available_kg: validatedData.available_kg,
+            price_per_kg: validatedData.price_per_kg,
+            currency,
+            description: validatedData.description || null,
+            allowed_items: validatedData.allowed_items,
+            prohibited_items: validatedData.prohibited_items,
+          })
+          .eq("id", editingId);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast.success("Annonce mise à jour avec succès!");
+      } else {
+        // Create new listing
+        const { error } = await supabase.from("listings").insert({
+          user_id: user.id,
+          departure: validatedData.departure,
+          arrival: validatedData.arrival,
+          departure_date: validatedData.departure_date,
+          arrival_date: validatedData.arrival_date,
+          available_kg: validatedData.available_kg,
+          price_per_kg: validatedData.price_per_kg,
+          currency,
+          description: validatedData.description || null,
+          allowed_items: validatedData.allowed_items,
+          prohibited_items: validatedData.prohibited_items,
+        });
 
-      toast.success("Annonce créée avec succès!");
-      navigate("/");
+        if (error) throw error;
+        toast.success("Annonce créée avec succès!");
+      }
+
+      navigate("/my-listings");
     } catch (error) {
       if (error instanceof z.ZodError) {
         const firstError = error.errors[0];
@@ -227,7 +300,7 @@ const PostListing = () => {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-bold">Poster une annonce</h1>
+          <h1 className="text-xl font-bold">{editingId ? "Modifier l'annonce" : "Poster une annonce"}</h1>
         </div>
       </header>
 
@@ -256,6 +329,8 @@ const PostListing = () => {
                       placeholder="ex: Montréal"
                       required
                       maxLength={100}
+                      value={formData.departure}
+                      onChange={(e) => setFormData(prev => ({ ...prev, departure: e.target.value }))}
                       className="transition-all duration-200 focus:scale-[1.02]"
                     />
                   </div>
@@ -268,6 +343,8 @@ const PostListing = () => {
                       placeholder="ex: Abidjan"
                       required
                       maxLength={100}
+                      value={formData.arrival}
+                      onChange={(e) => setFormData(prev => ({ ...prev, arrival: e.target.value }))}
                       className="transition-all duration-200 focus:scale-[1.02]"
                     />
                   </div>
@@ -288,6 +365,8 @@ const PostListing = () => {
                       name="departure-date"
                       type="date"
                       required
+                      value={formData.departure_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, departure_date: e.target.value }))}
                       className="transition-all duration-200 focus:scale-[1.02]"
                     />
                   </div>
@@ -299,6 +378,8 @@ const PostListing = () => {
                       name="arrival-date"
                       type="date"
                       required
+                      value={formData.arrival_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, arrival_date: e.target.value }))}
                       className="transition-all duration-200 focus:scale-[1.02]"
                     />
                   </div>
@@ -322,6 +403,8 @@ const PostListing = () => {
                       min="1"
                       max="100"
                       required
+                      value={formData.available_kg}
+                      onChange={(e) => setFormData(prev => ({ ...prev, available_kg: e.target.value }))}
                       className="transition-all duration-200 focus:scale-[1.02]"
                     />
                   </div>
@@ -337,6 +420,8 @@ const PostListing = () => {
                         min="1"
                         max="100000"
                         required
+                        value={formData.price_per_kg}
+                        onChange={(e) => setFormData(prev => ({ ...prev, price_per_kg: e.target.value }))}
                         className="flex-1 transition-all duration-200 focus:scale-[1.02]"
                       />
                       <Select value={currency} onValueChange={(value) => setCurrency(value as Currency)}>
@@ -547,6 +632,8 @@ const PostListing = () => {
                   placeholder="Ajoutez des informations supplémentaires sur votre offre..."
                   className="min-h-[100px] transition-all duration-200 focus:scale-[1.01]"
                   maxLength={1000}
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 />
               </div>
 
@@ -588,7 +675,9 @@ const PostListing = () => {
                 disabled={loading || isVerified === false || selectedAllowedItems.length === 0}
                 className="w-full h-12 text-base font-semibold bg-gradient-sky hover:opacity-90 transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
               >
-                {loading ? "Publication en cours..." : "Publier l'annonce"}
+                {loading 
+                  ? (editingId ? "Mise à jour..." : "Publication en cours...") 
+                  : (editingId ? "Mettre à jour l'annonce" : "Publier l'annonce")}
               </Button>
             </form>
           </CardContent>
