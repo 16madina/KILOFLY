@@ -209,7 +209,6 @@ const PostListing = () => {
 
     setLoading(true);
     
-    const formData = new FormData(e.currentTarget);
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
