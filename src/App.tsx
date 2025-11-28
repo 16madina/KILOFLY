@@ -45,6 +45,7 @@ import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useExchangeRates } from "./hooks/useExchangeRates";
+import { useCurrencyWelcome } from "./hooks/useCurrencyWelcome";
 
 const queryClient = new QueryClient();
 
@@ -145,6 +146,9 @@ const AnimatedRoutes = () => {
 function App() {
   // Update exchange rates on app load
   useExchangeRates();
+  
+  // Show currency welcome message on first visit
+  useCurrencyWelcome();
   
   return (
     <QueryClientProvider client={queryClient}>
