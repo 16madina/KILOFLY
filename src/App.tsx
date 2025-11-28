@@ -143,12 +143,22 @@ const AnimatedRoutes = () => {
   );
 };
 
+// Component that needs to be inside AuthProvider
+const AppContent = () => {
+  useCurrencyWelcome();
+  
+  return (
+    <div className="relative">
+      <AnimatedRoutes />
+      <MobileBottomNav />
+      <CookieConsent />
+    </div>
+  );
+};
+
 function App() {
   // Update exchange rates on app load
   useExchangeRates();
-  
-  // Show currency welcome message on first visit
-  useCurrencyWelcome();
   
   return (
     <QueryClientProvider client={queryClient}>
@@ -158,11 +168,7 @@ function App() {
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
-              <div className="relative">
-                <AnimatedRoutes />
-                <MobileBottomNav />
-                <CookieConsent />
-              </div>
+              <AppContent />
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
