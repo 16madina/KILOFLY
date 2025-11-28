@@ -358,18 +358,18 @@ const Home = () => {
 
         {/* Trust Badges */}
         <section className="container px-4 sm:px-6 py-6 -mt-4">
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Badge variant="secondary" className="py-2 px-4 text-sm">
-              <ShieldCheck className="h-4 w-4 mr-2" />
+          <div className="flex items-center justify-center gap-2">
+            <Badge variant="secondary" className="py-1 px-2 text-xs">
+              <ShieldCheck className="h-3 w-3 mr-1" />
               Voyageurs vérifiés
             </Badge>
-            <Badge variant="secondary" className="py-2 px-4 text-sm">
-              <CreditCard className="h-4 w-4 mr-2" />
-              Paiement sécurisé Stripe
+            <Badge variant="secondary" className="py-1 px-2 text-xs">
+              <CreditCard className="h-3 w-3 mr-1" />
+              Paiement sécurisé
             </Badge>
-            <Badge variant="secondary" className="py-2 px-4 text-sm">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Commission 5% seulement
+            <Badge variant="secondary" className="py-1 px-2 text-xs">
+              <TrendingUp className="h-3 w-3 mr-1" />
+              5% seulement
             </Badge>
           </div>
         </section>
