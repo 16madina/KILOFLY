@@ -40,6 +40,7 @@ import VerifyIdentity from "./pages/VerifyIdentity";
 import FAQ from "./pages/FAQ";
 import ListingDetail from "./pages/ListingDetail";
 import Payment from "./pages/Payment";
+import CurrencySettings from "./pages/CurrencySettings";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -125,6 +126,7 @@ const AnimatedRoutes = () => {
                   <Route path="/admin/transactions" element={<AdminTransactions />} />
                   <Route path="/account-security" element={<AccountSecurity />} />
                   <Route path="/privacy-settings" element={<PrivacySettings />} />
+                  <Route path="/currency-settings" element={<CurrencySettings />} />
                   <Route path="/trust-score-info" element={<TrustScoreInfo />} />
                   <Route path="/favorites" element={<Favorites />} />
                   <Route path="/route-alerts" element={<RouteAlerts />} />

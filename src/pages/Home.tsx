@@ -24,6 +24,7 @@ import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { CurrencyConverter } from "@/components/CurrencyConverter";
 
 interface Listing {
   id: string;
@@ -416,6 +417,13 @@ const Home = () => {
                 </p>
               </CardContent>
             </Card>
+          </div>
+        </section>
+
+        {/* Currency Converter Section */}
+        <section className="container px-4 sm:px-6 py-8">
+          <div className="max-w-md mx-auto">
+            <CurrencyConverter />
           </div>
         </section>
 
