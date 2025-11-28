@@ -99,6 +99,11 @@ export default {
         "shimmer": {
           "100%": { transform: "translateX(100%)" },
         },
+        "shake": {
+          "0%, 100%": { transform: "translateX(0)" },
+          "25%": { transform: "translateX(-10px)" },
+          "75%": { transform: "translateX(10px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -107,6 +112,7 @@ export default {
         "scale-in": "scale-in 0.2s ease-out",
         "slide-up": "slide-up 0.3s ease-out",
         "shimmer": "shimmer 2s infinite",
+        "shake": "shake 0.5s ease-in-out",
       },
     },
   },

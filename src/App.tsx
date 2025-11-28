@@ -2,10 +2,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AnimatePresence, motion } from "framer-motion";
 import { isIOS } from "@/lib/platform";
+import { useSwipeable } from "react-swipeable";
 import Home from "./pages/Home";
 import PostListing from "./pages/PostListing";
 import Messages from "./pages/Messages";
@@ -45,6 +46,19 @@ const queryClient = new QueryClient();
 
 const AnimatedRoutes = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Swipe back gesture for iOS
+  const swipeHandlers = useSwipeable({
+    onSwipedRight: (eventData) => {
+      // Only on iOS and only if swiping from left edge (first 50px)
+      if (isIOS() && eventData.initial[0] < 50) {
+        navigate(-1);
+      }
+    },
+    trackMouse: false,
+    trackTouch: true,
+  });
   
   const pageVariants = isIOS()
     ? {
@@ -67,8 +81,9 @@ const AnimatedRoutes = () => {
   };
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+    <div {...swipeHandlers} className="h-full">
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
         <Route
           path="/"
           element={
@@ -114,8 +129,9 @@ const AnimatedRoutes = () => {
                   <Route path="/faq" element={<FAQ />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><NotFound /></motion.div>} />
-      </Routes>
-    </AnimatePresence>
+        </Routes>
+      </AnimatePresence>
+    </div>
   );
 };
 
