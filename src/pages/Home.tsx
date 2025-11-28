@@ -34,6 +34,7 @@ interface Listing {
   arrival_date: string;
   available_kg: number;
   price_per_kg: number;
+  currency?: string;
   destination_image: string | null;
   description: string | null;
   allowed_items: unknown;
@@ -462,6 +463,7 @@ const Home = () => {
                   arrivalDate={formatDate(listing.arrival_date)}
                   availableKg={listing.available_kg}
                   pricePerKg={listing.price_per_kg}
+                  currency={listing.currency}
                   destinationImage={listing.destination_image || getDestinationImage(listing.arrival)}
                   isFavorited={favorites.has(listing.id)}
                   onFavoriteToggle={() => handleToggleFavorite(listing.id)}

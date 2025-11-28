@@ -17,6 +17,7 @@ interface AnimatedListingCardProps {
   arrivalDate: string;
   availableKg: number;
   pricePerKg: number;
+  currency?: string;
   destinationImage: string;
   isFavorited: boolean;
   onFavoriteToggle: () => void;

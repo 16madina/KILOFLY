@@ -8,6 +8,8 @@ import { MapPin, Calendar, Weight, ArrowRight, Heart, Package, AlertCircle } fro
 import { supabase } from "@/integrations/supabase/client";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import { TrustScore } from "@/components/TrustScore";
+import { PriceDisplay } from "@/components/PriceDisplay";
+import { Currency } from "@/lib/currency";
 
 interface ListingCardProps {
   id: string;
@@ -20,6 +22,7 @@ interface ListingCardProps {
   arrivalDate: string;
   availableKg: number;
   pricePerKg: number;
+  currency?: string;
   destinationImage?: string;
   isFavorited?: boolean;
   onFavoriteToggle?: () => void;
@@ -39,6 +42,7 @@ const ListingCard = ({
   arrivalDate,
   availableKg,
   pricePerKg,
+  currency = "EUR",
   destinationImage,
   isFavorited = false,
   onFavoriteToggle,
@@ -175,7 +179,12 @@ const ListingCard = ({
           <div className="flex items-center justify-between pt-3 border-t border-border">
             <div>
               <p className="text-xl font-bold text-primary">
-                {pricePerKg}€<span className="text-sm text-muted-foreground">/kg</span>
+                <PriceDisplay 
+                  amount={pricePerKg} 
+                  currency={currency as Currency}
+                  showOriginal={false}
+                />
+                <span className="text-sm text-muted-foreground">/kg</span>
               </p>
             </div>
             <Button 

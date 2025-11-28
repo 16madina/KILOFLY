@@ -206,6 +206,30 @@ export type Database = {
           },
         ]
       }
+      exchange_rates: {
+        Row: {
+          base_currency: string
+          id: string
+          last_updated: string
+          rate: number
+          target_currency: string
+        }
+        Insert: {
+          base_currency: string
+          id?: string
+          last_updated?: string
+          rate: number
+          target_currency: string
+        }
+        Update: {
+          base_currency?: string
+          id?: string
+          last_updated?: string
+          rate?: number
+          target_currency?: string
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
@@ -249,6 +273,7 @@ export type Database = {
           arrival_date: string
           available_kg: number
           created_at: string
+          currency: string
           departure: string
           departure_date: string
           description: string | null
@@ -266,6 +291,7 @@ export type Database = {
           arrival_date: string
           available_kg: number
           created_at?: string
+          currency?: string
           departure: string
           departure_date: string
           description?: string | null
@@ -283,6 +309,7 @@ export type Database = {
           arrival_date?: string
           available_kg?: number
           created_at?: string
+          currency?: string
           departure?: string
           departure_date?: string
           description?: string | null
@@ -448,6 +475,7 @@ export type Database = {
           id_verified: boolean | null
           phone: string
           phone_verified: boolean | null
+          preferred_currency: string
           response_rate: number | null
           terms_accepted: boolean
           terms_accepted_at: string | null
@@ -473,6 +501,7 @@ export type Database = {
           id_verified?: boolean | null
           phone: string
           phone_verified?: boolean | null
+          preferred_currency?: string
           response_rate?: number | null
           terms_accepted?: boolean
           terms_accepted_at?: string | null
@@ -498,6 +527,7 @@ export type Database = {
           id_verified?: boolean | null
           phone?: string
           phone_verified?: boolean | null
+          preferred_currency?: string
           response_rate?: number | null
           terms_accepted?: boolean
           terms_accepted_at?: string | null

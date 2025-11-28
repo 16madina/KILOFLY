@@ -43,6 +43,7 @@ import Payment from "./pages/Payment";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
+import { useExchangeRates } from "./hooks/useExchangeRates";
 
 const queryClient = new QueryClient();
 
@@ -140,6 +141,9 @@ const AnimatedRoutes = () => {
 };
 
 function App() {
+  // Update exchange rates on app load
+  useExchangeRates();
+  
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

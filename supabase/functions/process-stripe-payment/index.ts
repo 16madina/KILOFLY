@@ -37,7 +37,7 @@ serve(async (req) => {
         *,
         buyer:profiles!buyer_id(full_name, avatar_url),
         seller:profiles!seller_id(full_name, avatar_url),
-        listing:listings!listing_id(departure, arrival, departure_date, price_per_kg)
+        listing:listings!listing_id(departure, arrival, departure_date, price_per_kg, currency)
       `)
       .eq('id', reservationId)
       .single();
@@ -63,7 +63,7 @@ serve(async (req) => {
     // Create Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(totalAmount * 100), // Convert to cents
-      currency: 'eur',
+      currency: reservation.listing.currency ? reservation.listing.currency.toLowerCase() : 'eur',
       receipt_email: buyerEmail,
       description: `KiloFly - Transport ${reservation.listing.departure} → ${reservation.listing.arrival}`,
       metadata: {
