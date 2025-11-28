@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, ChevronRight, Shield, Globe, DollarSign, Heart, MapPin, Eye, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shield, Globe, DollarSign, Heart, MapPin, Eye, FileText, HelpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const Settings = () => {
@@ -96,6 +96,15 @@ const Settings = () => {
           <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
             <FileText className="w-5 h-5 text-cyan-500" />
             <span className="flex-1 text-left font-medium">Conditions d'utilisation</span>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </Link>
+
+        {/* FAQ */}
+        <Link to="/faq">
+          <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+            <HelpCircle className="w-5 h-5 text-orange-500" />
+            <span className="flex-1 text-left font-medium">Questions Fréquentes (FAQ)</span>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
         </Link>
