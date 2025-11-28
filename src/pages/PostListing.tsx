@@ -218,16 +218,15 @@ const PostListing = () => {
     }
 
     try {
-      // Validate form data
-      const formDataObj = new FormData(e.currentTarget);
+      // Validate form data from state
       const validatedData = listingSchema.parse({
-        departure: formDataObj.get("departure") as string,
-        arrival: formDataObj.get("arrival") as string,
-        departure_date: formDataObj.get("departure-date") as string,
-        arrival_date: formDataObj.get("arrival-date") as string,
-        available_kg: parseFloat(formDataObj.get("kg") as string),
-        price_per_kg: parseFloat(formDataObj.get("price") as string),
-        description: formDataObj.get("notes") as string || undefined,
+        departure: formData.departure,
+        arrival: formData.arrival,
+        departure_date: formData.departure_date,
+        arrival_date: formData.arrival_date,
+        available_kg: parseFloat(formData.available_kg),
+        price_per_kg: parseFloat(formData.price_per_kg),
+        description: formData.description || undefined,
         allowed_items: selectedAllowedItems,
         prohibited_items: selectedProhibitedItems,
       });
