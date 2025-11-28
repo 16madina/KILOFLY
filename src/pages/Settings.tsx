@@ -55,6 +55,15 @@ const Settings = () => {
           </button>
         </Link>
 
+        {/* Currency Settings */}
+        <Link to="/currency-settings">
+          <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+            <Globe className="w-5 h-5 text-orange-500" />
+            <span className="flex-1 text-left font-medium">Devise préférée</span>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </Link>
+
         {/* Privacy Settings */}
         <Link to="/privacy-settings">
           <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
