@@ -754,11 +754,13 @@ export type Database = {
           created_at: string
           id: string
           listing_id: string
+          payment_status: string | null
           platform_commission: number
           seller_amount: number
           seller_id: string
           status: string
           stripe_payment_intent_id: string | null
+          stripe_transfer_id: string | null
           updated_at: string
         }
         Insert: {
@@ -767,11 +769,13 @@ export type Database = {
           created_at?: string
           id?: string
           listing_id: string
+          payment_status?: string | null
           platform_commission: number
           seller_amount: number
           seller_id: string
           status?: string
           stripe_payment_intent_id?: string | null
+          stripe_transfer_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -780,11 +784,13 @@ export type Database = {
           created_at?: string
           id?: string
           listing_id?: string
+          payment_status?: string | null
           platform_commission?: number
           seller_amount?: number
           seller_id?: string
           status?: string
           stripe_payment_intent_id?: string | null
+          stripe_transfer_id?: string | null
           updated_at?: string
         }
         Relationships: [

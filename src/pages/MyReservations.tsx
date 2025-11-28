@@ -118,6 +118,7 @@ const MyReservations = () => {
 
   const handleApprove = async (reservationId: string) => {
     try {
+      // First approve the reservation
       const { error } = await supabase
         .from("reservations")
         .update({ status: "approved" })
@@ -125,7 +126,22 @@ const MyReservations = () => {
 
       if (error) throw error;
 
+      // Then trigger payment process
       toast.success("Réservation approuvée");
+      toast.info("Demande de paiement envoyée à l'acheteur...");
+
+      // Call the payment processing edge function
+      const { error: paymentError } = await supabase.functions.invoke('process-stripe-payment', {
+        body: { reservationId },
+      });
+
+      if (paymentError) {
+        console.error("Error processing payment:", paymentError);
+        toast.error("Erreur lors de l'envoi de la demande de paiement");
+      } else {
+        toast.success("Demande de paiement envoyée avec succès");
+      }
+
       fetchReservations();
     } catch (error) {
       console.error("Error approving reservation:", error);
@@ -174,6 +190,16 @@ const MyReservations = () => {
 
   const handleMarkDelivered = async (reservationId: string) => {
     try {
+      // Find the reservation to get listing_id
+      const allReservations = [...receivedReservations, ...sentReservations];
+      const currentReservation = allReservations.find(r => r.id === reservationId);
+      
+      if (!currentReservation) {
+        toast.error("Réservation introuvable");
+        return;
+      }
+
+      // Mark as delivered
       const { error } = await supabase
         .from("reservations")
         .update({ status: "delivered" })
@@ -181,7 +207,32 @@ const MyReservations = () => {
 
       if (error) throw error;
 
-      toast.success("Livraison confirmée ! 🎉");
+      // Get transaction with payment intent
+      const { data: transaction, error: transactionError } = await supabase
+        .from("transactions")
+        .select("stripe_payment_intent_id")
+        .eq("listing_id", currentReservation.listing_id)
+        .single();
+
+      if (!transactionError && transaction?.stripe_payment_intent_id) {
+        // Capture the payment (transfer money to seller)
+        const { error: captureError } = await supabase.functions.invoke('capture-payment', {
+          body: { 
+            paymentIntentId: transaction.stripe_payment_intent_id,
+            reservationId,
+          },
+        });
+
+        if (captureError) {
+          console.error("Error capturing payment:", captureError);
+          toast.warning("Livraison confirmée mais erreur lors du transfert de paiement");
+        } else {
+          toast.success("Livraison confirmée et paiement transféré ! 🎉");
+        }
+      } else {
+        toast.success("Livraison confirmée ! 🎉");
+      }
+
       fetchReservations();
     } catch (error) {
       console.error("Error marking delivered:", error);
@@ -301,6 +352,20 @@ const MyReservations = () => {
           </div>
 
           {/* Actions */}
+          {!isReceived && (
+            <>
+              {/* Buyer actions - Show payment button if approved */}
+              {reservation.status === "approved" && (
+                <Button
+                  className="w-full bg-gradient-sky hover:opacity-90"
+                  onClick={() => navigate(`/payment?reservation=${reservation.id}`)}
+                >
+                  💳 Procéder au paiement
+                </Button>
+              )}
+            </>
+          )}
+
           {isReceived && (
             <>
               {reservation.status === "pending" && (

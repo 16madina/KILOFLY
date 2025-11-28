@@ -39,6 +39,7 @@ import RouteAlerts from "./pages/RouteAlerts";
 import VerifyIdentity from "./pages/VerifyIdentity";
 import FAQ from "./pages/FAQ";
 import ListingDetail from "./pages/ListingDetail";
+import Payment from "./pages/Payment";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -128,6 +129,7 @@ const AnimatedRoutes = () => {
                   <Route path="/route-alerts" element={<RouteAlerts />} />
           <Route path="/verify-identity" element={<VerifyIdentity />} />
                   <Route path="/faq" element={<FAQ />} />
+                  <Route path="/payment" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Payment /></motion.div>} />
                   <Route path="/listing/:id" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><ListingDetail /></motion.div>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><NotFound /></motion.div>} />

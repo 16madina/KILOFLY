@@ -1,5 +1,17 @@
 project_id = "yuhbvzjniylkruaylxzz"
 
+[functions.create-payment-intent]
+verify_jwt = false
+
+[functions.capture-payment]
+verify_jwt = false
+
+[functions.process-stripe-payment]
+verify_jwt = false
+
+[functions.get-payment-intent]
+verify_jwt = false
+
 [functions.send-admin-email]
 verify_jwt = true
 
