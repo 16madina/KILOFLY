@@ -145,7 +145,7 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
                 <div className="p-2 rounded-full bg-primary/10">
                   <MapPin className="h-5 w-5 text-primary" />
                 </div>
-                <span className="text-base">D'où partez-vous ?</span>
+                <span className="text-base">Envoyer depuis...</span>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </Button>
@@ -190,7 +190,7 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
                   <div className="p-2 rounded-full bg-primary/10">
                     <MapPin className="h-5 w-5 text-primary" />
                   </div>
-                  <span className="text-base">Où allez-vous ?</span>
+                  <span className="text-base">Vers...</span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </Button>
@@ -231,7 +231,7 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
                     <CalendarIcon className="h-5 w-5 text-primary" />
                   </div>
                   <span className="text-base">
-                    {startDate ? `Du ${format(startDate, "d MMM", { locale: fr })} au...` : "Quand ?"}
+                    {startDate ? `Entre le ${format(startDate, "d MMM", { locale: fr })} et...` : "Dates possibles..."}
                   </span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -242,7 +242,7 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
                   <CalendarIcon className="h-4 w-4 text-primary" />
                 </div>
                 <span className="font-medium flex-1">
-                  Du {format(startDate, "d MMM", { locale: fr })} au {format(endDate, "d MMM yyyy", { locale: fr })}
+                  Entre le {format(startDate, "d MMM", { locale: fr })} et le {format(endDate, "d MMM yyyy", { locale: fr })}
                 </span>
                 <button
                   onClick={() => resetField("dates")}
@@ -282,7 +282,7 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
           <DrawerHeader className="border-b border-border/50">
             <DrawerTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-primary" />
-              D'où partez-vous ?
+              Envoyer depuis
             </DrawerTitle>
           </DrawerHeader>
           <div className="px-4 py-3">
@@ -327,7 +327,7 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
           <DrawerHeader className="border-b border-border/50">
             <DrawerTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-primary" />
-              Où allez-vous ?
+              Destination
             </DrawerTitle>
           </DrawerHeader>
           <div className="px-4 py-3">
@@ -374,11 +374,11 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
           <DrawerHeader className="border-b border-border/50">
             <DrawerTitle className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5 text-primary" />
-              {!startDate ? "Date de début" : "Date de fin"}
+              {!startDate ? "À partir du..." : "Jusqu'au..."}
             </DrawerTitle>
             {startDate && !endDate && (
               <p className="text-sm text-muted-foreground mt-1">
-                Début: {format(startDate, "d MMMM yyyy", { locale: fr })}
+                À partir du {format(startDate, "d MMMM yyyy", { locale: fr })}
               </p>
             )}
           </DrawerHeader>
