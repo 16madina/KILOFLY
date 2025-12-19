@@ -9,7 +9,7 @@ import {
   DrawerClose
 } from "@/components/ui/drawer";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, Plane, CalendarIcon, MapPin, ChevronRight, Check } from "lucide-react";
+import { Search, Plane, CalendarIcon, MapPin, ChevronRight, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -18,19 +18,20 @@ import { hapticImpact, hapticNotification } from "@/hooks/useHaptics";
 import { ImpactStyle, NotificationType } from "@capacitor/haptics";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface SearchFlowProps {
-  onSearch: (departure: string, arrival: string, departureDate?: Date, arrivalDate?: Date) => void;
+  onSearch: (departure: string, arrival: string, startDate?: Date, endDate?: Date) => void;
 }
 
-type Step = "idle" | "departure" | "departure-date" | "arrival" | "arrival-date";
+type DrawerType = "departure" | "arrival" | "dates" | null;
 
 export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
-  const [step, setStep] = useState<Step>("idle");
+  const [activeDrawer, setActiveDrawer] = useState<DrawerType>(null);
   const [departure, setDeparture] = useState("");
-  const [departureDate, setDepartureDate] = useState<Date>();
   const [arrival, setArrival] = useState("");
-  const [arrivalDate, setArrivalDate] = useState<Date>();
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
   const [searchQuery, setSearchQuery] = useState("");
 
   // Get all cities from all countries
@@ -55,212 +56,233 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
     );
   }, [allCities, searchQuery]);
 
-  const openStep = async (newStep: Step) => {
+  const openDrawer = async (drawer: DrawerType) => {
     await hapticImpact(ImpactStyle.Light);
     setSearchQuery("");
-    setStep(newStep);
+    setActiveDrawer(drawer);
   };
 
   const closeDrawer = () => {
-    setStep("idle");
+    setActiveDrawer(null);
     setSearchQuery("");
   };
 
   const selectDeparture = async (city: string) => {
     await hapticImpact(ImpactStyle.Medium);
     setDeparture(city);
-    setStep("departure-date");
-  };
-
-  const selectDepartureDate = async (date: Date | undefined) => {
-    if (date) {
-      await hapticImpact(ImpactStyle.Medium);
-      setDepartureDate(date);
-      setStep("arrival");
-    }
+    closeDrawer();
   };
 
   const selectArrival = async (city: string) => {
     await hapticImpact(ImpactStyle.Medium);
     setArrival(city);
-    setStep("arrival-date");
+    closeDrawer();
   };
 
-  const selectArrivalDate = async (date: Date | undefined) => {
-    if (date) {
+  const handleDateSelect = async (date: Date | undefined) => {
+    if (!date) return;
+    await hapticImpact(ImpactStyle.Light);
+    
+    if (!startDate || (startDate && endDate)) {
+      // Start new selection
+      setStartDate(date);
+      setEndDate(undefined);
+    } else {
+      // Complete the range
+      if (date < startDate) {
+        setEndDate(startDate);
+        setStartDate(date);
+      } else {
+        setEndDate(date);
+      }
       await hapticImpact(ImpactStyle.Medium);
-      setArrivalDate(date);
-      setStep("idle");
+      closeDrawer();
     }
   };
 
   const handleSearch = async () => {
     await hapticNotification(NotificationType.Success);
-    onSearch(departure, arrival, departureDate, arrivalDate);
+    onSearch(departure, arrival, startDate, endDate);
   };
 
-  const isComplete = departure && departureDate && arrival && arrivalDate;
+  const resetField = async (field: "departure" | "arrival" | "dates") => {
+    await hapticImpact(ImpactStyle.Light);
+    if (field === "departure") {
+      setDeparture("");
+      setArrival("");
+      setStartDate(undefined);
+      setEndDate(undefined);
+    } else if (field === "arrival") {
+      setArrival("");
+      setStartDate(undefined);
+      setEndDate(undefined);
+    } else {
+      setStartDate(undefined);
+      setEndDate(undefined);
+    }
+  };
+
+  // Determine current step
+  const currentStep = !departure ? 1 : !arrival ? 2 : (!startDate || !endDate) ? 3 : 4;
 
   return (
     <div className="space-y-3">
-      {/* Departure City Button */}
-      <Button
-        variant="outline"
-        className={cn(
-          "w-full h-14 justify-between text-left font-normal bg-card shadow-card border-border/50",
-          "transition-all duration-200 active:scale-[0.98]",
-          departure && "border-primary/50"
-        )}
-        onClick={() => openStep("departure")}
-      >
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            "p-2 rounded-full",
-            departure ? "bg-primary/10" : "bg-muted"
-          )}>
-            <MapPin className={cn("h-4 w-4", departure ? "text-primary" : "text-muted-foreground")} />
-          </div>
-          <div className="flex flex-col items-start">
-            <span className="text-xs text-muted-foreground">Ville de départ</span>
-            <span className={cn("text-sm", !departure && "text-muted-foreground")}>
-              {departure || "Sélectionner..."}
-            </span>
-          </div>
-        </div>
-        {departure ? (
-          <Check className="h-4 w-4 text-primary" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        )}
-      </Button>
+      <AnimatePresence mode="wait">
+        {/* Step 1: Departure - Always visible */}
+        <motion.div
+          key="departure"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {!departure ? (
+            <Button
+              variant="outline"
+              className="w-full h-14 justify-between text-left font-normal bg-card/80 backdrop-blur-sm shadow-lg border-primary/30 hover:border-primary/50 transition-all duration-200 active:scale-[0.98]"
+              onClick={() => openDrawer("departure")}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <MapPin className="h-5 w-5 text-primary" />
+                </div>
+                <span className="text-base">D'où partez-vous ?</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-card/60 backdrop-blur-sm border border-border/50">
+              <div className="p-1.5 rounded-full bg-primary/10">
+                <MapPin className="h-4 w-4 text-primary" />
+              </div>
+              <span className="font-medium flex-1">{departure}</span>
+              <button
+                onClick={() => resetField("departure")}
+                className="p-1.5 rounded-full hover:bg-muted transition-colors"
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+          )}
+        </motion.div>
 
-      {/* Departure Date Button */}
-      <Button
-        variant="outline"
-        className={cn(
-          "w-full h-14 justify-between text-left font-normal bg-card shadow-card border-border/50",
-          "transition-all duration-200 active:scale-[0.98]",
-          !departure && "opacity-50 pointer-events-none",
-          departureDate && "border-primary/50"
-        )}
-        onClick={() => openStep("departure-date")}
-        disabled={!departure}
-      >
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            "p-2 rounded-full",
-            departureDate ? "bg-primary/10" : "bg-muted"
-          )}>
-            <CalendarIcon className={cn("h-4 w-4", departureDate ? "text-primary" : "text-muted-foreground")} />
-          </div>
-          <div className="flex flex-col items-start">
-            <span className="text-xs text-muted-foreground">Date de départ</span>
-            <span className={cn("text-sm", !departureDate && "text-muted-foreground")}>
-              {departureDate ? format(departureDate, "PPP", { locale: fr }) : "Sélectionner..."}
-            </span>
-          </div>
-        </div>
-        {departureDate ? (
-          <Check className="h-4 w-4 text-primary" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        )}
-      </Button>
+        {/* Step 2: Arrival - Shows after departure */}
+        {departure && (
+          <motion.div
+            key="arrival"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.1 }}
+          >
+            {/* Plane divider */}
+            <div className="flex justify-center py-2">
+              <div className="bg-gradient-sky rounded-full p-1.5">
+                <Plane className="h-4 w-4 text-white rotate-90" />
+              </div>
+            </div>
 
-      {/* Plane Icon Divider */}
-      <div className="flex justify-center py-1">
-        <div className="bg-gradient-sky rounded-full p-2">
-          <Plane className="h-4 w-4 text-white rotate-90" />
-        </div>
-      </div>
+            {!arrival ? (
+              <Button
+                variant="outline"
+                className="w-full h-14 justify-between text-left font-normal bg-card/80 backdrop-blur-sm shadow-lg border-primary/30 hover:border-primary/50 transition-all duration-200 active:scale-[0.98]"
+                onClick={() => openDrawer("arrival")}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-primary/10">
+                    <MapPin className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-base">Où allez-vous ?</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-card/60 backdrop-blur-sm border border-border/50">
+                <div className="p-1.5 rounded-full bg-primary/10">
+                  <MapPin className="h-4 w-4 text-primary" />
+                </div>
+                <span className="font-medium flex-1">{arrival}</span>
+                <button
+                  onClick={() => resetField("arrival")}
+                  className="p-1.5 rounded-full hover:bg-muted transition-colors"
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
 
-      {/* Arrival City Button */}
-      <Button
-        variant="outline"
-        className={cn(
-          "w-full h-14 justify-between text-left font-normal bg-card shadow-card border-border/50",
-          "transition-all duration-200 active:scale-[0.98]",
-          !departureDate && "opacity-50 pointer-events-none",
-          arrival && "border-primary/50"
+        {/* Step 3: Date range - Shows after arrival */}
+        {arrival && (
+          <motion.div
+            key="dates"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.1 }}
+            className="pt-2"
+          >
+            {(!startDate || !endDate) ? (
+              <Button
+                variant="outline"
+                className="w-full h-14 justify-between text-left font-normal bg-card/80 backdrop-blur-sm shadow-lg border-primary/30 hover:border-primary/50 transition-all duration-200 active:scale-[0.98]"
+                onClick={() => openDrawer("dates")}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-primary/10">
+                    <CalendarIcon className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-base">
+                    {startDate ? `Du ${format(startDate, "d MMM", { locale: fr })} au...` : "Quand ?"}
+                  </span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-card/60 backdrop-blur-sm border border-border/50">
+                <div className="p-1.5 rounded-full bg-primary/10">
+                  <CalendarIcon className="h-4 w-4 text-primary" />
+                </div>
+                <span className="font-medium flex-1">
+                  Du {format(startDate, "d MMM", { locale: fr })} au {format(endDate, "d MMM yyyy", { locale: fr })}
+                </span>
+                <button
+                  onClick={() => resetField("dates")}
+                  className="p-1.5 rounded-full hover:bg-muted transition-colors"
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </div>
+            )}
+          </motion.div>
         )}
-        onClick={() => openStep("arrival")}
-        disabled={!departureDate}
-      >
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            "p-2 rounded-full",
-            arrival ? "bg-primary/10" : "bg-muted"
-          )}>
-            <MapPin className={cn("h-4 w-4", arrival ? "text-primary" : "text-muted-foreground")} />
-          </div>
-          <div className="flex flex-col items-start">
-            <span className="text-xs text-muted-foreground">Destination</span>
-            <span className={cn("text-sm", !arrival && "text-muted-foreground")}>
-              {arrival || "Sélectionner..."}
-            </span>
-          </div>
-        </div>
-        {arrival ? (
-          <Check className="h-4 w-4 text-primary" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        )}
-      </Button>
 
-      {/* Arrival Date Button */}
-      <Button
-        variant="outline"
-        className={cn(
-          "w-full h-14 justify-between text-left font-normal bg-card shadow-card border-border/50",
-          "transition-all duration-200 active:scale-[0.98]",
-          !arrival && "opacity-50 pointer-events-none",
-          arrivalDate && "border-primary/50"
+        {/* Search Button - Shows when form is complete */}
+        {startDate && endDate && (
+          <motion.div
+            key="search"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.1 }}
+            className="pt-2"
+          >
+            <Button 
+              size="lg" 
+              className="h-14 w-full bg-gradient-sky transition-all duration-200 text-base font-semibold active:scale-[0.98]"
+              onClick={handleSearch}
+            >
+              <Search className="h-5 w-5 mr-2" />
+              Rechercher
+            </Button>
+          </motion.div>
         )}
-        onClick={() => openStep("arrival-date")}
-        disabled={!arrival}
-      >
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            "p-2 rounded-full",
-            arrivalDate ? "bg-primary/10" : "bg-muted"
-          )}>
-            <CalendarIcon className={cn("h-4 w-4", arrivalDate ? "text-primary" : "text-muted-foreground")} />
-          </div>
-          <div className="flex flex-col items-start">
-            <span className="text-xs text-muted-foreground">Date d'arrivée</span>
-            <span className={cn("text-sm", !arrivalDate && "text-muted-foreground")}>
-              {arrivalDate ? format(arrivalDate, "PPP", { locale: fr }) : "Sélectionner..."}
-            </span>
-          </div>
-        </div>
-        {arrivalDate ? (
-          <Check className="h-4 w-4 text-primary" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        )}
-      </Button>
-
-      {/* Search Button */}
-      <Button 
-        size="lg" 
-        className={cn(
-          "h-14 w-full bg-gradient-sky transition-all duration-200 text-base font-semibold mt-2",
-          "active:scale-[0.98]",
-          isComplete ? "opacity-100" : "opacity-70"
-        )}
-        onClick={handleSearch}
-      >
-        <Search className="h-5 w-5 mr-2" />
-        Rechercher
-      </Button>
+      </AnimatePresence>
 
       {/* Departure City Drawer */}
-      <Drawer open={step === "departure"} onOpenChange={(open) => !open && closeDrawer()}>
+      <Drawer open={activeDrawer === "departure"} onOpenChange={(open) => !open && closeDrawer()}>
         <DrawerContent className="max-h-[85vh]">
           <DrawerHeader className="border-b border-border/50">
             <DrawerTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-primary" />
-              Ville de départ
+              D'où partez-vous ?
             </DrawerTitle>
           </DrawerHeader>
           <div className="px-4 py-3">
@@ -268,7 +290,7 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Rechercher une ville..."
-                className="pl-10 h-11 bg-muted/50"
+                className="pl-10 h-12 bg-muted/50 text-base"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
@@ -281,21 +303,17 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
                 <button
                   key={`${item.city}-${item.country}-${index}`}
                   className={cn(
-                    "w-full flex items-center gap-3 p-3 rounded-xl",
+                    "w-full flex items-center gap-3 p-3.5 rounded-xl",
                     "transition-all duration-150 active:scale-[0.98]",
-                    "hover:bg-accent/50 active:bg-accent",
-                    departure === item.city && "bg-primary/10 border border-primary/30"
+                    "hover:bg-accent/50 active:bg-accent"
                   )}
                   onClick={() => selectDeparture(item.city)}
                 >
                   <span className="text-2xl">{item.flag}</span>
                   <div className="flex flex-col items-start">
-                    <span className="font-medium">{item.city}</span>
-                    <span className="text-xs text-muted-foreground">{item.country}</span>
+                    <span className="font-medium text-base">{item.city}</span>
+                    <span className="text-sm text-muted-foreground">{item.country}</span>
                   </div>
-                  {departure === item.city && (
-                    <Check className="h-4 w-4 text-primary ml-auto" />
-                  )}
                 </button>
               ))}
             </div>
@@ -303,40 +321,13 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
         </DrawerContent>
       </Drawer>
 
-      {/* Departure Date Drawer */}
-      <Drawer open={step === "departure-date"} onOpenChange={(open) => !open && closeDrawer()}>
-        <DrawerContent>
-          <DrawerHeader className="border-b border-border/50">
-            <DrawerTitle className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-primary" />
-              Date de départ
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="flex justify-center p-4">
-            <Calendar
-              mode="single"
-              selected={departureDate}
-              onSelect={selectDepartureDate}
-              disabled={(date) => date < new Date()}
-              initialFocus
-              className="p-3 pointer-events-auto"
-            />
-          </div>
-          <DrawerFooter>
-            <DrawerClose asChild>
-              <Button variant="outline">Annuler</Button>
-            </DrawerClose>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-
       {/* Arrival City Drawer */}
-      <Drawer open={step === "arrival"} onOpenChange={(open) => !open && closeDrawer()}>
+      <Drawer open={activeDrawer === "arrival"} onOpenChange={(open) => !open && closeDrawer()}>
         <DrawerContent className="max-h-[85vh]">
           <DrawerHeader className="border-b border-border/50">
             <DrawerTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-primary" />
-              Destination
+              Où allez-vous ?
             </DrawerTitle>
           </DrawerHeader>
           <div className="px-4 py-3">
@@ -344,7 +335,7 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Rechercher une ville..."
-                className="pl-10 h-11 bg-muted/50"
+                className="pl-10 h-12 bg-muted/50 text-base"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
@@ -354,26 +345,22 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
           <ScrollArea className="flex-1 px-4 pb-4 max-h-[50vh]">
             <div className="space-y-1">
               {filteredCities
-                .filter(item => item.city !== departure) // Exclude departure city
+                .filter(item => item.city !== departure)
                 .map((item, index) => (
                   <button
                     key={`${item.city}-${item.country}-${index}`}
                     className={cn(
-                      "w-full flex items-center gap-3 p-3 rounded-xl",
+                      "w-full flex items-center gap-3 p-3.5 rounded-xl",
                       "transition-all duration-150 active:scale-[0.98]",
-                      "hover:bg-accent/50 active:bg-accent",
-                      arrival === item.city && "bg-primary/10 border border-primary/30"
+                      "hover:bg-accent/50 active:bg-accent"
                     )}
                     onClick={() => selectArrival(item.city)}
                   >
                     <span className="text-2xl">{item.flag}</span>
                     <div className="flex flex-col items-start">
-                      <span className="font-medium">{item.city}</span>
-                      <span className="text-xs text-muted-foreground">{item.country}</span>
+                      <span className="font-medium text-base">{item.city}</span>
+                      <span className="text-sm text-muted-foreground">{item.country}</span>
                     </div>
-                    {arrival === item.city && (
-                      <Check className="h-4 w-4 text-primary ml-auto" />
-                    )}
                   </button>
                 ))}
             </div>
@@ -381,23 +368,36 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
         </DrawerContent>
       </Drawer>
 
-      {/* Arrival Date Drawer */}
-      <Drawer open={step === "arrival-date"} onOpenChange={(open) => !open && closeDrawer()}>
+      {/* Date Range Drawer */}
+      <Drawer open={activeDrawer === "dates"} onOpenChange={(open) => !open && closeDrawer()}>
         <DrawerContent>
           <DrawerHeader className="border-b border-border/50">
             <DrawerTitle className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5 text-primary" />
-              Date d'arrivée
+              {!startDate ? "Date de début" : "Date de fin"}
             </DrawerTitle>
+            {startDate && !endDate && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Début: {format(startDate, "d MMMM yyyy", { locale: fr })}
+              </p>
+            )}
           </DrawerHeader>
           <div className="flex justify-center p-4">
             <Calendar
               mode="single"
-              selected={arrivalDate}
-              onSelect={selectArrivalDate}
-              disabled={(date) => date < (departureDate || new Date())}
+              selected={startDate && !endDate ? undefined : endDate}
+              onSelect={handleDateSelect}
+              disabled={(date) => date < new Date()}
               initialFocus
               className="p-3 pointer-events-auto"
+              modifiers={{
+                range_start: startDate ? [startDate] : [],
+                range_end: endDate ? [endDate] : []
+              }}
+              modifiersStyles={{
+                range_start: { backgroundColor: 'hsl(var(--primary))', color: 'white', borderRadius: '50%' },
+                range_end: { backgroundColor: 'hsl(var(--primary))', color: 'white', borderRadius: '50%' }
+              }}
             />
           </div>
           <DrawerFooter>
