@@ -211,37 +211,38 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
           </motion.div>
         )}
 
-        {/* Step 3: Date range - Shows after arrival */}
+        {/* Step 3: Date range (optional) + Search Button - Shows after arrival */}
         {arrival && (
           <motion.div
-            key="dates"
+            key="dates-and-search"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, delay: 0.1 }}
-            className="pt-2"
+            className="pt-2 space-y-3"
           >
+            {/* Optional dates */}
             {(!startDate || !endDate) ? (
               <Button
                 variant="outline"
-                className="w-full h-14 justify-between text-left font-normal bg-card/80 backdrop-blur-sm shadow-lg border-primary/30 hover:border-primary/50 transition-all duration-200 active:scale-[0.98]"
+                className="w-full h-12 justify-between text-left font-normal bg-card/60 backdrop-blur-sm border-border/50 hover:border-primary/30 transition-all duration-200 active:scale-[0.98]"
                 onClick={() => openDrawer("dates")}
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-primary/10">
-                    <CalendarIcon className="h-5 w-5 text-primary" />
+                  <div className="p-1.5 rounded-full bg-muted">
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <span className="text-base">
-                    {startDate ? `Entre le ${format(startDate, "d MMM", { locale: fr })} et...` : "Dates possibles..."}
+                  <span className="text-sm text-muted-foreground">
+                    {startDate ? `Entre le ${format(startDate, "d MMM", { locale: fr })} et...` : "Ajouter des dates (optionnel)"}
                   </span>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Button>
             ) : (
               <div className="flex items-center gap-2 p-3 rounded-xl bg-card/60 backdrop-blur-sm border border-border/50">
                 <div className="p-1.5 rounded-full bg-primary/10">
                   <CalendarIcon className="h-4 w-4 text-primary" />
                 </div>
-                <span className="font-medium flex-1">
+                <span className="font-medium flex-1 text-sm">
                   Entre le {format(startDate, "d MMM", { locale: fr })} et le {format(endDate, "d MMM yyyy", { locale: fr })}
                 </span>
                 <button
@@ -252,18 +253,8 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
                 </button>
               </div>
             )}
-          </motion.div>
-        )}
 
-        {/* Search Button - Shows when form is complete */}
-        {startDate && endDate && (
-          <motion.div
-            key="search"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: 0.1 }}
-            className="pt-2"
-          >
+            {/* Search Button - Always visible after arrival */}
             <Button 
               size="lg" 
               className="h-14 w-full bg-gradient-sky transition-all duration-200 text-base font-semibold active:scale-[0.98]"
