@@ -1,9 +1,8 @@
 import AnimatedListingCard from "@/components/mobile/AnimatedListingCard";
 import Navbar from "@/components/Navbar";
 import { SkeletonShimmer } from "@/components/ui/skeleton-shimmer";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plane, ShieldCheck, CreditCard, Package, Users, TrendingUp, Plus, CalendarIcon } from "lucide-react";
+import { Search, ShieldCheck, CreditCard, Package, Users, TrendingUp, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
@@ -17,14 +16,10 @@ import lomeImg from "@/assets/destinations/lome.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { CurrencyConverter } from "@/components/CurrencyConverter";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { SearchFlow } from "@/components/SearchFlow";
 
 interface Listing {
   id: string;
@@ -49,12 +44,9 @@ interface Listing {
 const Home = () => {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchDeparture, setSearchDeparture] = useState("");
-  const [searchArrival, setSearchArrival] = useState("");
-  const [departureDate, setDepartureDate] = useState<Date>();
-  const [arrivalDate, setArrivalDate] = useState<Date>();
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [stats, setStats] = useState({ totalTrips: 0, totalMembers: 0 });
+  const [currentSearch, setCurrentSearch] = useState({ departure: "", arrival: "" });
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -180,12 +172,13 @@ const Home = () => {
     setLoading(false);
   };
 
-  const handleSearch = () => {
-    fetchListings(searchDeparture, searchArrival);
+  const handleSearch = (departure: string, arrival: string) => {
+    setCurrentSearch({ departure, arrival });
+    fetchListings(departure, arrival);
   };
 
   const handleRefresh = async () => {
-    await fetchListings(searchDeparture, searchArrival);
+    await fetchListings(currentSearch.departure, currentSearch.arrival);
   };
 
   const getDestinationImage = (city: string) => {
@@ -261,96 +254,9 @@ const Home = () => {
                 Connectez-vous avec des voyageurs pour utiliser leurs kilos disponibles
               </p>
 
-              {/* Search Bar */}
-              <div className="flex flex-col gap-3 mt-6 max-w-2xl mx-auto">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    placeholder="Ville de départ..."
-                    className="pl-10 h-12 bg-card shadow-card text-base transition-all duration-200 focus:scale-[1.02]"
-                    value={searchDeparture}
-                    onChange={(e) => setSearchDeparture(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  />
-                </div>
-
-                {/* Date Departure */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "h-12 justify-start text-left font-normal bg-card shadow-card hover:bg-card transition-all duration-200 hover:scale-[1.02]",
-                        !departureDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-5 w-5" />
-                      {departureDate ? format(departureDate, "PPP", { locale: fr }) : <span>Date de départ</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={departureDate}
-                      onSelect={setDepartureDate}
-                      disabled={(date) => date < new Date()}
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
-
-                {/* Plane Icon */}
-                <div className="flex justify-center -my-1">
-                  <div className="bg-gradient-sky rounded-full p-2">
-                    <Plane className="h-5 w-5 text-white rotate-90" />
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    placeholder="Destination..."
-                    className="pl-10 h-12 bg-card shadow-card text-base transition-all duration-200 focus:scale-[1.02]"
-                    value={searchArrival}
-                    onChange={(e) => setSearchArrival(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  />
-                </div>
-
-                {/* Date Arrival */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "h-12 justify-start text-left font-normal bg-card shadow-card hover:bg-card transition-all duration-200 hover:scale-[1.02]",
-                        !arrivalDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-5 w-5" />
-                      {arrivalDate ? format(arrivalDate, "PPP", { locale: fr }) : <span>Date d'arrivée</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={arrivalDate}
-                      onSelect={setArrivalDate}
-                      disabled={(date) => date < (departureDate || new Date())}
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
-
-                <Button 
-                  size="lg" 
-                  className="h-12 w-full bg-gradient-sky hover:opacity-90 transition-all duration-200 hover:scale-[1.02] text-base font-semibold"
-                  onClick={handleSearch}
-                >
-                  Rechercher
-                </Button>
+              {/* Search Flow */}
+              <div className="mt-6 max-w-lg mx-auto">
+                <SearchFlow onSearch={handleSearch} />
               </div>
             </div>
           </div>
