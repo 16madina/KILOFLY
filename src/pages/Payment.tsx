@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { loadStripe } from "@stripe/stripe-js";
+import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Initialize Stripe (replace with your publishable key)
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+// Initialize Stripe only if key is available
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePromise: Promise<Stripe | null> = stripePublishableKey 
+  ? loadStripe(stripePublishableKey) 
+  : Promise.resolve(null);
 
 const PaymentForm = ({ clientSecret, reservationId }: { clientSecret: string; reservationId: string }) => {
   const stripe = useStripe();
@@ -210,7 +213,19 @@ const Payment = () => {
         )}
 
         {/* Payment Form */}
-        {clientSecret && (
+        {!stripePublishableKey ? (
+          <Card className="border-destructive/50">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <AlertTriangle className="h-10 w-10 text-destructive" />
+                <p className="font-medium">Configuration Stripe manquante</p>
+                <p className="text-sm text-muted-foreground">
+                  La clé publique Stripe n'est pas configurée. Contactez l'administrateur.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : clientSecret ? (
           <Card>
             <CardHeader>
               <CardTitle>Informations de paiement</CardTitle>
@@ -221,7 +236,7 @@ const Payment = () => {
               </Elements>
             </CardContent>
           </Card>
-        )}
+        ) : null}
 
         <p className="text-xs text-center text-muted-foreground">
           Votre paiement est sécurisé. L'argent sera conservé jusqu'à la livraison confirmée, 
