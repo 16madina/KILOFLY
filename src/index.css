@@ -150,21 +150,34 @@ All colors MUST be HSL.
 @layer base {
   * {
     @apply border-border;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
   }
 
   body {
     @apply bg-background text-foreground;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
   }
   
-  /* Hide scrollbar for Chrome, Safari and Opera */
+  /* Hide ALL scrollbars globally for native feel */
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  *::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Hide scrollbar utility class (kept for explicit use) */
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
   
-  /* Hide scrollbar for IE, Edge and Firefox */
   .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 
@@ -184,5 +197,39 @@ All colors MUST be HSL.
   
   .pr-safe {
     padding-right: env(safe-area-inset-right);
+  }
+  
+  /* Native min touch target */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Native press feedback */
+  .press-scale {
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .press-scale:active {
+    transform: scale(0.98);
+  }
+  
+  /* Card press effect */
+  .card-press {
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .card-press:active {
+    transform: scale(0.98);
+    box-shadow: var(--shadow-card);
+  }
+  
+  /* Native list item press */
+  .list-item-press {
+    transition: background-color 0.1s ease-out;
+  }
+  
+  .list-item-press:active {
+    background-color: hsl(var(--muted) / 0.5);
   }
 }

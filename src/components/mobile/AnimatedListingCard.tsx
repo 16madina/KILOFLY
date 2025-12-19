@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import SwipeableCard from "./SwipeableCard";
 import { Flag, UserX } from "lucide-react";
-import { isWeb } from "@/lib/platform";
 import ListingCard from "@/components/ListingCard";
+import { hapticImpact } from "@/hooks/useHaptics";
+import { ImpactStyle } from "@capacitor/haptics";
 
 interface AnimatedListingCardProps {
   id: string;
@@ -31,9 +31,7 @@ const AnimatedListingCard = (props: AnimatedListingCardProps) => {
   const [isPressed, setIsPressed] = useState(false);
 
   const handleTap = async () => {
-    if (!isWeb()) {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    }
+    await hapticImpact(ImpactStyle.Light);
   };
 
   const handleSwipeLeft = () => {
@@ -48,12 +46,12 @@ const AnimatedListingCard = (props: AnimatedListingCardProps) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
-        duration: 0.4,
-        delay: props.index * 0.05,
-        ease: [0.4, 0, 0.2, 1],
+        duration: 0.2,
+        delay: props.index * 0.04,
+        ease: [0.32, 0.72, 0, 1],
       }}
       whileTap={{ scale: 0.98 }}
       onTapStart={() => {

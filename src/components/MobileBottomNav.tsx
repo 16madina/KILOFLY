@@ -2,9 +2,10 @@ import { Link, useLocation } from "react-router-dom";
 import { Home, Plus, MessageCircle, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import { isIOS, isWeb } from "@/lib/platform";
+import { isIOS } from "@/lib/platform";
 import { useUnreadConversations } from "@/hooks/useUnreadConversations";
+import { hapticImpact } from "@/hooks/useHaptics";
+import { ImpactStyle } from "@capacitor/haptics";
 
 const MobileBottomNav = () => {
   const location = useLocation();
@@ -34,9 +35,7 @@ const MobileBottomNav = () => {
   ];
 
   const handleTabPress = async () => {
-    if (!isWeb()) {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    }
+    await hapticImpact(ImpactStyle.Light);
   };
 
   return (
