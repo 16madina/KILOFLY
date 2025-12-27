@@ -28,33 +28,51 @@ const listingSchema = z.object({
   regulations_accepted: z.boolean().refine(val => val === true, "Vous devez accepter les règlements aéroportuaires"),
 });
 
-// Objets que les voyageurs refusent généralement de transporter
-const COMMON_REFUSED_ITEMS = [
-  "Documents officiels (passeports, visas, actes)",
-  "Parfums et eaux de toilette",
-  "Crèmes éclaircissantes / hydroquinone",
-  "Pommades et cosmétiques non scellés",
-  "Insecticides et pesticides",
-  "Médicaments sans ordonnance",
-  "Produits pharmaceutiques non identifiés",
-  "Alcool en grande quantité",
-  "Cigarettes et tabac (quantité commerciale)",
-  "Produits alimentaires périssables",
-  "Viandes et produits laitiers",
-  "Épices en grande quantité",
-  "Argent liquide",
-  "Bijoux de grande valeur",
-  "Téléphones et tablettes d'occasion",
-  "Appareils électroniques sans facture",
-  "Pièces détachées automobiles",
-  "Batteries et accumulateurs",
-  "Huiles essentielles en grande quantité",
-  "Produits de contrebande",
-  "Marchandises sans facture",
-  "Objets de valeur non assurés",
-  "Colis scellés / contenu inconnu",
-  "Produits chimiques non identifiés",
-];
+// Objets groupés par catégories que les voyageurs refusent généralement de transporter
+const REFUSED_ITEMS_BY_CATEGORY = {
+  "📄 Documents": [
+    "Documents officiels (passeports, visas, actes)",
+    "Argent liquide",
+    "Chèques et titres de valeur",
+    "Cartes bancaires",
+  ],
+  "💄 Cosmétiques": [
+    "Parfums et eaux de toilette",
+    "Crèmes éclaircissantes / hydroquinone",
+    "Pommades et cosmétiques non scellés",
+    "Huiles essentielles en grande quantité",
+    "Produits de beauté sans étiquette",
+  ],
+  "🍎 Alimentaire": [
+    "Produits alimentaires périssables",
+    "Viandes et produits laitiers",
+    "Épices en grande quantité",
+    "Alcool en grande quantité",
+    "Boissons et liquides",
+  ],
+  "📱 Électronique": [
+    "Téléphones et tablettes d'occasion",
+    "Appareils électroniques sans facture",
+    "Batteries et accumulateurs",
+    "Pièces détachées électroniques",
+    "Ordinateurs portables d'occasion",
+  ],
+  "💊 Santé": [
+    "Médicaments sans ordonnance",
+    "Produits pharmaceutiques non identifiés",
+    "Insecticides et pesticides",
+    "Produits chimiques non identifiés",
+  ],
+  "📦 Autres": [
+    "Cigarettes et tabac (quantité commerciale)",
+    "Bijoux de grande valeur",
+    "Objets de valeur non assurés",
+    "Colis scellés / contenu inconnu",
+    "Marchandises sans facture",
+    "Produits de contrebande",
+    "Pièces détachées automobiles",
+  ],
+};
 
 const PostListing = () => {
   const navigate = useNavigate();
@@ -401,98 +419,109 @@ const PostListing = () => {
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Objets Interdits Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-red-500" />
-                  Objets que vous refusez de transporter
-                </h3>
-                <Alert className="border-orange-500/20 bg-orange-500/10">
-                  <AlertCircle className="h-4 w-4 text-orange-500" />
-                  <AlertDescription className="text-sm">
-                    <strong>Réglementations aéroportuaires internationales:</strong> Cette liste comprend les objets généralement interdits en cabine et/ou en soute selon les normes IATA et TSA. Vérifiez toujours les réglementations spécifiques de votre compagnie aérienne et pays de destination.
-                  </AlertDescription>
-                </Alert>
-                <p className="text-sm text-muted-foreground">
-                  Spécifiez les objets interdits selon les réglementations aéroportuaires
-                </p>
+                {/* Objets Interdits Section - moved here after kg */}
+                <div className="space-y-4 pt-4 border-t border-border/50">
+                  <h4 className="text-base font-medium flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-red-500" />
+                    Objets que vous refusez de transporter
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Sélectionnez les types d'objets que vous ne souhaitez pas transporter
+                  </p>
 
-                {/* Dropdown for prohibited items */}
-                <div className="space-y-3">
-                  <Label htmlFor="prohibited-items-select">Sélectionner des objets interdits</Label>
-                  <Select onValueChange={handleAddProhibitedItem}>
-                    <SelectTrigger id="prohibited-items-select" className="w-full">
-                      <SelectValue placeholder="Choisir un type d'objet interdit..." />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[300px] z-50 bg-popover">
-                      {COMMON_REFUSED_ITEMS.filter(item => !selectedProhibitedItems.includes(item)).map((item) => (
-                        <SelectItem key={item} value={item} className="cursor-pointer">
-                          <div className="flex items-center gap-2">
-                            <AlertCircle className="h-4 w-4 text-red-500" />
-                            {item}
+                  {/* Grouped dropdown for refused items */}
+                  <div className="space-y-3">
+                    <Label htmlFor="prohibited-items-select">Sélectionner par catégorie</Label>
+                    <Select onValueChange={handleAddProhibitedItem}>
+                      <SelectTrigger id="prohibited-items-select" className="w-full">
+                        <SelectValue placeholder="Choisir un type d'objet..." />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[350px] z-50 bg-popover">
+                        {Object.entries(REFUSED_ITEMS_BY_CATEGORY).map(([category, items]) => (
+                          <div key={category}>
+                            <div className="px-2 py-2 text-sm font-semibold text-muted-foreground bg-muted/50 sticky top-0">
+                              {category}
+                            </div>
+                            {items
+                              .filter(item => !selectedProhibitedItems.includes(item))
+                              .map((item) => (
+                                <SelectItem key={item} value={item} className="cursor-pointer pl-4">
+                                  <div className="flex items-center gap-2">
+                                    <AlertCircle className="h-3 w-3 text-red-500" />
+                                    {item}
+                                  </div>
+                                </SelectItem>
+                              ))}
                           </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Custom prohibited item input */}
-                <div className="space-y-2">
-                  <Label htmlFor="custom-prohibited">Ajouter un objet personnalisé</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="custom-prohibited"
-                      placeholder="Si non disponible dans la liste..."
-                      value={customProhibitedItem}
-                      onChange={(e) => setCustomProhibitedItem(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddCustomProhibitedItem();
-                        }
-                      }}
-                      maxLength={50}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={handleAddCustomProhibitedItem}
-                      disabled={!customProhibitedItem.trim()}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
 
-                {/* Selected prohibited items */}
-                {selectedProhibitedItems.length > 0 && (
+                  {/* Custom prohibited item input */}
                   <div className="space-y-2">
-                    <Label>Objets interdits sélectionnés ({selectedProhibitedItems.length})</Label>
-                    <div className="flex flex-wrap gap-2 p-4 bg-red-500/10 rounded-lg border border-red-500/20">
-                      {selectedProhibitedItems.map((item) => (
-                        <Badge
-                          key={item}
-                          variant="secondary"
-                          className="gap-1 bg-red-500/20 hover:bg-red-500/30 text-red-700 dark:text-red-300"
-                        >
-                          {item}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveProhibitedItem(item)}
-                            className="ml-1 hover:text-destructive transition-colors"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
+                    <Label htmlFor="custom-prohibited">Ajouter un objet personnalisé</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="custom-prohibited"
+                        placeholder="Si non disponible dans la liste..."
+                        value={customProhibitedItem}
+                        onChange={(e) => setCustomProhibitedItem(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomProhibitedItem();
+                          }
+                        }}
+                        maxLength={50}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={handleAddCustomProhibitedItem}
+                        disabled={!customProhibitedItem.trim()}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                )}
+
+                  {/* Selected prohibited items */}
+                  {selectedProhibitedItems.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Objets refusés sélectionnés ({selectedProhibitedItems.length})</Label>
+                      <div className="flex flex-wrap gap-2 p-3 bg-red-500/10 rounded-lg border border-red-500/20">
+                        {selectedProhibitedItems.map((item) => (
+                          <Badge
+                            key={item}
+                            variant="secondary"
+                            className="gap-1 bg-red-500/20 hover:bg-red-500/30 text-red-700 dark:text-red-300"
+                          >
+                            {item}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveProhibitedItem(item)}
+                              className="ml-1 hover:text-destructive transition-colors"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Note info about regulations */}
+              <Alert className="border-orange-500/20 bg-orange-500/10">
+                <AlertCircle className="h-4 w-4 text-orange-500" />
+                <AlertDescription className="text-sm">
+                  <strong>Rappel:</strong> Les articles interdits par les réglementations aéroportuaires (IATA/TSA) sont automatiquement exclus. Consultez le lien des règlements ci-dessous.
+                </AlertDescription>
+              </Alert>
 
               {/* Réglementations aéroportuaires - Checkbox */}
               <div className="space-y-4">
