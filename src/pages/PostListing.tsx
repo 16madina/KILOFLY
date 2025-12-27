@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { MapPin, Calendar, Weight, DollarSign, ArrowLeft, AlertCircle, X, Plus, ExternalLink } from "lucide-react";
+import { MapPin, Calendar, Weight, DollarSign, ArrowLeft, AlertCircle, X, Plus, ExternalLink, Truck } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -87,6 +88,9 @@ const PostListing = () => {
   const [selectedProhibitedItems, setSelectedProhibitedItems] = useState<string[]>([]);
   const [customProhibitedItem, setCustomProhibitedItem] = useState("");
   const [regulationsAccepted, setRegulationsAccepted] = useState(false);
+  
+  // Delivery options state
+  const [deliveryOption, setDeliveryOption] = useState<string>("pickup");
   
   // Form data state for editing
   const [formData, setFormData] = useState({
@@ -513,6 +517,83 @@ const PostListing = () => {
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Options de réception */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Truck className="h-5 w-5 text-primary" />
+                  Options de réception
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Comment souhaitez-vous remettre les colis à destination ?
+                </p>
+                
+                <RadioGroup
+                  value={deliveryOption}
+                  onValueChange={setDeliveryOption}
+                  className="space-y-3"
+                >
+                  <div className="flex items-start space-x-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+                    <RadioGroupItem value="pickup" id="pickup" className="mt-0.5" />
+                    <div className="flex-1">
+                      <Label htmlFor="pickup" className="font-medium cursor-pointer">
+                        🏠 Venir chercher sur place
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        L'expéditeur vient récupérer le colis à mon point de rencontre
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+                    <RadioGroupItem value="delivery_free" id="delivery_free" className="mt-0.5" />
+                    <div className="flex-1">
+                      <Label htmlFor="delivery_free" className="font-medium cursor-pointer">
+                        🚗 Livraison gratuite
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Je peux livrer le colis gratuitement dans un rayon proche
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+                    <RadioGroupItem value="delivery_paid" id="delivery_paid" className="mt-0.5" />
+                    <div className="flex-1">
+                      <Label htmlFor="delivery_paid" className="font-medium cursor-pointer">
+                        📦 Livraison payante
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Livraison possible avec frais supplémentaires à convenir
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+                    <RadioGroupItem value="handover" id="handover" className="mt-0.5" />
+                    <div className="flex-1">
+                      <Label htmlFor="handover" className="font-medium cursor-pointer">
+                        🤝 Remise en main propre
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Rencontre dans un lieu public pour la remise du colis
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+                    <RadioGroupItem value="airport" id="airport" className="mt-0.5" />
+                    <div className="flex-1">
+                      <Label htmlFor="airport" className="font-medium cursor-pointer">
+                        ✈️ À l'aéroport uniquement
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Remise du colis uniquement à l'aéroport d'arrivée
+                      </p>
+                    </div>
+                  </div>
+                </RadioGroup>
               </div>
 
               {/* Note info about regulations */}
