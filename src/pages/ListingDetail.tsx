@@ -8,7 +8,9 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { MapPin, Calendar, Weight, ArrowRight, Phone, Package, AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MapPin, Calendar, Weight, ArrowRight, Phone, Package, AlertCircle, ArrowLeft, Loader2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -50,6 +52,7 @@ const ListingDetail = () => {
   const [trustScore, setTrustScore] = useState(0);
   const [requestedKg, setRequestedKg] = useState<number>(1);
   const [itemDescription, setItemDescription] = useState<string>("");
+  const [regulationsAccepted, setRegulationsAccepted] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -151,6 +154,11 @@ const ListingDetail = () => {
 
     if (!itemDescription.trim()) {
       toast.error("Veuillez décrire les articles que vous souhaitez envoyer");
+      return;
+    }
+
+    if (!regulationsAccepted) {
+      toast.error("Veuillez accepter les règlements aéroportuaires");
       return;
     }
 
@@ -311,19 +319,22 @@ const ListingDetail = () => {
           </Card>
         )}
 
-        {/* Objets autorisés */}
-        {listing.allowed_items.length > 0 && (
-          <Card className="p-4">
-            <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-              <Package className="h-4 w-4 text-green-500" />
-              Objets acceptés
+        {/* Objets refusés par le voyageur */}
+        {listing.prohibited_items && listing.prohibited_items.length > 0 && (
+          <Card className="p-4 border-red-500/20 bg-red-500/5">
+            <h4 className="text-sm font-medium text-red-600 dark:text-red-400 mb-3 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              Objets refusés par ce voyageur
             </h4>
+            <p className="text-xs text-muted-foreground mb-3">
+              Ce voyageur ne transporte pas les articles suivants :
+            </p>
             <div className="flex flex-wrap gap-2">
-              {listing.allowed_items.map((item) => (
+              {listing.prohibited_items.map((item) => (
                 <Badge
                   key={item}
                   variant="secondary"
-                  className="bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/20"
+                  className="bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30"
                 >
                   {item}
                 </Badge>
@@ -332,26 +343,22 @@ const ListingDetail = () => {
           </Card>
         )}
 
-        {/* Objets interdits */}
-        {listing.prohibited_items.length > 0 && (
-          <Card className="p-4">
-            <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-red-500" />
-              Objets refusés
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {listing.prohibited_items.map((item) => (
-                <Badge
-                  key={item}
-                  variant="secondary"
-                  className="bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/20"
-                >
-                  {item}
-                </Badge>
-              ))}
-            </div>
-          </Card>
-        )}
+        {/* Rappel des réglementations aéroportuaires */}
+        <Alert className="border-orange-500/20 bg-orange-500/10">
+          <AlertCircle className="h-4 w-4 text-orange-500" />
+          <AlertDescription className="text-sm">
+            <strong>Rappel important :</strong> Les articles interdits par les réglementations aéroportuaires internationales (IATA/TSA) ne peuvent pas être transportés. 
+            <a
+              href="/prohibited-items"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline inline-flex items-center gap-1 ml-1 font-medium"
+            >
+              Voir la liste complète
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </AlertDescription>
+        </Alert>
 
         {/* Réservation Section */}
         <Card className="p-4 space-y-4 bg-primary/5 border-primary/10">
@@ -436,15 +443,53 @@ const ListingDetail = () => {
                 <span className="text-primary">{totalPrice}€</span>
               </div>
             </div>
+
+            {/* Checkbox acceptation règlements */}
+            <div className="flex items-start gap-3 p-3 border border-border rounded-lg bg-muted/30">
+              <Checkbox
+                id="regulations-accepted-detail"
+                checked={regulationsAccepted}
+                onCheckedChange={(checked) => setRegulationsAccepted(checked === true)}
+                className="mt-0.5"
+              />
+              <div className="flex-1">
+                <Label 
+                  htmlFor="regulations-accepted-detail" 
+                  className="text-sm cursor-pointer leading-relaxed"
+                >
+                  J'ai lu et j'accepte les{" "}
+                  <a
+                    href="/prohibited-items"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1 font-medium"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    règlements aéroportuaires
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                  {" "}et je confirme que mes articles sont conformes.
+                </Label>
+              </div>
+            </div>
           </div>
         </Card>
 
         {/* Reservation Button */}
+        {!regulationsAccepted && (
+          <Alert className="animate-fade-in">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Veuillez accepter les règlements aéroportuaires avant d'envoyer votre demande
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Button 
           className="w-full gap-2 bg-gradient-sky hover:opacity-90 transition-opacity" 
           size="lg"
           onClick={handleReservation}
-          disabled={contactLoading || !itemDescription.trim()}
+          disabled={contactLoading || !itemDescription.trim() || !regulationsAccepted}
         >
           <Phone className="h-5 w-5" />
           {contactLoading ? "Envoi en cours..." : `Envoyer la demande de réservation`}
