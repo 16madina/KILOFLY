@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MapPin, Calendar, Weight, ArrowRight, Phone, Package, AlertCircle, ArrowLeft, Loader2, ExternalLink } from "lucide-react";
+import { MapPin, Calendar, Weight, ArrowRight, Phone, Package, AlertCircle, ArrowLeft, Loader2, ExternalLink, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -31,6 +31,7 @@ interface Listing {
   allowed_items: string[];
   prohibited_items: string[];
   description: string | null;
+  delivery_option: string;
   profiles: {
     full_name: string;
     avatar_url: string;
@@ -40,6 +41,15 @@ interface Listing {
     response_rate: number;
   };
 }
+
+// Mapping des options de livraison pour affichage
+const DELIVERY_OPTIONS_LABELS: Record<string, { label: string; icon: string; description: string }> = {
+  pickup: { label: "Venir chercher sur place", icon: "🏠", description: "L'expéditeur vient récupérer le colis au point de rencontre du voyageur" },
+  delivery_free: { label: "Livraison gratuite", icon: "🚗", description: "Le voyageur peut livrer le colis gratuitement dans un rayon proche" },
+  delivery_paid: { label: "Livraison payante", icon: "📦", description: "Livraison possible avec frais supplémentaires à convenir" },
+  handover: { label: "Remise en main propre", icon: "🤝", description: "Rencontre dans un lieu public pour la remise du colis" },
+  airport: { label: "À l'aéroport uniquement", icon: "✈️", description: "Remise du colis uniquement à l'aéroport d'arrivée" },
+};
 
 const ListingDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -316,6 +326,27 @@ const ListingDetail = () => {
           <Card className="p-4">
             <h4 className="text-sm font-medium text-muted-foreground mb-2">Description</h4>
             <p className="text-sm text-foreground whitespace-pre-wrap">{listing.description}</p>
+          </Card>
+        )}
+
+        {/* Option de réception */}
+        {listing.delivery_option && DELIVERY_OPTIONS_LABELS[listing.delivery_option] && (
+          <Card className="p-4 border-primary/20 bg-primary/5">
+            <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+              <Truck className="h-4 w-4 text-primary" />
+              Mode de réception
+            </h4>
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">{DELIVERY_OPTIONS_LABELS[listing.delivery_option].icon}</span>
+              <div>
+                <p className="font-medium text-foreground">
+                  {DELIVERY_OPTIONS_LABELS[listing.delivery_option].label}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {DELIVERY_OPTIONS_LABELS[listing.delivery_option].description}
+                </p>
+              </div>
+            </div>
           </Card>
         )}
 
