@@ -160,6 +160,7 @@ const PostListing = () => {
       });
       setCurrency(data.currency as Currency);
       setSelectedProhibitedItems(data.prohibited_items || []);
+      setDeliveryOption(data.delivery_option || "pickup");
       setRegulationsAccepted(true); // Already accepted when editing
     }
   };
@@ -229,6 +230,7 @@ const PostListing = () => {
             currency,
             description: validatedData.description || null,
             prohibited_items: validatedData.prohibited_items,
+            delivery_option: deliveryOption,
           })
           .eq("id", editingId);
 
@@ -247,6 +249,7 @@ const PostListing = () => {
           currency,
           description: validatedData.description || null,
           prohibited_items: validatedData.prohibited_items,
+          delivery_option: deliveryOption,
         });
 
         if (error) throw error;

@@ -274,6 +274,7 @@ export type Database = {
           available_kg: number
           created_at: string
           currency: string
+          delivery_option: string
           departure: string
           departure_date: string
           description: string | null
@@ -292,6 +293,7 @@ export type Database = {
           available_kg: number
           created_at?: string
           currency?: string
+          delivery_option?: string
           departure: string
           departure_date: string
           description?: string | null
@@ -310,6 +312,7 @@ export type Database = {
           available_kg?: number
           created_at?: string
           currency?: string
+          delivery_option?: string
           departure?: string
           departure_date?: string
           description?: string | null
