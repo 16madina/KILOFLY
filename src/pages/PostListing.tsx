@@ -28,32 +28,32 @@ const listingSchema = z.object({
   regulations_accepted: z.boolean().refine(val => val === true, "Vous devez accepter les règlements aéroportuaires"),
 });
 
-// Objets interdits - Réglementations aéroportuaires internationales
-const COMMON_PROHIBITED_ITEMS = [
-  "Armes à feu et munitions",
-  "Armes blanches (couteaux, ciseaux >6cm, rasoirs)",
-  "Drogues et stupéfiants",
-  "Explosifs et feux d'artifice",
-  "Gaz comprimés (spray au poivre, bonbonnes)",
-  "Liquides inflammables (essence, alcool >70%)",
-  "Substances toxiques et corrosives",
-  "Produits chimiques dangereux",
-  "Batteries au lithium en vrac",
-  "Cigarettes électroniques en soute",
-  "Alcool >70° d'alcool",
-  "Liquides >100ml en cabine",
-  "Objets contondants (battes, clubs)",
-  "Matières radioactives",
-  "Agents oxydants (eau de javel concentrée)",
-  "Aliments liquides non scellés",
-  "Plantes et graines (selon pays)",
-  "Produits d'origine animale (viande, lait)",
-  "Contrefaçons et produits piratés",
-  "Objets de valeur >10 000€ non déclarés",
-  "Animaux vivants sans autorisation",
-  "Matériel médical avec aiguilles non certifié",
-  "Briquets tempête et allumettes (quantité)",
-  "Poudres >350ml en cabine",
+// Objets que les voyageurs refusent généralement de transporter
+const COMMON_REFUSED_ITEMS = [
+  "Documents officiels (passeports, visas, actes)",
+  "Parfums et eaux de toilette",
+  "Crèmes éclaircissantes / hydroquinone",
+  "Pommades et cosmétiques non scellés",
+  "Insecticides et pesticides",
+  "Médicaments sans ordonnance",
+  "Produits pharmaceutiques non identifiés",
+  "Alcool en grande quantité",
+  "Cigarettes et tabac (quantité commerciale)",
+  "Produits alimentaires périssables",
+  "Viandes et produits laitiers",
+  "Épices en grande quantité",
+  "Argent liquide",
+  "Bijoux de grande valeur",
+  "Téléphones et tablettes d'occasion",
+  "Appareils électroniques sans facture",
+  "Pièces détachées automobiles",
+  "Batteries et accumulateurs",
+  "Huiles essentielles en grande quantité",
+  "Produits de contrebande",
+  "Marchandises sans facture",
+  "Objets de valeur non assurés",
+  "Colis scellés / contenu inconnu",
+  "Produits chimiques non identifiés",
 ];
 
 const PostListing = () => {
@@ -427,7 +427,7 @@ const PostListing = () => {
                       <SelectValue placeholder="Choisir un type d'objet interdit..." />
                     </SelectTrigger>
                     <SelectContent className="max-h-[300px] z-50 bg-popover">
-                      {COMMON_PROHIBITED_ITEMS.filter(item => !selectedProhibitedItems.includes(item)).map((item) => (
+                      {COMMON_REFUSED_ITEMS.filter(item => !selectedProhibitedItems.includes(item)).map((item) => (
                         <SelectItem key={item} value={item} className="cursor-pointer">
                           <div className="flex items-center gap-2">
                             <AlertCircle className="h-4 w-4 text-red-500" />
