@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -240,26 +240,30 @@ const ListingDetail = () => {
 
       <div className="container px-4 sm:px-6 py-6 max-w-2xl mx-auto space-y-6 animate-fade-in">
         {/* User Info */}
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <PinchZoomImage
-              src={listing.profiles.avatar_url}
-              alt={listing.profiles.full_name}
-              className="h-16 w-16 rounded-full object-cover"
-              containerClassName="h-16 w-16 flex-shrink-0"
-            />
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <p className="font-semibold text-lg">{listing.profiles.full_name}</p>
-                <VerifiedBadge verified={listing.profiles.id_verified} size="sm" />
+        <Link to={`/user/${listing.user_id}`}>
+          <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-center gap-3">
+              <PinchZoomImage
+                src={listing.profiles.avatar_url}
+                alt={listing.profiles.full_name}
+                className="h-16 w-16 rounded-full object-cover"
+                containerClassName="h-16 w-16 flex-shrink-0"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="font-semibold text-lg">{listing.profiles.full_name}</p>
+                  <VerifiedBadge verified={listing.profiles.id_verified} size="sm" />
+                </div>
+                <TrustScore score={trustScore} className="mb-1" />
+                <p className="text-sm text-muted-foreground">
+                  {listing.profiles.id_verified ? "Voyageur vérifié" : "En attente de vérification"}
+                </p>
               </div>
-              <TrustScore score={trustScore} className="mb-1" />
-              <p className="text-sm text-muted-foreground">
-                {listing.profiles.id_verified ? "Voyageur vérifié" : "En attente de vérification"}
-              </p>
+              <ArrowRight className="h-5 w-5 text-muted-foreground" />
             </div>
-          </div>
-        </Card>
+            <p className="text-xs text-primary mt-2 text-center">Voir le profil complet →</p>
+          </Card>
+        </Link>
 
         {/* Destination Image */}
         {listing.destination_image && (
