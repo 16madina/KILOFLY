@@ -5,9 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { MapPin, Calendar, Weight, DollarSign, ArrowLeft, AlertCircle, Package, X, Plus, Check } from "lucide-react";
+import { MapPin, Calendar, Weight, DollarSign, ArrowLeft, AlertCircle, X, Plus, ExternalLink } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,27 +24,9 @@ const listingSchema = z.object({
   available_kg: z.number().min(1, "Minimum 1 kg").max(100, "Maximum 100 kg"),
   price_per_kg: z.number().min(1, "Prix minimum 1€").max(1000, "Prix maximum 1000€"),
   description: z.string().max(1000, "Maximum 1000 caractères").optional(),
-  allowed_items: z.array(z.string()).min(1, "Sélectionnez au moins un objet autorisé"),
   prohibited_items: z.array(z.string()),
+  regulations_accepted: z.boolean().refine(val => val === true, "Vous devez accepter les règlements aéroportuaires"),
 });
-
-// Objets prédéfinis - Autorisés
-const COMMON_ALLOWED_ITEMS = [
-  "Vêtements",
-  "Chaussures",
-  "Livres",
-  "Jouets",
-  "Médicaments (non contrôlés avec ordonnance)",
-  "Cosmétiques (quantité limitée)",
-  "Électronique (téléphones, tablettes, ordinateurs)",
-  "Documents",
-  "Produits alimentaires secs/non périssables",
-  "Bijoux (déclarés)",
-  "Accessoires de mode",
-  "Matériel de sport (sans armes blanches)",
-  "Fournitures scolaires",
-  "Petits appareils électroménagers",
-];
 
 // Objets interdits - Réglementations aéroportuaires internationales
 const COMMON_PROHIBITED_ITEMS = [
@@ -82,13 +65,10 @@ const PostListing = () => {
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [currency, setCurrency] = useState<Currency>("EUR");
   
-  // Allowed items state
-  const [selectedAllowedItems, setSelectedAllowedItems] = useState<string[]>([]);
-  const [customAllowedItem, setCustomAllowedItem] = useState("");
-  
   // Prohibited items state
   const [selectedProhibitedItems, setSelectedProhibitedItems] = useState<string[]>([]);
   const [customProhibitedItem, setCustomProhibitedItem] = useState("");
+  const [regulationsAccepted, setRegulationsAccepted] = useState(false);
   
   // Form data state for editing
   const [formData, setFormData] = useState({
@@ -157,29 +137,11 @@ const PostListing = () => {
         description: data.description || "",
       });
       setCurrency(data.currency as Currency);
-      setSelectedAllowedItems(data.allowed_items || []);
       setSelectedProhibitedItems(data.prohibited_items || []);
+      setRegulationsAccepted(true); // Already accepted when editing
     }
   };
   
-  const handleAddAllowedItem = (item: string) => {
-    if (item && !selectedAllowedItems.includes(item)) {
-      setSelectedAllowedItems(prev => [...prev, item]);
-    }
-  };
-
-  const handleAddCustomAllowedItem = () => {
-    const trimmedItem = customAllowedItem.trim();
-    if (trimmedItem && !selectedAllowedItems.includes(trimmedItem)) {
-      setSelectedAllowedItems(prev => [...prev, trimmedItem]);
-      setCustomAllowedItem("");
-    }
-  };
-
-  const handleRemoveAllowedItem = (item: string) => {
-    setSelectedAllowedItems(prev => prev.filter(i => i !== item));
-  };
-
   const handleAddProhibitedItem = (item: string) => {
     if (item && !selectedProhibitedItems.includes(item)) {
       setSelectedProhibitedItems(prev => [...prev, item]);
@@ -227,8 +189,8 @@ const PostListing = () => {
         available_kg: parseFloat(formData.available_kg),
         price_per_kg: parseFloat(formData.price_per_kg),
         description: formData.description || undefined,
-        allowed_items: selectedAllowedItems,
         prohibited_items: selectedProhibitedItems,
+        regulations_accepted: regulationsAccepted,
       });
 
       if (editingId) {
@@ -244,7 +206,6 @@ const PostListing = () => {
             price_per_kg: validatedData.price_per_kg,
             currency,
             description: validatedData.description || null,
-            allowed_items: validatedData.allowed_items,
             prohibited_items: validatedData.prohibited_items,
           })
           .eq("id", editingId);
@@ -263,7 +224,6 @@ const PostListing = () => {
           price_per_kg: validatedData.price_per_kg,
           currency,
           description: validatedData.description || null,
-          allowed_items: validatedData.allowed_items,
           prohibited_items: validatedData.prohibited_items,
         });
 
@@ -443,91 +403,6 @@ const PostListing = () => {
                 </div>
               </div>
 
-              {/* Objets Autorisés Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Package className="h-5 w-5 text-green-500" />
-                  Objets que vous acceptez de transporter
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Sélectionnez les types d'objets que vous êtes prêt à transporter
-                </p>
-
-                {/* Dropdown for allowed items */}
-                <div className="space-y-3">
-                  <Label htmlFor="allowed-items-select">Sélectionner des objets autorisés</Label>
-                  <Select onValueChange={handleAddAllowedItem}>
-                    <SelectTrigger id="allowed-items-select" className="w-full">
-                      <SelectValue placeholder="Choisir un type d'objet..." />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[300px] z-50 bg-popover">
-                      {COMMON_ALLOWED_ITEMS.filter(item => !selectedAllowedItems.includes(item)).map((item) => (
-                        <SelectItem key={item} value={item} className="cursor-pointer">
-                          <div className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-green-500" />
-                            {item}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Custom allowed item input */}
-                <div className="space-y-2">
-                  <Label htmlFor="custom-allowed">Ajouter un objet personnalisé</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="custom-allowed"
-                      placeholder="Si non disponible dans la liste..."
-                      value={customAllowedItem}
-                      onChange={(e) => setCustomAllowedItem(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddCustomAllowedItem();
-                        }
-                      }}
-                      maxLength={50}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={handleAddCustomAllowedItem}
-                      disabled={!customAllowedItem.trim()}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Selected allowed items */}
-                {selectedAllowedItems.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Objets sélectionnés ({selectedAllowedItems.length})</Label>
-                    <div className="flex flex-wrap gap-2 p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-                      {selectedAllowedItems.map((item) => (
-                        <Badge
-                          key={item}
-                          variant="secondary"
-                          className="gap-1 bg-green-500/20 hover:bg-green-500/30 text-green-700 dark:text-green-300"
-                        >
-                          {item}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveAllowedItem(item)}
-                            className="ml-1 hover:text-destructive transition-colors"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
               {/* Objets Interdits Section */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -619,6 +494,40 @@ const PostListing = () => {
                 )}
               </div>
 
+              {/* Réglementations aéroportuaires - Checkbox */}
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-4 border border-border rounded-lg bg-muted/30">
+                  <Checkbox
+                    id="regulations-accepted"
+                    checked={regulationsAccepted}
+                    onCheckedChange={(checked) => setRegulationsAccepted(checked === true)}
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1 space-y-2">
+                    <Label 
+                      htmlFor="regulations-accepted" 
+                      className="text-sm cursor-pointer leading-relaxed"
+                    >
+                      J'ai lu et j'accepte les{" "}
+                      <a
+                        href="/prohibited-items"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline inline-flex items-center gap-1 font-medium"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        règlements aéroportuaires internationaux
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                      {" "}concernant les articles interdits en transport aérien.
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Je m'engage à respecter toutes les réglementations IATA et TSA applicables.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Notes Section */}
               <div className="space-y-2">
                 <Label htmlFor="notes">
@@ -659,18 +568,18 @@ const PostListing = () => {
                 </Alert>
               )}
 
-              {selectedAllowedItems.length === 0 && (
+              {!regulationsAccepted && (
                 <Alert className="animate-fade-in">
-                  <Package className="h-4 w-4" />
+                  <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Veuillez sélectionner au moins un type d'objet que vous acceptez de transporter
+                    Veuillez accepter les règlements aéroportuaires avant de publier
                   </AlertDescription>
                 </Alert>
               )}
 
               <Button
                 type="submit"
-                disabled={loading || isVerified === false || selectedAllowedItems.length === 0}
+                disabled={loading || isVerified === false || !regulationsAccepted}
                 className="w-full h-12 text-base font-semibold bg-gradient-sky hover:opacity-90 transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
               >
                 {loading 
