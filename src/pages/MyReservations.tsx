@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ReservationTimeline from "@/components/ReservationTimeline";
 import ReservationChat from "@/components/ReservationChat";
+import { PackageTracker } from "@/components/tracking/PackageTracker";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -332,11 +333,25 @@ const MyReservations = () => {
 
           <Separator />
 
-          {/* Reservation Timeline */}
-          <div>
-            <h4 className="text-sm font-medium mb-3">Suivi de la réservation</h4>
-            <ReservationTimeline status={reservation.status} />
-          </div>
+          {/* Package Tracker - Only show for approved, in_progress, or delivered reservations */}
+          {["approved", "in_progress", "delivered", "pickup_scheduled", "picked_up", "in_transit", "arrived", "out_for_delivery"].includes(reservation.status) && listing && (
+            <PackageTracker
+              reservationId={reservation.id}
+              departure={listing.departure}
+              arrival={listing.arrival}
+              initialStatus={reservation.status}
+              sellerId={reservation.seller_id}
+              compact={true}
+            />
+          )}
+
+          {/* Reservation Timeline - Show for pending/rejected only */}
+          {["pending", "rejected", "cancelled"].includes(reservation.status) && (
+            <div>
+              <h4 className="text-sm font-medium mb-3">Suivi de la réservation</h4>
+              <ReservationTimeline status={reservation.status} />
+            </div>
+          )}
 
           <Separator />
 
