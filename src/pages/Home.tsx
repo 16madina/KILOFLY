@@ -2,7 +2,7 @@ import AnimatedListingCard from "@/components/mobile/AnimatedListingCard";
 import Navbar from "@/components/Navbar";
 import { SkeletonShimmer } from "@/components/ui/skeleton-shimmer";
 import { Button } from "@/components/ui/button";
-import { Search, ShieldCheck, CreditCard, Package, Users, TrendingUp, Plus } from "lucide-react";
+import { Search, ShieldCheck, CreditCard, Package, Users, TrendingUp, Plus, Plane } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
@@ -20,6 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import { CurrencyConverter } from "@/components/CurrencyConverter";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { SearchFlow } from "@/components/SearchFlow";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TransportRequestsList } from "@/components/transport-requests/TransportRequestsList";
 
 interface Listing {
   id: string;
@@ -335,74 +337,95 @@ const Home = () => {
           </div>
         </section>
 
-        {/* Listings Section */}
+        {/* Main Tabs Section */}
         <section className="container px-4 sm:px-6 py-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold">Annonces récentes</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Dernières offres disponibles
-            </p>
-          </div>
+          <Tabs defaultValue="listings" className="w-full">
+            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
+              <TabsTrigger value="listings" className="gap-2">
+                <Plane className="h-4 w-4" />
+                Annonces
+              </TabsTrigger>
+              <TabsTrigger value="requests" className="gap-2">
+                <Search className="h-4 w-4" />
+                Je recherche
+              </TabsTrigger>
+            </TabsList>
 
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="rounded-2xl overflow-hidden bg-card shadow-card">
-                  <SkeletonShimmer className="h-48 w-full rounded-none" />
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <SkeletonShimmer className="h-10 w-10 rounded-full" />
-                      <SkeletonShimmer className="h-4 w-32" />
+            {/* Listings Tab */}
+            <TabsContent value="listings" className="space-y-6">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold">Annonces récentes</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Dernières offres disponibles
+                </p>
+              </div>
+
+              {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="rounded-2xl overflow-hidden bg-card shadow-card">
+                      <SkeletonShimmer className="h-48 w-full rounded-none" />
+                      <div className="p-4 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <SkeletonShimmer className="h-10 w-10 rounded-full" />
+                          <SkeletonShimmer className="h-4 w-32" />
+                        </div>
+                        <SkeletonShimmer className="h-4 w-full" />
+                        <SkeletonShimmer className="h-4 w-2/3" />
+                      </div>
                     </div>
-                    <SkeletonShimmer className="h-4 w-full" />
-                    <SkeletonShimmer className="h-4 w-2/3" />
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : listings.length === 0 ? (
-            <div className="text-center py-12 animate-fade-in">
-              <p className="text-muted-foreground">Aucune annonce disponible pour le moment.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {listings.slice(0, 3).map((listing, index) => (
-                <AnimatedListingCard
-                  key={listing.id}
-                  id={listing.id}
-                  userId={listing.user_id}
-                  userName={listing.profiles.full_name}
-                  userAvatar={listing.profiles.avatar_url}
-                  departure={listing.departure}
-                  arrival={listing.arrival}
-                  departureDate={formatDate(listing.departure_date)}
-                  arrivalDate={formatDate(listing.arrival_date)}
-                  availableKg={listing.available_kg}
-                  pricePerKg={listing.price_per_kg}
-                  currency={listing.currency}
-                  destinationImage={listing.destination_image || getDestinationImage(listing.arrival)}
-                  isFavorited={favorites.has(listing.id)}
-                  onFavoriteToggle={() => handleToggleFavorite(listing.id)}
-                  allowedItems={listing.allowed_items as string[] || []}
-                  prohibitedItems={listing.prohibited_items as string[] || []}
-                  description={listing.description || undefined}
-                  index={index}
-                />
-              ))}
-            </div>
-          )}
-          
-          {!loading && listings.length > 3 && (
-            <div className="mt-6 text-center">
-              <Button 
-                variant="outline"
-                size="lg"
-                className="hover:scale-105 transition-transform duration-200"
-              >
-                Voir toutes les annonces
-              </Button>
-            </div>
-          )}
+              ) : listings.length === 0 ? (
+                <div className="text-center py-12 animate-fade-in">
+                  <p className="text-muted-foreground">Aucune annonce disponible pour le moment.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {listings.slice(0, 6).map((listing, index) => (
+                    <AnimatedListingCard
+                      key={listing.id}
+                      id={listing.id}
+                      userId={listing.user_id}
+                      userName={listing.profiles.full_name}
+                      userAvatar={listing.profiles.avatar_url}
+                      departure={listing.departure}
+                      arrival={listing.arrival}
+                      departureDate={formatDate(listing.departure_date)}
+                      arrivalDate={formatDate(listing.arrival_date)}
+                      availableKg={listing.available_kg}
+                      pricePerKg={listing.price_per_kg}
+                      currency={listing.currency}
+                      destinationImage={listing.destination_image || getDestinationImage(listing.arrival)}
+                      isFavorited={favorites.has(listing.id)}
+                      onFavoriteToggle={() => handleToggleFavorite(listing.id)}
+                      allowedItems={listing.allowed_items as string[] || []}
+                      prohibitedItems={listing.prohibited_items as string[] || []}
+                      description={listing.description || undefined}
+                      index={index}
+                    />
+                  ))}
+                </div>
+              )}
+              
+              {!loading && listings.length > 6 && (
+                <div className="mt-6 text-center">
+                  <Button 
+                    variant="outline"
+                    size="lg"
+                    className="hover:scale-105 transition-transform duration-200"
+                  >
+                    Voir toutes les annonces
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Transport Requests Tab */}
+            <TabsContent value="requests">
+              <TransportRequestsList />
+            </TabsContent>
+          </Tabs>
         </section>
       </div>
     </PullToRefresh>
