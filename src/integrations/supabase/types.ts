@@ -904,6 +904,117 @@ export type Database = {
           },
         ]
       }
+      transport_offers: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string | null
+          message: string | null
+          proposed_price: number | null
+          request_id: string
+          status: string
+          traveler_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id?: string | null
+          message?: string | null
+          proposed_price?: number | null
+          request_id: string
+          status?: string
+          traveler_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string | null
+          message?: string | null
+          proposed_price?: number | null
+          request_id?: string
+          status?: string
+          traveler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_offers_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_offers_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "transport_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_offers_traveler_id_fkey"
+            columns: ["traveler_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transport_requests: {
+        Row: {
+          arrival: string
+          budget_max: number | null
+          created_at: string
+          currency: string
+          departure: string
+          departure_date_end: string | null
+          departure_date_start: string
+          description: string | null
+          id: string
+          requested_kg: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          arrival: string
+          budget_max?: number | null
+          created_at?: string
+          currency?: string
+          departure: string
+          departure_date_end?: string | null
+          departure_date_start: string
+          description?: string | null
+          id?: string
+          requested_kg: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          arrival?: string
+          budget_max?: number | null
+          created_at?: string
+          currency?: string
+          departure?: string
+          departure_date_end?: string | null
+          departure_date_start?: string
+          description?: string | null
+          id?: string
+          requested_kg?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
