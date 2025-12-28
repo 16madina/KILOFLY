@@ -780,6 +780,60 @@ export type Database = {
           },
         ]
       }
+      tracking_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_automatic: boolean | null
+          location_lat: number | null
+          location_lng: number | null
+          location_name: string | null
+          reservation_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_automatic?: boolean | null
+          location_lat?: number | null
+          location_lng?: number | null
+          location_name?: string | null
+          reservation_id: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_automatic?: boolean | null
+          location_lat?: number | null
+          location_lng?: number | null
+          location_name?: string | null
+          reservation_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracking_events_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
