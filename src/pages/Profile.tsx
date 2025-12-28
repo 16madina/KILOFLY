@@ -460,6 +460,19 @@ const Profile = () => {
             </Card>
           </Link>
 
+          {/* Mes demandes de transport */}
+          <Link to="/my-transport-requests">
+            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
+                  <Package className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <span className="font-medium">Mes demandes de transport</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Card>
+          </Link>
+
           {/* Mes réservations */}
           <Link to="/my-reservations">
             <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">

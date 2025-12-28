@@ -42,6 +42,7 @@ import ListingDetail from "./pages/ListingDetail";
 import PublicProfile from "./pages/PublicProfile";
 import Payment from "./pages/Payment";
 import CurrencySettings from "./pages/CurrencySettings";
+import MyTransportRequests from "./pages/MyTransportRequests";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -123,6 +124,7 @@ const AnimatedRoutes = () => {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/my-listings" element={<MyListings />} />
                   <Route path="/my-transactions" element={<MyTransactions />} />
+                  <Route path="/my-transport-requests" element={<MyTransportRequests />} />
                   <Route path="/my-reservations" element={<MyReservations />} />
                   <Route path="/user-transactions" element={<UserTransactions />} />
                   <Route path="/admin/transactions" element={<AdminTransactions />} />
