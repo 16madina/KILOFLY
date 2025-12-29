@@ -646,10 +646,11 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
 
     let completed = false;
 
-    // Note: headAngle is calculated from camera perspective
-    // Positive = user's nose closer to their right eye = user turning their head to THEIR left
-    // Negative = user's nose closer to their left eye = user turning their head to THEIR right
-    // Lower threshold (10°) makes it easier to trigger
+    // Note: Video display is mirrored (scaleX(-1)) but face-api sees raw video
+    // So when user turns their head to THEIR left:
+    // - In mirrored display: head appears to go left (natural mirror behavior)
+    // - In raw video (face-api): head goes right = negative angle
+    // Therefore: turn_left = negative angle, turn_right = positive angle
     switch (currentChallenge.type) {
       case 'blink':
         if (blinkDetected) {
@@ -659,15 +660,15 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
         }
         break;
       case 'turn_left':
-        // User turns their head to the left = positive angle (nose closer to right eye in camera view)
-        if (headAngle > 10) {
+        // User turns their head to the left = NEGATIVE angle in raw video
+        if (headAngle < -10) {
           completed = true;
           console.log(`[Liveness] Challenge TURN_LEFT completed! Angle: ${headAngle.toFixed(1)}°`);
         }
         break;
       case 'turn_right':
-        // User turns their head to the right = negative angle (nose closer to left eye in camera view)
-        if (headAngle < -10) {
+        // User turns their head to the right = POSITIVE angle in raw video
+        if (headAngle > 10) {
           completed = true;
           console.log(`[Liveness] Challenge TURN_RIGHT completed! Angle: ${headAngle.toFixed(1)}°`);
         }
@@ -817,7 +818,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     }
   };
 
-  // Get challenge status indicator
+  // Get challenge status indicator (accounting for mirrored display)
   const getChallengeStatus = () => {
     if (!currentChallenge) return '';
     
@@ -827,19 +828,21 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       case 'blink':
         return eyesOpen ? '👀 Yeux ouverts - Clignez!' : '😌 Yeux fermés - Parfait!';
       case 'turn_left':
-        if (headAngle > 10) {
-          return `✅ Détecté! ${angleDisplay}`;
-        } else if (headAngle > 5) {
-          return `↩️ Encore un peu... ${angleDisplay}`;
-        }
-        return `➡️ Tournez à gauche ${angleDisplay}`;
-      case 'turn_right':
+        // turn_left triggers on negative angle (raw video perspective)
         if (headAngle < -10) {
           return `✅ Détecté! ${angleDisplay}`;
         } else if (headAngle < -5) {
+          return `↩️ Encore un peu... ${angleDisplay}`;
+        }
+        return `➡️ Tournez la tête à gauche ${angleDisplay}`;
+      case 'turn_right':
+        // turn_right triggers on positive angle (raw video perspective)
+        if (headAngle > 10) {
+          return `✅ Détecté! ${angleDisplay}`;
+        } else if (headAngle > 5) {
           return `↪️ Encore un peu... ${angleDisplay}`;
         }
-        return `⬅️ Tournez à droite ${angleDisplay}`;
+        return `⬅️ Tournez la tête à droite ${angleDisplay}`;
       case 'smile':
         return currentExpression === 'happy' ? '😊 Sourire détecté!' : `Expression: ${currentExpression}`;
       default:
@@ -1021,14 +1024,18 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                 <div className="relative aspect-square bg-black rounded-2xl">
                   <DebugInfo />
 
-                  {/* Video element - no transforms, no motion wrapper */}
+                  {/* Video element - mirrored for natural selfie view */}
                   <video
                     ref={videoRef}
                     autoPlay
                     playsInline
                     muted
                     className="w-full h-full object-cover rounded-2xl"
-                    style={{ minWidth: '100%', minHeight: '100%' }}
+                    style={{ 
+                      minWidth: '100%', 
+                      minHeight: '100%',
+                      transform: 'scaleX(-1)' // Mirror for selfie mode
+                    }}
                   />
 
                   {/* Tap to play overlay */}
