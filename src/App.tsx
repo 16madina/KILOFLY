@@ -8,7 +8,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { isIOS } from "@/lib/platform";
 import { useSwipeable } from "react-swipeable";
 import Home from "./pages/Home";
+import PostChoice from "./pages/PostChoice";
 import PostListing from "./pages/PostListing";
+import PostRequest from "./pages/PostRequest";
 import Messages from "./pages/Messages";
 import Conversation from "./pages/Conversation";
 import Profile from "./pages/Profile";
@@ -105,7 +107,9 @@ const AnimatedRoutes = () => {
             </motion.div>
           }
         />
-        <Route path="/post" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><PostListing /></motion.div>} />
+        <Route path="/post" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><PostChoice /></motion.div>} />
+        <Route path="/post-listing" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><PostListing /></motion.div>} />
+        <Route path="/post-request" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><PostRequest /></motion.div>} />
         <Route path="/messages" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Messages /></motion.div>} />
         <Route path="/conversation/:id" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Conversation /></motion.div>} />
         <Route path="/profile" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Profile /></motion.div>} />
