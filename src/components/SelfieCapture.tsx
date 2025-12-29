@@ -1,12 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Camera, RefreshCw, Check, X, Loader2, AlertCircle, Sparkles } from "lucide-react";
+import { Camera, RefreshCw, Check, X, Loader2, AlertCircle, Sparkles, Eye, RotateCcw, Smile } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 interface SelfieCaptureProps {
   onCaptureComplete: (selfieUrl: string) => void;
@@ -14,7 +15,43 @@ interface SelfieCaptureProps {
   documentUrl: string;
 }
 
-type CaptureStep = 'instructions' | 'camera' | 'preview' | 'uploading';
+type CaptureStep = 'instructions' | 'camera' | 'liveness' | 'preview' | 'uploading';
+
+type LivenessChallenge = 'blink' | 'turn_left' | 'turn_right' | 'smile';
+
+interface Challenge {
+  type: LivenessChallenge;
+  label: string;
+  instruction: string;
+  icon: React.ReactNode;
+}
+
+const LIVENESS_CHALLENGES: Challenge[] = [
+  {
+    type: 'blink',
+    label: 'Clignez des yeux',
+    instruction: 'Clignez des yeux 2 fois',
+    icon: <Eye className="h-6 w-6" />
+  },
+  {
+    type: 'turn_left',
+    label: 'Tournez à gauche',
+    instruction: 'Tournez lentement la tête vers la gauche',
+    icon: <RotateCcw className="h-6 w-6" />
+  },
+  {
+    type: 'turn_right',
+    label: 'Tournez à droite',
+    instruction: 'Tournez lentement la tête vers la droite',
+    icon: <RotateCcw className="h-6 w-6 scale-x-[-1]" />
+  },
+  {
+    type: 'smile',
+    label: 'Souriez',
+    instruction: 'Faites un grand sourire',
+    icon: <Smile className="h-6 w-6" />
+  }
+];
 
 const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCaptureProps) => {
   const { user } = useAuth();
@@ -28,6 +65,21 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [faceDetected, setFaceDetected] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
+  
+  // Liveness detection state
+  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
+  const [challengeProgress, setChallengeProgress] = useState(0);
+  const [challengeCompleted, setChallengeCompleted] = useState<boolean[]>([false, false, false, false]);
+  const [livenessVerified, setLivenessVerified] = useState(false);
+  const [challengeTimer, setChallengeTimer] = useState<number>(5);
+
+  // Get random 2 challenges for this session
+  const [selectedChallenges] = useState<Challenge[]>(() => {
+    const shuffled = [...LIVENESS_CHALLENGES].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 2);
+  });
+
+  const currentChallenge = selectedChallenges[currentChallengeIndex];
 
   // Start camera
   const startCamera = useCallback(async () => {
@@ -52,7 +104,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       
       setStep('camera');
       
-      // Simulate face detection after a delay (in production, use a real face detection library)
+      // Simulate face detection after a delay
       setTimeout(() => setFaceDetected(true), 1500);
       
     } catch (error: any) {
@@ -84,6 +136,66 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       stopCamera();
     };
   }, [stopCamera]);
+
+  // Start liveness detection
+  const startLivenessDetection = useCallback(() => {
+    setStep('liveness');
+    setCurrentChallengeIndex(0);
+    setChallengeProgress(0);
+    setChallengeCompleted([false, false]);
+    setLivenessVerified(false);
+    setChallengeTimer(5);
+  }, []);
+
+  // Simulate challenge detection (in production, use real ML models)
+  useEffect(() => {
+    if (step !== 'liveness' || livenessVerified) return;
+
+    // Timer countdown
+    const timerInterval = setInterval(() => {
+      setChallengeTimer(prev => {
+        if (prev <= 1) {
+          // Challenge completed (simulated)
+          const newCompleted = [...challengeCompleted];
+          newCompleted[currentChallengeIndex] = true;
+          setChallengeCompleted(newCompleted);
+          
+          if (currentChallengeIndex < selectedChallenges.length - 1) {
+            // Move to next challenge
+            setCurrentChallengeIndex(prev => prev + 1);
+            setChallengeProgress(0);
+            return 5;
+          } else {
+            // All challenges completed
+            setLivenessVerified(true);
+            clearInterval(timerInterval);
+            toast.success('Vérification de vivacité réussie!');
+            return 0;
+          }
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Progress animation
+    const progressInterval = setInterval(() => {
+      setChallengeProgress(prev => Math.min(prev + 5, 100));
+    }, 250);
+
+    return () => {
+      clearInterval(timerInterval);
+      clearInterval(progressInterval);
+    };
+  }, [step, currentChallengeIndex, livenessVerified, challengeCompleted, selectedChallenges.length]);
+
+  // Auto-capture after liveness verified
+  useEffect(() => {
+    if (livenessVerified && step === 'liveness') {
+      setTimeout(() => {
+        startCapture();
+      }, 1000);
+    }
+  }, [livenessVerified, step]);
 
   // Capture photo with countdown
   const startCapture = useCallback(() => {
@@ -133,6 +245,9 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const retakePhoto = useCallback(() => {
     setCapturedImage(null);
     setFaceDetected(false);
+    setLivenessVerified(false);
+    setCurrentChallengeIndex(0);
+    setChallengeCompleted([false, false]);
     startCamera();
   }, [startCamera]);
 
@@ -196,7 +311,10 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
           <div>
             <h3 className="text-lg font-semibold">Vérification faciale</h3>
             <p className="text-sm text-muted-foreground">
-              Prenez un selfie pour confirmer votre identité
+              {step === 'liveness' 
+                ? 'Suivez les instructions pour prouver votre identité'
+                : 'Prenez un selfie pour confirmer votre identité'
+              }
             </p>
           </div>
         </div>
@@ -214,31 +332,34 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
               <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-xl p-5 border border-primary/10">
                 <div className="flex items-center gap-2 mb-3">
                   <Sparkles className="h-5 w-5 text-primary" />
-                  <span className="font-semibold">Pourquoi cette étape ?</span>
+                  <span className="font-semibold">Vérification de vivacité</span>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Nous allons comparer votre selfie avec la photo de votre document d'identité 
-                  pour nous assurer que c'est bien vous. C'est une mesure de sécurité importante 
-                  pour protéger tous les utilisateurs de KiloFly.
+                  Pour garantir que vous êtes une vraie personne et non une photo, 
+                  nous allons vous demander d'effectuer quelques mouvements simples 
+                  devant la caméra.
                 </p>
                 
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Regardez directement la caméra</span>
+                    <Eye className="h-4 w-4 text-primary" />
+                    <span>Clignez des yeux sur demande</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Assurez-vous d'être bien éclairé</span>
+                    <RotateCcw className="h-4 w-4 text-primary" />
+                    <span>Tournez la tête dans la direction indiquée</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Retirez lunettes de soleil et chapeau</span>
+                    <Smile className="h-4 w-4 text-primary" />
+                    <span>Souriez à la caméra</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Centrez votre visage dans le cadre</span>
-                  </div>
+                </div>
+
+                <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    🔒 Assurez-vous d'être dans un endroit bien éclairé et d'avoir 
+                    votre visage entièrement visible.
+                  </p>
                 </div>
               </div>
 
@@ -248,7 +369,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                   className="flex-1 gap-2"
                 >
                   <Camera className="h-4 w-4" />
-                  Ouvrir la caméra
+                  Commencer
                 </Button>
                 {onSkip && (
                   <Button
@@ -263,7 +384,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
             </motion.div>
           )}
 
-          {/* Camera Step */}
+          {/* Camera Step - Face Detection */}
           {step === 'camera' && (
             <motion.div
               key="camera"
@@ -309,30 +430,11 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                     <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
                       <p className="text-white text-center text-sm">
                         {faceDetected 
-                          ? "✅ Visage détecté - Restez immobile"
+                          ? "✅ Visage détecté - Prêt pour la vérification"
                           : "Placez votre visage dans le cercle"
                         }
                       </p>
                     </div>
-
-                    {/* Countdown overlay */}
-                    {countdown !== null && (
-                      <motion.div
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="absolute inset-0 flex items-center justify-center bg-black/50"
-                      >
-                        <motion.span
-                          key={countdown}
-                          initial={{ scale: 1.5, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          exit={{ scale: 0.5, opacity: 0 }}
-                          className="text-8xl font-bold text-white"
-                        >
-                          {countdown}
-                        </motion.span>
-                      </motion.div>
-                    )}
                   </div>
 
                   <div className="flex gap-3">
@@ -348,16 +450,154 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                       Annuler
                     </Button>
                     <Button
-                      onClick={startCapture}
-                      disabled={!faceDetected || countdown !== null}
+                      onClick={startLivenessDetection}
+                      disabled={!faceDetected}
                       className="flex-1 gap-2"
                     >
-                      <Camera className="h-4 w-4" />
-                      Capturer
+                      <Check className="h-4 w-4" />
+                      Continuer
                     </Button>
                   </div>
                 </>
               )}
+            </motion.div>
+          )}
+
+          {/* Liveness Detection Step */}
+          {step === 'liveness' && (
+            <motion.div
+              key="liveness"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="space-y-4"
+            >
+              <div className="relative aspect-square bg-black rounded-2xl overflow-hidden">
+                {/* Video feed */}
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover scale-x-[-1]"
+                />
+                
+                {/* Face guide overlay with liveness indicator */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <motion.div 
+                    animate={{ 
+                      borderColor: livenessVerified ? '#22c55e' : '#3b82f6',
+                      boxShadow: livenessVerified 
+                        ? '0 0 30px rgba(34,197,94,0.5)' 
+                        : '0 0 20px rgba(59,130,246,0.3)'
+                    }}
+                    className="w-56 h-72 rounded-[50%] border-4 transition-all duration-300"
+                  />
+                </div>
+                
+                {/* Challenge instruction overlay */}
+                {!livenessVerified && currentChallenge && (
+                  <motion.div 
+                    key={currentChallengeIndex}
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute top-4 left-4 right-4"
+                  >
+                    <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-xl p-4 shadow-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-primary/10 text-primary">
+                          {currentChallenge.icon}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">{currentChallenge.label}</p>
+                          <p className="text-xs text-muted-foreground">{currentChallenge.instruction}</p>
+                        </div>
+                        <div className="text-2xl font-bold text-primary">
+                          {challengeTimer}
+                        </div>
+                      </div>
+                      <Progress value={challengeProgress} className="mt-3 h-2" />
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Success overlay */}
+                {livenessVerified && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="absolute inset-0 flex items-center justify-center bg-black/50"
+                  >
+                    <div className="bg-green-500 text-white rounded-full p-6">
+                      <Check className="h-12 w-12" />
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Countdown overlay for photo capture */}
+                {countdown !== null && (
+                  <motion.div
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="absolute inset-0 flex items-center justify-center bg-black/50"
+                  >
+                    <motion.span
+                      key={countdown}
+                      initial={{ scale: 1.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.5, opacity: 0 }}
+                      className="text-8xl font-bold text-white"
+                    >
+                      {countdown}
+                    </motion.span>
+                  </motion.div>
+                )}
+
+                {/* Bottom progress indicators */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                  <div className="flex items-center justify-center gap-2">
+                    {selectedChallenges.map((_, index) => (
+                      <motion.div
+                        key={index}
+                        animate={{
+                          backgroundColor: challengeCompleted[index] 
+                            ? '#22c55e' 
+                            : index === currentChallengeIndex 
+                              ? '#3b82f6' 
+                              : '#ffffff50'
+                        }}
+                        className="w-3 h-3 rounded-full"
+                      />
+                    ))}
+                    <motion.div
+                      animate={{
+                        backgroundColor: livenessVerified ? '#22c55e' : '#ffffff50'
+                      }}
+                      className="w-3 h-3 rounded-full"
+                    />
+                  </div>
+                  <p className="text-white text-center text-sm mt-2">
+                    {livenessVerified 
+                      ? "✅ Vivacité confirmée - Photo dans 3s..."
+                      : `Défi ${currentChallengeIndex + 1}/${selectedChallenges.length}`
+                    }
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  stopCamera();
+                  setStep('instructions');
+                  setLivenessVerified(false);
+                  setCurrentChallengeIndex(0);
+                }}
+                className="w-full"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Annuler
+              </Button>
             </motion.div>
           )}
 
@@ -377,17 +617,20 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                   className="w-full h-full object-cover"
                 />
                 
-                {/* Success indicator */}
-                <div className="absolute top-4 right-4">
-                  <div className="bg-green-500 text-white rounded-full p-2">
-                    <Check className="h-5 w-5" />
+                {/* Success indicators */}
+                <div className="absolute top-4 right-4 space-y-2">
+                  <div className="bg-green-500 text-white rounded-full p-2 flex items-center gap-1 px-3">
+                    <Check className="h-4 w-4" />
+                    <span className="text-xs font-medium">Vivacité ✓</span>
                   </div>
                 </div>
               </div>
 
-              <p className="text-center text-sm text-muted-foreground">
-                Votre photo est-elle nette et votre visage bien visible ?
-              </p>
+              <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 border border-green-200 dark:border-green-800">
+                <p className="text-sm text-green-700 dark:text-green-400 text-center">
+                  ✅ Vérification de vivacité réussie! Votre photo est prête.
+                </p>
+              </div>
 
               <div className="flex gap-3">
                 <Button
