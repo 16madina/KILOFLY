@@ -230,6 +230,14 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     }
     
     try {
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraError('Votre navigateur ne supporte pas l\'accès à la caméra. Essayez avec Chrome ou Safari.');
+        return;
+      }
+      
+      console.log('Requesting camera access...');
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'user',
@@ -239,16 +247,34 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
         audio: false
       });
       
+      console.log('Camera stream obtained:', stream.getTracks());
+      
       streamRef.current = stream;
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
         
-        // Start face detection after video is playing
-        setTimeout(() => {
-          startFaceDetection();
-        }, 500);
+        // Wait for video to be ready before playing
+        videoRef.current.onloadedmetadata = async () => {
+          console.log('Video metadata loaded');
+          try {
+            await videoRef.current?.play();
+            console.log('Video playing');
+            
+            // Start face detection after video is playing
+            setTimeout(() => {
+              startFaceDetection();
+            }, 500);
+          } catch (playError) {
+            console.error('Video play error:', playError);
+            setCameraError('Impossible de démarrer la vidéo. Appuyez sur l\'écran et réessayez.');
+          }
+        };
+        
+        videoRef.current.onerror = (e) => {
+          console.error('Video element error:', e);
+          setCameraError('Erreur lors du chargement de la vidéo.');
+        };
       }
       
       setStep('camera');
@@ -259,8 +285,30 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
         setCameraError('Accès à la caméra refusé. Veuillez autoriser l\'accès dans les paramètres de votre navigateur.');
       } else if (error.name === 'NotFoundError') {
         setCameraError('Aucune caméra détectée sur votre appareil.');
+      } else if (error.name === 'NotReadableError') {
+        setCameraError('La caméra est utilisée par une autre application. Fermez les autres apps et réessayez.');
+      } else if (error.name === 'OverconstrainedError') {
+        // Try again with less constraints
+        try {
+          const fallbackStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          });
+          streamRef.current = fallbackStream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = fallbackStream;
+            videoRef.current.onloadedmetadata = async () => {
+              await videoRef.current?.play();
+              setTimeout(() => startFaceDetection(), 500);
+            };
+          }
+          setStep('camera');
+          return;
+        } catch {
+          setCameraError('Impossible de configurer la caméra.');
+        }
       } else {
-        setCameraError('Impossible d\'accéder à la caméra. Veuillez réessayer.');
+        setCameraError(`Impossible d'accéder à la caméra: ${error.message || 'Erreur inconnue'}`);
       }
     }
   }, [modelsLoaded, loadModels, startFaceDetection]);
