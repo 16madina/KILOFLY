@@ -197,21 +197,17 @@ const ListingCard = ({
             "border-white/20"
           )}>
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <Avatar className="h-10 w-10 border-2 border-white/30 shadow-lg">
-                  <AvatarImage src={userAvatar} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm font-bold">
-                    {userName.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                {isVerified && (
-                  <div className="absolute -bottom-1 -right-1">
-                    <VerifiedBadge verified={isVerified} size="sm" />
-                  </div>
-                )}
-              </div>
+              <Avatar className="h-10 w-10 border-2 border-white/30 shadow-lg flex-shrink-0">
+                <AvatarImage src={userAvatar} />
+                <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm font-bold">
+                  {userName.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-white text-sm truncate">{userName}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-white text-sm truncate">{userName}</p>
+                  {isVerified && <VerifiedBadge verified={isVerified} size="sm" />}
+                </div>
                 <TrustScore score={trustScore} className="scale-75 origin-left opacity-90" />
               </div>
             </div>

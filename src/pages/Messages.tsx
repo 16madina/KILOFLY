@@ -314,12 +314,10 @@ const Messages = () => {
                   </Avatar>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <h3 className="font-semibold truncate">{otherUser.full_name}</h3>
-                        <VerifiedBadge verified={otherUser.id_verified || false} size="sm" />
-                      </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold truncate flex-shrink min-w-0">{otherUser.full_name}</h3>
+                      <VerifiedBadge verified={otherUser.id_verified || false} size="sm" />
+                      <span className="text-xs text-muted-foreground whitespace-nowrap ml-auto flex-shrink-0">
                         {new Date(conversation.updated_at).toLocaleDateString('fr-FR', {
                           day: 'numeric',
                           month: 'short'
