@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,8 +26,10 @@ interface Notification {
 
 const NotificationBell = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -128,10 +131,29 @@ const NotificationBell = () => {
     }
   };
 
+  // Handle notification click - navigate based on notification type
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.read) {
+      markAsRead(notification.id);
+    }
+    
+    // Navigate based on notification title/type
+    if (notification.title.includes('proposition') || notification.title.includes('transport')) {
+      setOpen(false);
+      navigate('/my-transport-requests');
+    } else if (notification.title.includes('réservation') || notification.title.includes('Réservation')) {
+      setOpen(false);
+      navigate('/my-reservations');
+    } else if (notification.title.includes('message') || notification.title.includes('Message')) {
+      setOpen(false);
+      navigate('/messages');
+    }
+  };
+
   if (!user) return null;
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
@@ -175,7 +197,7 @@ const NotificationBell = () => {
                   "flex flex-col items-start gap-1 p-4 cursor-pointer",
                   !notification.read && "bg-muted/50"
                 )}
-                onClick={() => !notification.read && markAsRead(notification.id)}
+                onClick={() => handleNotificationClick(notification)}
               >
                 <div className="flex items-start justify-between w-full gap-2">
                   <p className={cn(
