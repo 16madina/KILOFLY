@@ -204,25 +204,69 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       try {
         const detections = await faceapi
           .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ 
-            inputSize: 160, // Reduced from 224 for better perf
-            scoreThreshold: 0.5 
+            inputSize: 224, // Back to 224 for better accuracy
+            scoreThreshold: 0.4 // Lower threshold for better detection
           }))
           .withFaceLandmarks();
 
         if (detections) {
           setFaceDetected(true);
           
-          // Calculate head angle from landmarks
+          // Calculate head angle from landmarks using nose and eyes
           const landmarks = detections.landmarks;
           const leftEye = landmarks.getLeftEye();
           const rightEye = landmarks.getRightEye();
+          const nose = landmarks.getNose();
           
-          // Estimate head angle based on face box position relative to frame
-          const faceBox = detections.detection.box;
-          const frameCenter = video.videoWidth / 2;
-          const faceCenter = faceBox.x + faceBox.width / 2;
-          const angle = ((faceCenter - frameCenter) / frameCenter) * 45;
-          setHeadAngle(angle);
+          // Get center points
+          const leftEyeCenter = {
+            x: leftEye.reduce((sum, p) => sum + p.x, 0) / leftEye.length,
+            y: leftEye.reduce((sum, p) => sum + p.y, 0) / leftEye.length
+          };
+          const rightEyeCenter = {
+            x: rightEye.reduce((sum, p) => sum + p.x, 0) / rightEye.length,
+            y: rightEye.reduce((sum, p) => sum + p.y, 0) / rightEye.length
+          };
+          const noseTip = nose[nose.length - 1]; // Tip of nose
+          
+          // Calculate eye midpoint
+          const eyeMidpoint = {
+            x: (leftEyeCenter.x + rightEyeCenter.x) / 2,
+            y: (leftEyeCenter.y + rightEyeCenter.y) / 2
+          };
+          
+          // Calculate distances from nose to each eye
+          const noseToLeftEye = Math.sqrt(
+            Math.pow(noseTip.x - leftEyeCenter.x, 2) + Math.pow(noseTip.y - leftEyeCenter.y, 2)
+          );
+          const noseToRightEye = Math.sqrt(
+            Math.pow(noseTip.x - rightEyeCenter.x, 2) + Math.pow(noseTip.y - rightEyeCenter.y, 2)
+          );
+          
+          // Eye distance for normalization
+          const eyeDistance = Math.sqrt(
+            Math.pow(rightEyeCenter.x - leftEyeCenter.x, 2) + Math.pow(rightEyeCenter.y - leftEyeCenter.y, 2)
+          );
+          
+          // Ratio-based angle estimation (more reliable than position-based)
+          // When turning left, nose gets closer to left eye, ratio > 1
+          // When turning right, nose gets closer to right eye, ratio < 1
+          const ratio = noseToLeftEye / noseToRightEye;
+          
+          // Convert ratio to approximate angle (-30 to +30 degrees)
+          // ratio = 1 means centered (0 degrees)
+          // ratio > 1 means turning right (nose closer to right eye)
+          // ratio < 1 means turning left (nose closer to left eye)
+          const angle = (ratio - 1) * 50; // Scale factor for sensitivity
+          
+          // Clamp to reasonable range
+          const clampedAngle = Math.max(-45, Math.min(45, angle));
+          setHeadAngle(clampedAngle);
+          
+          // Log angle during liveness for debugging
+          if (step === 'liveness') {
+            console.log(`[Liveness] Head angle: ${clampedAngle.toFixed(1)}° (ratio: ${ratio.toFixed(2)})`);
+          }
           
           // Eye aspect ratio for blink detection
           const calculateEAR = (eye: faceapi.Point[]) => {
@@ -247,6 +291,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
           
           if (previousEyesOpenRef.current && !areEyesOpen) {
             setBlinkDetected(true);
+            console.log('[Liveness] Blink detected!');
           }
           
           previousEyesOpenRef.current = areEyesOpen;
@@ -601,26 +646,36 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
 
     let completed = false;
 
+    // Note: headAngle is calculated from camera perspective
+    // Positive = user's nose closer to their right eye = user turning their head to THEIR left
+    // Negative = user's nose closer to their left eye = user turning their head to THEIR right
+    // Lower threshold (10°) makes it easier to trigger
     switch (currentChallenge.type) {
       case 'blink':
         if (blinkDetected) {
           completed = true;
           setBlinkDetected(false);
+          console.log('[Liveness] Challenge BLINK completed!');
         }
         break;
       case 'turn_left':
-        if (headAngle > 15) {
+        // User turns their head to the left = positive angle (nose closer to right eye in camera view)
+        if (headAngle > 10) {
           completed = true;
+          console.log(`[Liveness] Challenge TURN_LEFT completed! Angle: ${headAngle.toFixed(1)}°`);
         }
         break;
       case 'turn_right':
-        if (headAngle < -15) {
+        // User turns their head to the right = negative angle (nose closer to left eye in camera view)
+        if (headAngle < -10) {
           completed = true;
+          console.log(`[Liveness] Challenge TURN_RIGHT completed! Angle: ${headAngle.toFixed(1)}°`);
         }
         break;
       case 'smile':
         if (currentExpression === 'happy') {
           completed = true;
+          console.log('[Liveness] Challenge SMILE completed!');
         }
         break;
     }
@@ -766,13 +821,25 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const getChallengeStatus = () => {
     if (!currentChallenge) return '';
     
+    const angleDisplay = `(${headAngle.toFixed(0)}°)`;
+    
     switch (currentChallenge.type) {
       case 'blink':
-        return eyesOpen ? '👀 Yeux ouverts - Clignez!' : '😌 Yeux fermés';
+        return eyesOpen ? '👀 Yeux ouverts - Clignez!' : '😌 Yeux fermés - Parfait!';
       case 'turn_left':
-        return headAngle > 5 ? `↩️ Angle: ${Math.round(headAngle)}°` : '➡️ Tournez plus à gauche';
+        if (headAngle > 10) {
+          return `✅ Détecté! ${angleDisplay}`;
+        } else if (headAngle > 5) {
+          return `↩️ Encore un peu... ${angleDisplay}`;
+        }
+        return `➡️ Tournez à gauche ${angleDisplay}`;
       case 'turn_right':
-        return headAngle < -5 ? `↪️ Angle: ${Math.round(Math.abs(headAngle))}°` : '⬅️ Tournez plus à droite';
+        if (headAngle < -10) {
+          return `✅ Détecté! ${angleDisplay}`;
+        } else if (headAngle < -5) {
+          return `↪️ Encore un peu... ${angleDisplay}`;
+        }
+        return `⬅️ Tournez à droite ${angleDisplay}`;
       case 'smile':
         return currentExpression === 'happy' ? '😊 Sourire détecté!' : `Expression: ${currentExpression}`;
       default:
@@ -792,16 +859,14 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
         <div>readyState: {video?.readyState ?? 'N/A'}</div>
         <div>dim: {video?.videoWidth ?? 0}x{video?.videoHeight ?? 0}</div>
         <div>paused: {video?.paused ? 'Y' : 'N'} | ended: {video?.ended ? 'Y' : 'N'}</div>
-        <div>currentTime: {video?.currentTime?.toFixed(1) ?? 0}</div>
         <div>track: {track?.readyState ?? 'none'}</div>
-        <div>muted: {track?.muted ? 'Y' : 'N'}</div>
         <div>models: {modelsLoaded ? '✓' : '...'}</div>
         <div>face: {faceDetected ? '✓' : '✗'}</div>
+        <div className="text-yellow-400 font-bold">angle: {headAngle.toFixed(1)}°</div>
         <div className="border-t border-white/30 mt-1 pt-1">
           <div>frames OK: {debugStats.framesOk}</div>
           <div>frames lost: {debugStats.framesLost}</div>
           <div>restarts: {debugStats.restarts}</div>
-          <div className="truncate">last: {debugStats.lastEvent}</div>
         </div>
         <Button 
           size="sm" 
