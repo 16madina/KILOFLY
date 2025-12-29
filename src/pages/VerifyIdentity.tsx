@@ -261,106 +261,113 @@ const VerifyIdentity = () => {
     );
   }
 
+  // Success Popup - rendered globally regardless of currentStep
+  const successPopup = (
+    <Dialog open={showSuccessPopup} onOpenChange={() => {}}>
+      <DialogContent className="sm:max-w-md text-center" onPointerDownOutside={(e) => e.preventDefault()}>
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", duration: 0.5 }}
+          className="flex flex-col items-center gap-4 py-4"
+        >
+          <div className="relative">
+            <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <CheckCircle2 className="h-12 w-12 text-green-500" />
+            </div>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.3, type: "spring" }}
+              className="absolute -top-2 -right-2"
+            >
+              <PartyPopper className="h-8 w-8 text-yellow-500" />
+            </motion.div>
+          </div>
+          
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-foreground">
+              Félicitations ! 🎉
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Votre profil est maintenant complètement validé
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 px-4 py-2 rounded-full">
+            <Sparkles className="h-4 w-4" />
+            <span>Vous pouvez profiter de toutes les fonctionnalités</span>
+          </div>
+          
+          <div className="mt-4 text-center text-muted-foreground">
+            <p className="text-sm">Redirection automatique dans</p>
+            <motion.span 
+              key={redirectCountdown}
+              initial={{ scale: 1.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="text-2xl font-bold text-primary block mt-1"
+            >
+              {redirectCountdown}s
+            </motion.span>
+          </div>
+        </motion.div>
+      </DialogContent>
+    </Dialog>
+  );
+
   // Show completed state
   if (currentStep === 'complete' && status) {
     return (
-      <div className="min-h-screen bg-background pb-24">
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-lg border-b border-border">
-          <div className="container flex items-center gap-4 py-4 max-w-2xl mx-auto px-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/profile')}
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </Button>
-            <h1 className="text-xl font-bold">Vérification d'identité</h1>
+      <>
+        {successPopup}
+        <div className="min-h-screen bg-background pb-24">
+          {/* Header */}
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-lg border-b border-border">
+            <div className="container flex items-center gap-4 py-4 max-w-2xl mx-auto px-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/profile')}
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </Button>
+              <h1 className="text-xl font-bold">Vérification d'identité</h1>
+            </div>
+          </div>
+
+          <div className="container px-4 py-6 max-w-2xl mx-auto space-y-6">
+            {getStatusBadge()}
+
+            {/* Show upload option if rejected */}
+            {(status.verification_method === 'manual_rejected' || status.verification_method === 'ai_rejected') && (
+              <IDDocumentUpload 
+                documentUrl={status.id_document_url || undefined}
+                onUploadComplete={() => {
+                  fetchVerificationStatus();
+                  setCurrentStep('document');
+                }}
+              />
+            )}
+
+            {/* Help Section */}
+            <Card className="p-4">
+              <h4 className="font-semibold mb-2">Besoin d'aide ?</h4>
+              <p className="text-sm text-muted-foreground">
+                Contactez notre support à{' '}
+                <a href="mailto:support@kilofly.com" className="text-primary hover:underline">
+                  support@kilofly.com
+                </a>
+              </p>
+            </Card>
           </div>
         </div>
-
-        <div className="container px-4 py-6 max-w-2xl mx-auto space-y-6">
-          {getStatusBadge()}
-
-          {/* Show upload option if rejected */}
-          {(status.verification_method === 'manual_rejected' || status.verification_method === 'ai_rejected') && (
-            <IDDocumentUpload 
-              documentUrl={status.id_document_url || undefined}
-              onUploadComplete={() => {
-                fetchVerificationStatus();
-                setCurrentStep('document');
-              }}
-            />
-          )}
-
-          {/* Help Section */}
-          <Card className="p-4">
-            <h4 className="font-semibold mb-2">Besoin d'aide ?</h4>
-            <p className="text-sm text-muted-foreground">
-              Contactez notre support à{' '}
-              <a href="mailto:support@kilofly.com" className="text-primary hover:underline">
-                support@kilofly.com
-              </a>
-            </p>
-          </Card>
-        </div>
-      </div>
+      </>
     );
   }
 
   return (
     <>
-      {/* Success Popup */}
-      <Dialog open={showSuccessPopup} onOpenChange={setShowSuccessPopup}>
-        <DialogContent className="sm:max-w-md text-center">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", duration: 0.5 }}
-            className="flex flex-col items-center gap-4 py-4"
-          >
-            <div className="relative">
-              <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <CheckCircle2 className="h-12 w-12 text-green-500" />
-              </div>
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.3, type: "spring" }}
-                className="absolute -top-2 -right-2"
-              >
-                <PartyPopper className="h-8 w-8 text-yellow-500" />
-              </motion.div>
-            </div>
-            
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-foreground">
-                Félicitations ! 🎉
-              </h2>
-              <p className="text-lg text-muted-foreground">
-                Votre profil est maintenant complètement validé
-              </p>
-            </div>
-            
-            <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 px-4 py-2 rounded-full">
-              <Sparkles className="h-4 w-4" />
-              <span>Vous pouvez profiter de toutes les fonctionnalités</span>
-            </div>
-            
-            <div className="mt-4 text-center text-muted-foreground">
-              <p className="text-sm">Redirection automatique dans</p>
-              <motion.span 
-                key={redirectCountdown}
-                initial={{ scale: 1.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-2xl font-bold text-primary block mt-1"
-              >
-                {redirectCountdown}s
-              </motion.span>
-            </div>
-          </motion.div>
-        </DialogContent>
-      </Dialog>
+      {successPopup}
 
       <div className="min-h-screen bg-background pb-24">
       {/* Header */}
