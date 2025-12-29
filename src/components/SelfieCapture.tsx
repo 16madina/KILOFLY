@@ -806,10 +806,6 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                       playsInline
                       muted
                       className="w-full h-full object-cover rounded-2xl"
-                      style={{ 
-                        WebkitTransform: 'translateZ(0)',
-                        transform: 'translateZ(0)'
-                      }}
                     />
                     
                     {/* Tap to play overlay for iOS */}
@@ -918,10 +914,6 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                   playsInline
                   muted
                   className="w-full h-full object-cover rounded-2xl"
-                  style={{ 
-                    WebkitTransform: 'translateZ(0)',
-                    transform: 'translateZ(0)'
-                  }}
                 />
                 
                 {/* Face guide overlay with liveness indicator */}
