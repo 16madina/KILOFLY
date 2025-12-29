@@ -303,12 +303,19 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
           const rightEAR = calculateEAR(rightEye);
           const avgEAR = (leftEAR + rightEAR) / 2;
           
-          const EAR_THRESHOLD = 0.22;
+          // Lower threshold makes blink detection easier (0.20 instead of 0.22)
+          const EAR_THRESHOLD = 0.20;
           const areEyesOpen = avgEAR > EAR_THRESHOLD;
           
+          // Detect blink: eyes were open, now closed
           if (previousEyesOpenRef.current && !areEyesOpen) {
             setBlinkDetected(true);
-            console.log('[Liveness] Blink detected!');
+            console.log('[Liveness] Blink detected! EAR:', avgEAR.toFixed(3));
+          }
+          
+          // Log EAR values during liveness for debugging
+          if (step === 'liveness') {
+            console.log(`[Liveness] EAR: ${avgEAR.toFixed(3)} | Eyes: ${areEyesOpen ? 'OPEN' : 'CLOSED'}`);
           }
           
           previousEyesOpenRef.current = areEyesOpen;
@@ -1203,12 +1210,14 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                       </div>
                     )}
                     
-                    {/* Face oval guide */}
+                    {/* Face oval guide - LARGER for better detection */}
                     <div
                       className={cn(
-                        "w-56 h-72 rounded-[50%] border-4 transition-all duration-300",
+                        "w-72 h-80 rounded-[50%] border-4 transition-all duration-300",
                         step === 'calibration'
-                          ? "border-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.3)]"
+                          ? calibrationProgress >= 100
+                            ? "border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.5)]"
+                            : "border-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.3)]"
                           : step === 'liveness'
                             ? livenessVerified
                               ? "border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.5)]"
@@ -1217,7 +1226,16 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                               ? "border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
                               : "border-white/50"
                       )}
-                    />
+                    >
+                      {/* Checkmark when calibration step completed */}
+                      {step === 'calibration' && calibrationProgress >= 100 && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center animate-scale-in">
+                            <Check className="h-10 w-10 text-white" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Loading models indicator */}
