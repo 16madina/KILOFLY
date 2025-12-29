@@ -628,9 +628,16 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     );
   };
 
-  // Video container component - no overflow-hidden on parent, styles on video directly
+  // Video container component - iOS Safari safe (no overflow-hidden, no transform)
   const VideoContainer = ({ children }: { children: React.ReactNode }) => (
-    <div className="relative aspect-square bg-black rounded-2xl">
+    <div 
+      className="relative aspect-square bg-black rounded-2xl"
+      style={{
+        // iOS Safari safe - avoid any transform on video parent
+        WebkitBackfaceVisibility: 'hidden',
+        backfaceVisibility: 'hidden'
+      }}
+    >
       {children}
     </div>
   );
@@ -799,13 +806,18 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                   <VideoContainer>
                     <DebugInfo />
                     
-                    {/* Video feed - no overflow-hidden, apply rounded directly */}
+                    {/* Video feed - iOS Safari safe: no transform, no overflow-hidden on parent */}
                     <video
                       ref={videoRef}
                       autoPlay
                       playsInline
                       muted
                       className="w-full h-full object-cover rounded-2xl"
+                      style={{
+                        // iOS Safari requires explicit dimensions and no CSS transform
+                        minWidth: '100%',
+                        minHeight: '100%'
+                      }}
                     />
                     
                     {/* Tap to play overlay for iOS */}
@@ -907,13 +919,17 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
               <VideoContainer>
                 <DebugInfo />
                 
-                {/* Video feed */}
+                {/* Video feed - iOS Safari safe */}
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
                   muted
                   className="w-full h-full object-cover rounded-2xl"
+                  style={{
+                    minWidth: '100%',
+                    minHeight: '100%'
+                  }}
                 />
                 
                 {/* Face guide overlay with liveness indicator */}
