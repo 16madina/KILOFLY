@@ -46,6 +46,7 @@ import Payment from "./pages/Payment";
 import CurrencySettings from "./pages/CurrencySettings";
 import MyTransportRequests from "./pages/MyTransportRequests";
 import Tracking from "./pages/Tracking";
+import EmailConfirmed from "./pages/EmailConfirmed";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -141,6 +142,7 @@ const AnimatedRoutes = () => {
                   <Route path="/favorites" element={<Favorites />} />
                   <Route path="/route-alerts" element={<RouteAlerts />} />
           <Route path="/verify-identity" element={<VerifyIdentity />} />
+          <Route path="/email-confirmed" element={<EmailConfirmed />} />
                   <Route path="/faq" element={<FAQ />} />
                   <Route path="/payment" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Payment /></motion.div>} />
                   <Route path="/listing/:id" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><ListingDetail /></motion.div>} />
