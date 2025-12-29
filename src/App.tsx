@@ -45,6 +45,7 @@ import PublicProfile from "./pages/PublicProfile";
 import Payment from "./pages/Payment";
 import CurrencySettings from "./pages/CurrencySettings";
 import MyTransportRequests from "./pages/MyTransportRequests";
+import Tracking from "./pages/Tracking";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -107,6 +108,7 @@ const AnimatedRoutes = () => {
             </motion.div>
           }
         />
+        <Route path="/tracking" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Tracking /></motion.div>} />
         <Route path="/post" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><PostChoice /></motion.div>} />
         <Route path="/post-listing" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><PostListing /></motion.div>} />
         <Route path="/post-request" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><PostRequest /></motion.div>} />
