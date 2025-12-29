@@ -99,9 +99,10 @@ const VerifyIdentity = () => {
   };
 
   const handleDocumentUploaded = (url: string) => {
+    console.log('[VerifyIdentity] Document uploaded, transitioning to selfie step:', url);
     setDocumentUrl(url);
     setCurrentStep('selfie');
-    toast.success('Document enregistré! Passons à la vérification faciale.');
+    // Toast is already shown in IDDocumentUpload, no need to duplicate
   };
 
   // Progress animation for AI stages
