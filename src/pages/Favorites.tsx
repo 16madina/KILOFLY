@@ -121,30 +121,23 @@ export default function Favorites() {
               const profile = favorite.listings.profiles;
               
               return (
-                <motion.div
+                <ListingCard
                   key={favorite.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <div className="relative">
-                    <ListingCard
-                      id={listing.id}
-                      userId={listing.user_id}
-                      userName={profile.full_name}
-                      userAvatar={profile.avatar_url}
-                      departure={listing.departure}
-                      arrival={listing.arrival}
-                      departureDate={new Date(listing.departure_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      arrivalDate={new Date(listing.arrival_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      availableKg={listing.available_kg}
-                      pricePerKg={listing.price_per_kg}
-                      destinationImage={listing.destination_image}
-                      isFavorited={true}
-                      onFavoriteToggle={() => handleRemoveFavorite(favorite.id)}
-                    />
-                  </div>
-                </motion.div>
+                  id={listing.id}
+                  userId={listing.user_id}
+                  userName={profile.full_name}
+                  userAvatar={profile.avatar_url}
+                  departure={listing.departure}
+                  arrival={listing.arrival}
+                  departureDate={new Date(listing.departure_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  arrivalDate={new Date(listing.arrival_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  availableKg={listing.available_kg}
+                  pricePerKg={listing.price_per_kg}
+                  destinationImage={listing.destination_image}
+                  isFavorited={true}
+                  onFavoriteToggle={() => handleRemoveFavorite(favorite.id)}
+                  index={index}
+                />
               );
             })}
           </div>
