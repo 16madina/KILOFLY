@@ -241,9 +241,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { token, token_hash, redirect_to, email_action_type } = email_data;
     
-    // Build the confirmation URL - use the production URL
-    const siteUrl = redirect_to || "https://kiloflyappcom.lovable.app";
-    const confirmationUrl = `${SUPABASE_URL}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(siteUrl)}`;
+    // Build the confirmation URL - redirect to email-confirmed page
+    const baseUrl = redirect_to || "https://kiloflyappcom.lovable.app";
+    const redirectTarget = email_action_type === 'signup' ? `${baseUrl}/email-confirmed` : baseUrl;
+    const confirmationUrl = `${SUPABASE_URL}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(redirectTarget)}`;
 
     const subject = getSubject(email_action_type);
     const html = getEmailTemplate(email_action_type, user.email, confirmationUrl);
