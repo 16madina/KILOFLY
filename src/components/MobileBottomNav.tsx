@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Plus, MessageCircle, User } from "lucide-react";
+import { Home, Plus, MessageCircle, User, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { isIOS } from "@/lib/platform";
@@ -16,6 +16,11 @@ const MobileBottomNav = () => {
       path: "/",
       label: "Accueil",
       icon: Home,
+    },
+    {
+      path: "/tracking",
+      label: "Suivi",
+      icon: Package,
     },
     {
       path: "/post",
