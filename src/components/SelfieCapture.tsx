@@ -220,104 +220,108 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   }, []);
 
   // Start camera
+  const attachStreamToVideo = useCallback(async () => {
+    const stream = streamRef.current;
+    const video = videoRef.current;
+
+    if (!stream || !video) return;
+
+    // Ensure inline playback on iOS
+    video.muted = true;
+    video.playsInline = true;
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+
+    if (video.srcObject !== stream) {
+      video.srcObject = stream;
+    }
+
+    // Wait until metadata is available (prevents silent play failures on mobile)
+    if (video.readyState < 1) {
+      await new Promise<void>((resolve) => {
+        const onLoaded = () => resolve();
+        video.addEventListener('loadedmetadata', onLoaded, { once: true });
+      });
+    }
+
+    try {
+      await video.play();
+      stopFaceDetection();
+      setTimeout(() => startFaceDetection(), 200);
+    } catch (playError) {
+      console.error('Video play blocked:', playError);
+      setCameraError("La caméra est autorisée mais la vidéo ne démarre pas. Touchez l'aperçu vidéo puis réessayez.");
+    }
+  }, [startFaceDetection, stopFaceDetection]);
+
+  // Start camera
   const startCamera = useCallback(async () => {
     setCameraError(null);
-    
+
     // Load models first if not loaded
     if (!modelsLoaded) {
       const loaded = await loadModels();
       if (!loaded) return;
     }
-    
+
     try {
       // Check if mediaDevices is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setCameraError('Votre navigateur ne supporte pas l\'accès à la caméra. Essayez avec Chrome ou Safari.');
+        setCameraError("Votre navigateur ne supporte pas l'accès à la caméra. Essayez avec Chrome ou Safari.");
         return;
       }
-      
-      console.log('Requesting camera access...');
-      
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'user',
           width: { ideal: 720 },
-          height: { ideal: 720 }
+          height: { ideal: 720 },
         },
-        audio: false
+        audio: false,
       });
-      
-      console.log('Camera stream obtained:', stream.getTracks());
-      
+
       streamRef.current = stream;
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        
-        // Wait for video to be ready before playing
-        videoRef.current.onloadedmetadata = async () => {
-          console.log('Video metadata loaded');
-          try {
-            await videoRef.current?.play();
-            console.log('Video playing');
-            
-            // Start face detection after video is playing
-            setTimeout(() => {
-              startFaceDetection();
-            }, 500);
-          } catch (playError) {
-            console.error('Video play error:', playError);
-            setCameraError('Impossible de démarrer la vidéo. Appuyez sur l\'écran et réessayez.');
-          }
-        };
-        
-        videoRef.current.onerror = (e) => {
-          console.error('Video element error:', e);
-          setCameraError('Erreur lors du chargement de la vidéo.');
-        };
-      }
-      
+
+      // IMPORTANT: mount the video element first (it only exists in step 'camera' / 'liveness')
       setStep('camera');
-      
+
+      // Attach stream on next tick after the video mounts
+      setTimeout(() => {
+        attachStreamToVideo();
+      }, 0);
+
     } catch (error: any) {
       console.error('Camera error:', error);
-      if (error.name === 'NotAllowedError') {
-        setCameraError('Accès à la caméra refusé. Veuillez autoriser l\'accès dans les paramètres de votre navigateur.');
-      } else if (error.name === 'NotFoundError') {
+      if (error?.name === 'NotAllowedError') {
+        setCameraError("Accès à la caméra refusé. Veuillez autoriser l'accès dans les paramètres de votre navigateur.");
+      } else if (error?.name === 'NotFoundError') {
         setCameraError('Aucune caméra détectée sur votre appareil.');
-      } else if (error.name === 'NotReadableError') {
+      } else if (error?.name === 'NotReadableError') {
         setCameraError('La caméra est utilisée par une autre application. Fermez les autres apps et réessayez.');
-      } else if (error.name === 'OverconstrainedError') {
+      } else if (error?.name === 'OverconstrainedError') {
         // Try again with less constraints
         try {
           const fallbackStream = await navigator.mediaDevices.getUserMedia({
             video: true,
-            audio: false
+            audio: false,
           });
           streamRef.current = fallbackStream;
-          if (videoRef.current) {
-            videoRef.current.srcObject = fallbackStream;
-            videoRef.current.onloadedmetadata = async () => {
-              await videoRef.current?.play();
-              setTimeout(() => startFaceDetection(), 500);
-            };
-          }
           setStep('camera');
-          return;
+          setTimeout(() => attachStreamToVideo(), 0);
         } catch {
           setCameraError('Impossible de configurer la caméra.');
         }
       } else {
-        setCameraError(`Impossible d'accéder à la caméra: ${error.message || 'Erreur inconnue'}`);
+        setCameraError(`Impossible d'accéder à la caméra: ${error?.message || 'Erreur inconnue'}`);
       }
     }
-  }, [modelsLoaded, loadModels, startFaceDetection]);
+  }, [modelsLoaded, loadModels, attachStreamToVideo]);
 
   // Stop camera
   const stopCamera = useCallback(() => {
     stopFaceDetection();
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
     if (videoRef.current) {
@@ -331,6 +335,13 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       stopCamera();
     };
   }, [stopCamera]);
+
+  // When the UI switches to a step that renders the video element, re-attach the stream
+  useEffect(() => {
+    if (step === 'camera' || step === 'liveness') {
+      attachStreamToVideo();
+    }
+  }, [step, attachStreamToVideo]);
 
   // Start liveness detection
   const startLivenessDetection = useCallback(() => {
