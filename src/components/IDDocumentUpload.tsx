@@ -99,15 +99,19 @@ const IDDocumentUpload = ({ documentUrl, onUploadComplete }: IDDocumentUploadPro
         throw updateError;
       }
 
-      toast.success('Document téléchargé avec succès');
       setUploadState('uploaded');
       setLocalPreview(null);
       setSelectedFile(null);
 
-      // Notify parent component with the URL for next step (selfie capture)
-      if (onUploadComplete) {
-        onUploadComplete(publicUrl);
-      }
+      // Show success briefly then notify parent to proceed to next step
+      toast.success('Document enregistré ! Passage à la vérification faciale...');
+      
+      // Small delay for user feedback, then proceed to next step
+      setTimeout(() => {
+        if (onUploadComplete) {
+          onUploadComplete(publicUrl);
+        }
+      }, 800);
 
     } catch (error: any) {
       console.error('Error uploading document:', error);
