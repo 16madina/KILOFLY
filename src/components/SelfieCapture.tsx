@@ -305,9 +305,9 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
           const rightEAR = calculateEAR(rightEye);
           const avgEAR = (leftEAR + rightEAR) / 2;
           
-          // VERY lenient threshold - makes blink detection much easier
-          // Higher threshold = eyes considered "closed" more easily
-          const EAR_THRESHOLD = 0.25;
+          // VERY HIGH threshold - extremely easy blink detection
+          // Higher value = eyes considered "closed" much more easily
+          const EAR_THRESHOLD = 0.32;
           const areEyesOpen = avgEAR > EAR_THRESHOLD;
           
           // Log EAR values during liveness for debugging
@@ -1417,6 +1417,23 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                             </div>
                             <h3 className="text-2xl font-bold text-white drop-shadow-lg">{currentChallenge.label}</h3>
                             <p className="text-white/90 text-base drop-shadow-lg">{currentChallenge.instruction}</p>
+                            
+                            {/* Eye status indicator for blink challenge */}
+                            {currentChallenge.type === 'blink' && (
+                              <div className={cn(
+                                "px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2 transition-all duration-200",
+                                eyesOpen 
+                                  ? "bg-blue-500/80 text-white" 
+                                  : "bg-green-500/80 text-white animate-pulse"
+                              )}>
+                                <div className={cn(
+                                  "w-3 h-3 rounded-full",
+                                  eyesOpen ? "bg-white" : "bg-white/50"
+                                )} />
+                                {eyesOpen ? "👁️ Yeux OUVERTS" : "😌 Yeux FERMÉS - Clignement!"}
+                              </div>
+                            )}
+                            
                             <div className="w-[260px] max-w-[80vw] mt-1">
                               <Progress value={challengeProgress} className="h-3" />
                             </div>
