@@ -94,17 +94,22 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   // Liveness detection state
   const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
   const [challengeProgress, setChallengeProgress] = useState(0);
-  const [challengeCompleted, setChallengeCompleted] = useState<boolean[]>([false, false]);
+  const [challengeCompleted, setChallengeCompleted] = useState<boolean[]>([false]);
   const [livenessVerified, setLivenessVerified] = useState(false);
-  
+
   // Face detection state
   const [currentExpression, setCurrentExpression] = useState<string>('neutral');
   const [headAngle, setHeadAngle] = useState<number>(0);
-  const [headPitch, setHeadPitch] = useState<number>(0); // For nod detection (up/down)
-  const [nodDetected, setNodDetected] = useState(false);
-  const nodPhaseRef = useRef<'idle' | 'up' | 'down'>('idle');
+  const [headPitch, setHeadPitch] = useState<number>(0); // Déviation verticale (nod)
+
+  // Nod (haut/bas) : 2 validations simples puis fin
+  const [nodUpValidated, setNodUpValidated] = useState(false);
+  const [nodDownValidated, setNodDownValidated] = useState(false);
+  const [nodDetected, setNodDetected] = useState(false); // true quand UP + DOWN validés
+
   const baselinePitchRef = useRef<number | null>(null);
-  
+  const lastNodEventAtRef = useRef<number>(0);
+
   // Head-turn thresholds - VERY EASY (minimal movement required)
   // Fixed very low threshold - just 2 degrees of movement needed!
   const TURN_THRESHOLD_DEG = 2;
