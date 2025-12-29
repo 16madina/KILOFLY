@@ -4,12 +4,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, CheckCircle2, Clock, XCircle, Loader2, FileCheck, Camera, Shield } from "lucide-react";
+import { ChevronLeft, CheckCircle2, Clock, XCircle, Loader2, FileCheck, Camera, Shield, PartyPopper, Sparkles } from "lucide-react";
 import IDDocumentUpload from "@/components/IDDocumentUpload";
 import SelfieCapture from "@/components/SelfieCapture";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 
 interface VerificationStatus {
   id_verified: boolean;
@@ -29,6 +33,7 @@ const VerifyIdentity = () => {
   const [status, setStatus] = useState<VerificationStatus | null>(null);
   const [currentStep, setCurrentStep] = useState<VerificationStep>('document');
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -99,7 +104,8 @@ const VerifyIdentity = () => {
         toast.warning('⚠️ La vérification automatique a échoué. Un admin vérifiera manuellement.');
       } else if (data?.success) {
         if (data.idVerified) {
-          toast.success('✅ Identité vérifiée! Vous pouvez maintenant utiliser toutes les fonctionnalités.');
+          // Show success popup!
+          setShowSuccessPopup(true);
         } else if (data.faceComparison?.same_person === false) {
           toast.error('❌ Le visage ne correspond pas au document. Veuillez réessayer avec votre propre document.');
         } else {
@@ -115,6 +121,11 @@ const VerifyIdentity = () => {
       toast.error('Erreur lors de la vérification');
       setCurrentStep('complete');
     }
+  };
+
+  const handleCloseSuccessPopup = () => {
+    setShowSuccessPopup(false);
+    navigate('/profile');
   };
 
   const handleSkipSelfie = async () => {
@@ -135,7 +146,7 @@ const VerifyIdentity = () => {
         toast.warning('⚠️ Vérification manuelle requise.');
       } else if (data?.success) {
         if (data.idVerified) {
-          toast.success('✅ Document vérifié!');
+          setShowSuccessPopup(true);
         } else {
           toast.info('⏳ Vérification manuelle en cours (24-48h).');
         }
@@ -282,7 +293,57 @@ const VerifyIdentity = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <>
+      {/* Success Popup */}
+      <Dialog open={showSuccessPopup} onOpenChange={setShowSuccessPopup}>
+        <DialogContent className="sm:max-w-md text-center">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", duration: 0.5 }}
+            className="flex flex-col items-center gap-4 py-4"
+          >
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <CheckCircle2 className="h-12 w-12 text-green-500" />
+              </div>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.3, type: "spring" }}
+                className="absolute -top-2 -right-2"
+              >
+                <PartyPopper className="h-8 w-8 text-yellow-500" />
+              </motion.div>
+            </div>
+            
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-foreground">
+                Félicitations ! 🎉
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                Votre profil est maintenant complètement validé
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 px-4 py-2 rounded-full">
+              <Sparkles className="h-4 w-4" />
+              <span>Vous pouvez profiter de toutes les fonctionnalités</span>
+            </div>
+            
+            <Button 
+              onClick={handleCloseSuccessPopup}
+              className="w-full mt-4 gap-2"
+              size="lg"
+            >
+              <CheckCircle2 className="h-5 w-5" />
+              Continuer
+            </Button>
+          </motion.div>
+        </DialogContent>
+      </Dialog>
+
+      <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-lg border-b border-border">
         <div className="container flex items-center gap-4 py-4 max-w-2xl mx-auto px-4">
@@ -424,6 +485,7 @@ const VerifyIdentity = () => {
         </Card>
       </div>
     </div>
+    </>
   );
 };
 

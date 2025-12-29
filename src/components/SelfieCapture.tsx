@@ -951,9 +951,9 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     }, 1000);
   }, []);
 
-  // Capture photo
-  const capturePhoto = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return;
+  // Capture photo and auto-upload
+  const capturePhoto = useCallback(async () => {
+    if (!videoRef.current || !canvasRef.current || !user) return;
     
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -973,8 +973,48 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     setCapturedImage(imageDataUrl);
     
     stopCamera();
-    setStep('preview');
-  }, [stopCamera]);
+    
+    // Auto-upload immediately (skip preview step)
+    setStep('uploading');
+    setUploading(true);
+    
+    try {
+      const response = await fetch(imageDataUrl);
+      const blob = await response.blob();
+      
+      const fileName = `${user.id}/selfie-${Date.now()}.jpg`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, blob, { 
+          upsert: true,
+          contentType: 'image/jpeg'
+        });
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+      
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+      
+      if (updateError) throw updateError;
+      
+      toast.success('Selfie enregistré - Vérification en cours...');
+      onCaptureComplete(publicUrl);
+      
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error('Erreur lors de l\'envoi du selfie');
+      setStep('preview'); // Fallback to preview on error
+    } finally {
+      setUploading(false);
+    }
+  }, [stopCamera, user, onCaptureComplete]);
 
   // Retake photo
   const retakePhoto = useCallback(() => {
