@@ -26,6 +26,21 @@ interface VerificationStatus {
 
 type VerificationStep = 'document' | 'selfie' | 'verifying' | 'complete';
 
+type AIVerificationStage = 
+  | 'uploading' 
+  | 'sending' 
+  | 'analyzing_document' 
+  | 'comparing_faces' 
+  | 'finalizing';
+
+const AI_STAGES: { id: AIVerificationStage; label: string; duration: number }[] = [
+  { id: 'uploading', label: 'Préparation des images...', duration: 1500 },
+  { id: 'sending', label: 'Envoi à l\'IA...', duration: 2000 },
+  { id: 'analyzing_document', label: 'Analyse du document...', duration: 4000 },
+  { id: 'comparing_faces', label: 'Comparaison des visages...', duration: 3000 },
+  { id: 'finalizing', label: 'Finalisation...', duration: 1500 },
+];
+
 const VerifyIdentity = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -35,6 +50,8 @@ const VerifyIdentity = () => {
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [redirectCountdown, setRedirectCountdown] = useState(5);
+  const [aiStage, setAiStage] = useState<AIVerificationStage>('uploading');
+  const [stageProgress, setStageProgress] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -87,12 +104,60 @@ const VerifyIdentity = () => {
     toast.success('Document enregistré! Passons à la vérification faciale.');
   };
 
+  // Progress animation for AI stages
+  useEffect(() => {
+    if (currentStep !== 'verifying') {
+      setAiStage('uploading');
+      setStageProgress(0);
+      return;
+    }
+
+    let stageIndex = 0;
+    let progressInterval: number;
+    let stageTimeout: number;
+
+    const runStage = () => {
+      if (stageIndex >= AI_STAGES.length) return;
+      
+      const stage = AI_STAGES[stageIndex];
+      setAiStage(stage.id);
+      setStageProgress(0);
+
+      // Animate progress bar for this stage
+      const steps = 20;
+      const stepDuration = stage.duration / steps;
+      let currentProgress = 0;
+
+      progressInterval = window.setInterval(() => {
+        currentProgress += 100 / steps;
+        setStageProgress(Math.min(currentProgress, 100));
+      }, stepDuration);
+
+      // Move to next stage
+      stageTimeout = window.setTimeout(() => {
+        window.clearInterval(progressInterval);
+        setStageProgress(100);
+        stageIndex++;
+        if (stageIndex < AI_STAGES.length) {
+          runStage();
+        }
+      }, stage.duration);
+    };
+
+    runStage();
+
+    return () => {
+      window.clearInterval(progressInterval);
+      window.clearTimeout(stageTimeout);
+    };
+  }, [currentStep]);
+
   const handleSelfieComplete = async (selfieUrl: string) => {
     setCurrentStep('verifying');
+    setAiStage('uploading');
+    setStageProgress(0);
     
     try {
-      toast.info('🤖 Vérification en cours avec comparaison faciale...');
-      
       const { data, error } = await supabase.functions.invoke('verify-id-document', {
         body: {
           userId: user?.id,
@@ -482,19 +547,108 @@ const VerifyIdentity = () => {
               key="verifying"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="py-16 text-center space-y-6"
+              className="py-8 space-y-8"
             >
-              <div className="relative mx-auto w-24 h-24">
-                <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
-                <div className="relative w-full h-full rounded-full bg-primary/10 flex items-center justify-center">
-                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              {/* Central animation */}
+              <div className="flex justify-center">
+                <div className="relative w-28 h-28">
+                  <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
+                  <div className="absolute inset-2 rounded-full bg-primary/10 animate-pulse" />
+                  <div className="relative w-full h-full rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center backdrop-blur-sm border border-primary/20">
+                    <Shield className="h-12 w-12 text-primary animate-pulse" />
+                  </div>
                 </div>
               </div>
-              <div>
-                <p className="text-xl font-semibold">Vérification en cours</p>
-                <p className="text-muted-foreground mt-2">
-                  Notre IA analyse votre document et compare votre visage...
+
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-foreground">
+                  Vérification IA en cours
+                </h3>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Analyse automatique de votre identité
                 </p>
+              </div>
+
+              {/* Stage indicators */}
+              <Card className="p-5 space-y-4 bg-card/50 backdrop-blur-sm border-primary/10">
+                {AI_STAGES.map((stage, index) => {
+                  const currentIndex = AI_STAGES.findIndex(s => s.id === aiStage);
+                  const isActive = stage.id === aiStage;
+                  const isCompleted = index < currentIndex;
+                  const isPending = index > currentIndex;
+
+                  return (
+                    <motion.div
+                      key={stage.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="space-y-2"
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Status icon */}
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300",
+                          isCompleted && "bg-green-500/20 text-green-500",
+                          isActive && "bg-primary/20 text-primary",
+                          isPending && "bg-muted text-muted-foreground"
+                        )}>
+                          {isCompleted ? (
+                            <CheckCircle2 className="h-5 w-5" />
+                          ) : isActive ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <div className="w-2 h-2 rounded-full bg-current" />
+                          )}
+                        </div>
+
+                        {/* Label */}
+                        <span className={cn(
+                          "text-sm font-medium transition-colors",
+                          isCompleted && "text-green-500",
+                          isActive && "text-foreground",
+                          isPending && "text-muted-foreground"
+                        )}>
+                          {stage.label}
+                        </span>
+
+                        {/* Checkmark for completed */}
+                        {isCompleted && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="ml-auto text-green-500 text-xs"
+                          >
+                            ✓
+                          </motion.span>
+                        )}
+                      </div>
+
+                      {/* Progress bar for active stage */}
+                      {isActive && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="ml-11"
+                        >
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <motion.div
+                              className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full"
+                              style={{ width: `${stageProgress}%` }}
+                              transition={{ duration: 0.1 }}
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </Card>
+
+              {/* Security note */}
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Shield className="h-3.5 w-3.5" />
+                <span>Données chiffrées et sécurisées</span>
               </div>
             </motion.div>
           )}
