@@ -251,15 +251,14 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
             Math.pow(rightEyeCenter.x - leftEyeCenter.x, 2) + Math.pow(rightEyeCenter.y - leftEyeCenter.y, 2)
           );
           
-          // Ratio-based angle estimation (more reliable than position-based)
-          // When turning left, nose gets closer to left eye, ratio > 1
-          // When turning right, nose gets closer to right eye, ratio < 1
+          // Ratio-based angle estimation (robust + normalized)
+          // ratio = 1 => centered (0)
+          // ratio > 1 => nose closer to rightEyeCenter => positive angle
+          // ratio < 1 => nose closer to leftEyeCenter  => negative angle
+          // (Left/right challenge mapping is handled later, based on observed behavior.)
           const ratio = noseToLeftEye / noseToRightEye;
           
-          // Convert ratio to approximate angle (-30 to +30 degrees)
-          // ratio = 1 means centered (0 degrees)
-          // ratio > 1 means turning right (nose closer to right eye)
-          // ratio < 1 means turning left (nose closer to left eye)
+          // Convert ratio to approximate angle
           const angle = (ratio - 1) * 50; // Scale factor for sensitivity
           
           // Clamp to reasonable range
@@ -694,11 +693,10 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
 
     let completed = false;
 
-    // Note: Video display is mirrored (scaleX(-1)) but face-api sees raw video
-    // So when user turns their head to THEIR left:
-    // - In mirrored display: head appears to go left (natural mirror behavior)
-    // - In raw video (face-api): head goes right = negative angle
-    // Therefore: turn_left = negative angle, turn_right = positive angle
+    // Note: Video display is mirrored (scaleX(-1)) but face-api sees raw video.
+    // In practice (based on our landmark ratio), turning LEFT tends to produce a POSITIVE angle,
+    // and turning RIGHT tends to produce a NEGATIVE angle.
+    // If this ever flips on some devices, we can calibrate, but this mapping matches current behavior.
     switch (currentChallenge.type) {
       case 'blink':
         if (blinkDetected) {
@@ -708,15 +706,15 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
         }
         break;
       case 'turn_left':
-        // User turns their head to the left = NEGATIVE angle in raw video
-        if (headAngle < -10) {
+        // LEFT = positive angle
+        if (headAngle > 8) {
           completed = true;
           console.log(`[Liveness] Challenge TURN_LEFT completed! Angle: ${headAngle.toFixed(1)}°`);
         }
         break;
       case 'turn_right':
-        // User turns their head to the right = POSITIVE angle in raw video
-        if (headAngle > 10) {
+        // RIGHT = negative angle
+        if (headAngle < -8) {
           completed = true;
           console.log(`[Liveness] Challenge TURN_RIGHT completed! Angle: ${headAngle.toFixed(1)}°`);
         }
@@ -876,21 +874,21 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       case 'blink':
         return eyesOpen ? '👀 Yeux ouverts - Clignez!' : '😌 Yeux fermés - Parfait!';
       case 'turn_left':
-        // turn_left triggers on negative angle (raw video perspective)
-        if (headAngle < -10) {
+        // LEFT = positive angle (current headAngle calibration)
+        if (headAngle > 8) {
           return `✅ Détecté! ${angleDisplay}`;
-        } else if (headAngle < -5) {
+        } else if (headAngle > 4) {
           return `↩️ Encore un peu... ${angleDisplay}`;
         }
-        return `➡️ Tournez la tête à gauche ${angleDisplay}`;
+        return `⬅️ Tournez la tête à gauche ${angleDisplay}`;
       case 'turn_right':
-        // turn_right triggers on positive angle (raw video perspective)
-        if (headAngle > 10) {
+        // RIGHT = negative angle (current headAngle calibration)
+        if (headAngle < -8) {
           return `✅ Détecté! ${angleDisplay}`;
-        } else if (headAngle > 5) {
+        } else if (headAngle < -4) {
           return `↪️ Encore un peu... ${angleDisplay}`;
         }
-        return `⬅️ Tournez la tête à droite ${angleDisplay}`;
+        return `➡️ Tournez la tête à droite ${angleDisplay}`;
       case 'smile':
         return currentExpression === 'happy' ? '😊 Sourire détecté!' : `Expression: ${currentExpression}`;
       default:
@@ -1150,33 +1148,30 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                     <>
                       {/* Initial 3-2-1 countdown before challenges start */}
                       {livenessCountdown !== null && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 rounded-2xl pointer-events-none">
-                          <p className="text-white text-lg mb-4 font-medium">Préparez-vous...</p>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 rounded-2xl pointer-events-none">
+                          <p className="text-white text-lg mb-4 font-medium drop-shadow-lg">Préparez-vous...</p>
                           <div className="relative">
-                            <div className="w-32 h-32 rounded-full border-4 border-primary flex items-center justify-center bg-primary/20">
-                              <span className="text-7xl font-bold text-white animate-pulse">{livenessCountdown}</span>
+                            <div className="w-32 h-32 rounded-full border-4 border-primary flex items-center justify-center bg-primary/10">
+                              <span className="text-7xl font-bold text-white animate-pulse drop-shadow-lg">{livenessCountdown}</span>
                             </div>
                           </div>
-                          <p className="text-white/80 text-sm mt-4">Gardez votre visage visible</p>
+                          <p className="text-white/90 text-sm mt-4 drop-shadow-lg">Gardez votre visage visible</p>
                         </div>
                       )}
 
-                      {/* Challenge instruction overlay - LARGE and visible */}
+                      {/* Challenge instruction overlay - NO background card (keep video visible) */}
                       {!livenessVerified && currentChallenge && livenessCountdown === null && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                          {/* Large centered instruction */}
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-                            <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-6 min-w-[280px]">
-                              <div className="w-20 h-20 mx-auto rounded-full bg-primary/30 flex items-center justify-center mb-4">
-                                <div className="text-primary scale-150">
-                                  {currentChallenge.icon}
-                                </div>
-                              </div>
-                              <h3 className="text-2xl font-bold text-white mb-2">{currentChallenge.label}</h3>
-                              <p className="text-white/80 text-base mb-4">{currentChallenge.instruction}</p>
-                              <Progress value={challengeProgress} className="h-3 mb-2" />
-                              <p className="text-sm text-white/70">{getChallengeStatus()}</p>
+                        <div className="absolute top-6 left-1/2 -translate-x-1/2 text-center pointer-events-none">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center">
+                              <div className="text-primary scale-150 drop-shadow-lg">{currentChallenge.icon}</div>
                             </div>
+                            <h3 className="text-2xl font-bold text-white drop-shadow-lg">{currentChallenge.label}</h3>
+                            <p className="text-white/90 text-base drop-shadow-lg">{currentChallenge.instruction}</p>
+                            <div className="w-[260px] max-w-[80vw] mt-1">
+                              <Progress value={challengeProgress} className="h-3" />
+                            </div>
+                            <p className="text-sm text-white/80 drop-shadow-lg">{getChallengeStatus()}</p>
                           </div>
                         </div>
                       )}
@@ -1198,7 +1193,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                       )}
 
                       {/* Bottom progress indicators */}
-                      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl pointer-events-none">
+                      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/50 to-transparent rounded-b-2xl pointer-events-none">
                         <div className="flex items-center justify-center gap-3">
                           {selectedChallenges.map((challenge, index) => (
                             <div
