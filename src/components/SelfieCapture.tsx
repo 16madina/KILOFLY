@@ -38,13 +38,13 @@ const LIVENESS_CHALLENGES: Challenge[] = [
   {
     type: 'turn_left',
     label: 'Tournez à gauche',
-    instruction: 'Tournez lentement la tête vers la gauche',
+    instruction: 'Tournez légèrement la tête vers la gauche',
     icon: <RotateCcw className="h-6 w-6" />
   },
   {
     type: 'turn_right',
     label: 'Tournez à droite',
-    instruction: 'Tournez lentement la tête vers la droite',
+    instruction: 'Tournez légèrement la tête vers la droite',
     icon: <RotateCcw className="h-6 w-6 scale-x-[-1]" />
   },
   {
@@ -104,11 +104,29 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const [blinkDetected, setBlinkDetected] = useState(false);
   const previousEyesOpenRef = useRef<boolean>(true);
   
+  // Head-turn thresholds (smaller = more comfortable)
+  const MIN_TURN_DEG = 3;
+  const MAX_TURN_DEG = 6;
+  const FALLBACK_TURN_DEG = 5;
+  const TURN_FACTOR = 0.25;
+
+  const deriveTurnThreshold = useCallback(
+    (angle: number | null, sign: -1 | 1) => {
+      if (angle === null) return sign * FALLBACK_TURN_DEG;
+      const deg = Math.min(
+        MAX_TURN_DEG,
+        Math.max(MIN_TURN_DEG, Math.abs(angle) * TURN_FACTOR)
+      );
+      return sign * deg;
+    },
+    [FALLBACK_TURN_DEG, MAX_TURN_DEG, MIN_TURN_DEG, TURN_FACTOR]
+  );
+
   // Computed calibration thresholds (with fallback defaults)
   // Visual LEFT turn = negative angle (due to mirrored video), so leftThreshold is negative
   // Visual RIGHT turn = positive angle, so rightThreshold is positive
-  const leftThreshold = calibrationLeftAngle !== null ? calibrationLeftAngle * 0.5 : -8;
-  const rightThreshold = calibrationRightAngle !== null ? calibrationRightAngle * 0.5 : 8;
+  const leftThreshold = deriveTurnThreshold(calibrationLeftAngle, -1);
+  const rightThreshold = deriveTurnThreshold(calibrationRightAngle, 1);
 
   // Debug mode
   const [debugMode] = useState(() => {
@@ -712,16 +730,23 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       // While showing the success checkmark, ignore detection to avoid double-triggers
       if (calibrationTransitioningRef.current) return;
 
+      const CALIBRATION_TARGET_DEG = 3;
+      const CALIBRATION_HOLD_FRAMES = 3;
+
       if (calibrationStep === 'left') {
         // Visual LEFT turn = NEGATIVE angle (due to mirrored video + face-api raw analysis)
-        if (headAngle < -5) {
+        if (headAngle < -CALIBRATION_TARGET_DEG) {
           calibrationHoldCountRef.current++;
-          setCalibrationProgress((calibrationHoldCountRef.current / 5) * 100);
+          setCalibrationProgress(
+            (calibrationHoldCountRef.current / CALIBRATION_HOLD_FRAMES) * 100
+          );
 
           // Track min (most negative) angle seen for left
-          setCalibrationLeftAngle((prev) => (prev === null ? headAngle : Math.min(prev, headAngle)));
+          setCalibrationLeftAngle((prev) =>
+            prev === null ? headAngle : Math.min(prev, headAngle)
+          );
 
-          if (calibrationHoldCountRef.current >= 5) {
+          if (calibrationHoldCountRef.current >= CALIBRATION_HOLD_FRAMES) {
             console.log(`[Calibration] LEFT captured: ${headAngle.toFixed(1)}°`);
             toast.success('Gauche calibré!');
 
@@ -743,14 +768,18 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
         }
       } else if (calibrationStep === 'right') {
         // Visual RIGHT turn = POSITIVE angle
-        if (headAngle > 5) {
+        if (headAngle > CALIBRATION_TARGET_DEG) {
           calibrationHoldCountRef.current++;
-          setCalibrationProgress((calibrationHoldCountRef.current / 5) * 100);
+          setCalibrationProgress(
+            (calibrationHoldCountRef.current / CALIBRATION_HOLD_FRAMES) * 100
+          );
 
           // Track max (most positive) angle seen for right
-          setCalibrationRightAngle((prev) => (prev === null ? headAngle : Math.max(prev, headAngle)));
+          setCalibrationRightAngle((prev) =>
+            prev === null ? headAngle : Math.max(prev, headAngle)
+          );
 
-          if (calibrationHoldCountRef.current >= 5) {
+          if (calibrationHoldCountRef.current >= CALIBRATION_HOLD_FRAMES) {
             console.log(`[Calibration] RIGHT captured: ${headAngle.toFixed(1)}°`);
             toast.success('Droite calibré!');
 
