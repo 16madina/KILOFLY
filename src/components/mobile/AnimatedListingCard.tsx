@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import ListingCard from "@/components/ListingCard";
 import { hapticImpact } from "@/hooks/useHaptics";
 import { ImpactStyle } from "@capacitor/haptics";
@@ -30,19 +29,9 @@ const AnimatedListingCard = (props: AnimatedListingCardProps) => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.2,
-        delay: props.index * 0.04,
-        ease: [0.32, 0.72, 0, 1],
-      }}
-      whileTap={{ scale: 0.98 }}
-      onTapStart={handleTap}
-    >
+    <div onTouchStart={handleTap}>
       <ListingCard {...props} />
-    </motion.div>
+    </div>
   );
 };
 
