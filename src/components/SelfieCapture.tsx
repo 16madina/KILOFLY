@@ -87,7 +87,9 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const [calibrationLeftAngle, setCalibrationLeftAngle] = useState<number | null>(null);
   const [calibrationRightAngle, setCalibrationRightAngle] = useState<number | null>(null);
   const [calibrationProgress, setCalibrationProgress] = useState(0);
+  const [calibrationJustCompleted, setCalibrationJustCompleted] = useState<CalibrationStep | null>(null);
   const calibrationHoldCountRef = useRef(0);
+  const calibrationTransitioningRef = useRef(false);
   
   // Liveness detection state
   const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
@@ -671,68 +673,12 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     setCalibrationLeftAngle(null);
     setCalibrationRightAngle(null);
     setCalibrationProgress(0);
+    setCalibrationJustCompleted(null);
+    calibrationTransitioningRef.current = false;
     calibrationHoldCountRef.current = 0;
     faceDetectedCountRef.current = 0;
     setAutoProgressCount(0);
   }, []);
-
-  // Calibration detection - track max angles for each direction
-  useEffect(() => {
-    if (step !== 'calibration' || !faceDetected) return;
-
-    const interval = setInterval(() => {
-      if (calibrationStep === 'left') {
-        // Visual LEFT turn = NEGATIVE angle (due to mirrored video + face-api raw analysis)
-        if (headAngle < -5) {
-          calibrationHoldCountRef.current++;
-          setCalibrationProgress((calibrationHoldCountRef.current / 5) * 100);
-          
-          // Track min (most negative) angle seen for left
-          setCalibrationLeftAngle(prev => 
-            prev === null ? headAngle : Math.min(prev, headAngle)
-          );
-          
-          if (calibrationHoldCountRef.current >= 5) {
-            console.log(`[Calibration] LEFT captured: ${headAngle.toFixed(1)}°`);
-            toast.success('Gauche calibré!');
-            setCalibrationStep('right');
-            calibrationHoldCountRef.current = 0;
-            setCalibrationProgress(0);
-          }
-        } else {
-          calibrationHoldCountRef.current = 0;
-          setCalibrationProgress(0);
-        }
-      } else if (calibrationStep === 'right') {
-        // Visual RIGHT turn = POSITIVE angle
-        if (headAngle > 5) {
-          calibrationHoldCountRef.current++;
-          setCalibrationProgress((calibrationHoldCountRef.current / 5) * 100);
-          
-          // Track max (most positive) angle seen for right
-          setCalibrationRightAngle(prev => 
-            prev === null ? headAngle : Math.max(prev, headAngle)
-          );
-          
-          if (calibrationHoldCountRef.current >= 5) {
-            console.log(`[Calibration] RIGHT captured: ${headAngle.toFixed(1)}°`);
-            toast.success('Droite calibré! Démarrage des défis...');
-            setCalibrationStep('done');
-            
-            // Start liveness after short delay
-            setTimeout(() => {
-              startLivenessDetection();
-            }, 500);
-          }
-        } else {
-          calibrationHoldCountRef.current = 0;
-          setCalibrationProgress(0);
-        }
-      }
-    }, 200);
-
-    return () => clearInterval(interval);
-  }, [step, calibrationStep, faceDetected, headAngle]);
 
   // Start liveness detection with countdown
   const startLivenessDetection = useCallback(() => {
@@ -744,19 +690,93 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     setBlinkDetected(false);
     faceDetectedCountRef.current = 0;
     setAutoProgressCount(0);
-    
+
     // Start 3-2-1 countdown before showing challenges
     setLivenessCountdown(3);
-    const countdownInterval = setInterval(() => {
-      setLivenessCountdown(prev => {
+    const countdownInterval = window.setInterval(() => {
+      setLivenessCountdown((prev) => {
         if (prev === null || prev <= 1) {
-          clearInterval(countdownInterval);
+          window.clearInterval(countdownInterval);
           return null; // Countdown finished, show challenges
         }
         return prev - 1;
       });
     }, 1000);
   }, []);
+
+  // Calibration detection - track max angles for each direction
+  useEffect(() => {
+    if (step !== 'calibration' || !faceDetected) return;
+
+    const interval = window.setInterval(() => {
+      // While showing the success checkmark, ignore detection to avoid double-triggers
+      if (calibrationTransitioningRef.current) return;
+
+      if (calibrationStep === 'left') {
+        // Visual LEFT turn = NEGATIVE angle (due to mirrored video + face-api raw analysis)
+        if (headAngle < -5) {
+          calibrationHoldCountRef.current++;
+          setCalibrationProgress((calibrationHoldCountRef.current / 5) * 100);
+
+          // Track min (most negative) angle seen for left
+          setCalibrationLeftAngle((prev) => (prev === null ? headAngle : Math.min(prev, headAngle)));
+
+          if (calibrationHoldCountRef.current >= 5) {
+            console.log(`[Calibration] LEFT captured: ${headAngle.toFixed(1)}°`);
+            toast.success('Gauche calibré!');
+
+            calibrationTransitioningRef.current = true;
+            setCalibrationProgress(100);
+            setCalibrationJustCompleted('left');
+
+            window.setTimeout(() => {
+              setCalibrationJustCompleted(null);
+              setCalibrationStep('right');
+              calibrationHoldCountRef.current = 0;
+              setCalibrationProgress(0);
+              calibrationTransitioningRef.current = false;
+            }, 700);
+          }
+        } else {
+          calibrationHoldCountRef.current = 0;
+          setCalibrationProgress(0);
+        }
+      } else if (calibrationStep === 'right') {
+        // Visual RIGHT turn = POSITIVE angle
+        if (headAngle > 5) {
+          calibrationHoldCountRef.current++;
+          setCalibrationProgress((calibrationHoldCountRef.current / 5) * 100);
+
+          // Track max (most positive) angle seen for right
+          setCalibrationRightAngle((prev) => (prev === null ? headAngle : Math.max(prev, headAngle)));
+
+          if (calibrationHoldCountRef.current >= 5) {
+            console.log(`[Calibration] RIGHT captured: ${headAngle.toFixed(1)}°`);
+            toast.success('Droite calibré!');
+
+            calibrationTransitioningRef.current = true;
+            setCalibrationProgress(100);
+            setCalibrationJustCompleted('right');
+
+            window.setTimeout(() => {
+              setCalibrationJustCompleted(null);
+              setCalibrationStep('done');
+              calibrationHoldCountRef.current = 0;
+              setCalibrationProgress(0);
+              calibrationTransitioningRef.current = false;
+              startLivenessDetection();
+            }, 700);
+          }
+        } else {
+          calibrationHoldCountRef.current = 0;
+          setCalibrationProgress(0);
+        }
+      }
+    }, 200);
+
+    return () => window.clearInterval(interval);
+  }, [step, calibrationStep, faceDetected, headAngle, startLivenessDetection]);
+
 
   // Handle file upload fallback
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -783,6 +803,10 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     // Don't process challenges during countdown
     if (step !== 'liveness' || livenessVerified || !currentChallenge || livenessCountdown !== null) return;
 
+    // Avoid double-triggering while we animate progress / switch to the next challenge
+    if (challengeProgress > 0) return;
+    if (challengeCompleted[currentChallengeIndex]) return;
+
     let completed = false;
 
     // Video display is mirrored (scaleX(-1)) but face-api sees raw video.
@@ -800,14 +824,18 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
         // Visual LEFT = negative angle, threshold is negative
         if (headAngle < leftThreshold) {
           completed = true;
-          console.log(`[Liveness] Challenge TURN_LEFT completed! Angle: ${headAngle.toFixed(1)}° (threshold: ${leftThreshold.toFixed(1)}°)`);
+          console.log(
+            `[Liveness] Challenge TURN_LEFT completed! Angle: ${headAngle.toFixed(1)}° (threshold: ${leftThreshold.toFixed(1)}°)`
+          );
         }
         break;
       case 'turn_right':
         // Visual RIGHT = positive angle, threshold is positive
         if (headAngle > rightThreshold) {
           completed = true;
-          console.log(`[Liveness] Challenge TURN_RIGHT completed! Angle: ${headAngle.toFixed(1)}° (threshold: ${rightThreshold.toFixed(1)}°)`);
+          console.log(
+            `[Liveness] Challenge TURN_RIGHT completed! Angle: ${headAngle.toFixed(1)}° (threshold: ${rightThreshold.toFixed(1)}°)`
+          );
         }
         break;
       case 'smile':
@@ -818,36 +846,59 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
         break;
     }
 
-    if (completed) {
-      const progressInterval = setInterval(() => {
-        setChallengeProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(progressInterval);
-            
-            const newCompleted = [...challengeCompleted];
-            newCompleted[currentChallengeIndex] = true;
-            setChallengeCompleted(newCompleted);
-            
-            if (currentChallengeIndex < selectedChallenges.length - 1) {
-              setTimeout(() => {
-                setCurrentChallengeIndex(prev => prev + 1);
-                setChallengeProgress(0);
-              }, 500);
-            } else {
-              setTimeout(() => {
-                setLivenessVerified(true);
-                toast.success('Vérification de vivacité réussie!');
-              }, 500);
-            }
-            return 100;
-          }
-          return prev + 20; // Faster progress (was 10)
-        });
-      }, 100); // Slower interval (was 50)
-      
-      return () => clearInterval(progressInterval);
-    }
-  }, [step, currentChallenge, blinkDetected, headAngle, currentExpression, livenessVerified, currentChallengeIndex, challengeCompleted, selectedChallenges.length, livenessCountdown]);
+    if (!completed) return;
+
+    // Mark as started immediately to prevent multiple intervals from being created
+    setChallengeProgress(1);
+
+    const progressInterval = window.setInterval(() => {
+      setChallengeProgress((prev) => Math.min(100, prev + 20));
+    }, 100);
+
+    const idx = currentChallengeIndex;
+
+    const finishTimeout = window.setTimeout(() => {
+      window.clearInterval(progressInterval);
+      setChallengeProgress(100);
+
+      setChallengeCompleted((prev) => {
+        const next = [...prev];
+        next[idx] = true;
+        return next;
+      });
+
+      if (idx < selectedChallenges.length - 1) {
+        window.setTimeout(() => {
+          setCurrentChallengeIndex((prev) => prev + 1);
+          setChallengeProgress(0);
+        }, 300);
+      } else {
+        window.setTimeout(() => {
+          setLivenessVerified(true);
+          toast.success('Vérification de vivacité réussie!');
+        }, 300);
+      }
+    }, 550);
+
+    return () => {
+      window.clearInterval(progressInterval);
+      window.clearTimeout(finishTimeout);
+    };
+  }, [
+    step,
+    livenessVerified,
+    currentChallenge,
+    livenessCountdown,
+    challengeProgress,
+    currentChallengeIndex,
+    challengeCompleted,
+    selectedChallenges.length,
+    blinkDetected,
+    headAngle,
+    currentExpression,
+    leftThreshold,
+    rightThreshold,
+  ]);
 
   // Auto-capture after liveness verified
   useEffect(() => {
@@ -1226,12 +1277,12 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                       </div>
                     )}
                     
-                    {/* Face oval guide - normal face size */}
+                    {/* Face oval guide - slightly larger for reliability */}
                     <div
                       className={cn(
-                        "w-52 h-64 rounded-[50%] border-4 transition-all duration-300",
+                        "w-56 h-72 rounded-[50%] border-4 transition-all duration-300",
                         step === 'calibration'
-                          ? calibrationProgress >= 100
+                          ? calibrationJustCompleted !== null
                             ? "border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.5)]"
                             : "border-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.3)]"
                           : step === 'liveness'
@@ -1244,7 +1295,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                       )}
                     >
                       {/* Checkmark when calibration step completed */}
-                      {step === 'calibration' && calibrationProgress >= 100 && (
+                      {step === 'calibration' && calibrationJustCompleted !== null && (
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center animate-scale-in">
                             <Check className="h-10 w-10 text-white" />
@@ -1288,27 +1339,43 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                   {step === 'calibration' && (
                     <div className="absolute top-6 left-1/2 -translate-x-1/2 text-center pointer-events-none">
                       <div className="flex flex-col items-center gap-2">
-                        <div className="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                          {calibrationStep === 'left' ? (
-                            <ChevronLeft className="h-10 w-10 text-yellow-500" />
-                          ) : (
-                            <ChevronRight className="h-10 w-10 text-yellow-500" />
-                          )}
-                        </div>
-                        <h3 className="text-2xl font-bold text-white drop-shadow-lg">
-                          {calibrationStep === 'left' ? 'Calibration: Gauche' : 'Calibration: Droite'}
-                        </h3>
-                        <p className="text-white/90 text-base drop-shadow-lg">
-                          {calibrationStep === 'left' 
-                            ? 'Tournez la tête vers la gauche' 
-                            : 'Tournez la tête vers la droite'}
-                        </p>
-                        <div className="w-[260px] max-w-[80vw] mt-1">
-                          <Progress value={calibrationProgress} className="h-3" />
-                        </div>
-                        <p className="text-sm text-white/80 drop-shadow-lg">
-                          Angle: {headAngle.toFixed(0)}° - Maintenez la position
-                        </p>
+                        {calibrationJustCompleted !== null ? (
+                          <>
+                            <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
+                              <Check className="h-10 w-10 text-green-500" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-white drop-shadow-lg">
+                              {calibrationJustCompleted === 'left' ? 'Gauche validé' : 'Droite validé'}
+                            </h3>
+                            <p className="text-white/90 text-base drop-shadow-lg">
+                              {calibrationJustCompleted === 'left'
+                                ? 'Prochaine étape: tournez la tête vers la droite'
+                                : 'Démarrage des défis...'}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                              {calibrationStep === 'left' ? (
+                                <ChevronLeft className="h-10 w-10 text-yellow-500" />
+                              ) : (
+                                <ChevronRight className="h-10 w-10 text-yellow-500" />
+                              )}
+                            </div>
+                            <h3 className="text-2xl font-bold text-white drop-shadow-lg">
+                              {calibrationStep === 'left' ? 'Calibration: Gauche' : 'Calibration: Droite'}
+                            </h3>
+                            <p className="text-white/90 text-base drop-shadow-lg">
+                              {calibrationStep === 'left' ? 'Tournez la tête vers la gauche' : 'Tournez la tête vers la droite'}
+                            </p>
+                            <div className="w-[260px] max-w-[80vw] mt-1">
+                              <Progress value={calibrationProgress} className="h-3" />
+                            </div>
+                            <p className="text-sm text-white/80 drop-shadow-lg">
+                              Angle: {headAngle.toFixed(0)}° - Maintenez la position
+                            </p>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
