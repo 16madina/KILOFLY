@@ -1211,7 +1211,15 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                 </div>
               </div>
 
-              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+              {/* Profile photo notice */}
+              <div className="mt-4 p-3 bg-primary/10 dark:bg-primary/20 rounded-lg border border-primary/20">
+                <p className="text-xs text-primary dark:text-primary font-medium flex items-center gap-2">
+                  <Camera className="h-4 w-4 shrink-0" />
+                  <span>Ce selfie deviendra votre photo de profil pour garantir l'authenticité de votre compte.</span>
+                </p>
+              </div>
+
+              <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
                 <p className="text-xs text-amber-700 dark:text-amber-400">
                   🔒 Assurez-vous d'être dans un endroit bien éclairé et d'avoir 
                   votre visage entièrement visible.
