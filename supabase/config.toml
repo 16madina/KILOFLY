@@ -20,3 +20,6 @@ verify_jwt = true
 
 [functions.verify-id-document]
 verify_jwt = true
+
+[functions.auth-email-hook]
+verify_jwt = false
