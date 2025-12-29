@@ -380,18 +380,13 @@ const VerifyIdentity = () => {
           )}
 
           {currentStep === 'selfie' && documentUrl && (
-            <motion.div
-              key="selfie"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
+            <div className="animate-fade-in">
               <SelfieCapture
                 documentUrl={documentUrl}
                 onCaptureComplete={handleSelfieComplete}
                 onSkip={handleSkipSelfie}
               />
-            </motion.div>
+            </div>
           )}
 
           {currentStep === 'verifying' && (
