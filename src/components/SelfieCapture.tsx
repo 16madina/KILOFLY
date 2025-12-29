@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Camera, RefreshCw, Check, X, Loader2, AlertCircle, Sparkles, Eye, RotateCcw, Smile, Upload, Play } from "lucide-react";
+import { Camera, RefreshCw, Check, X, Loader2, AlertCircle, Sparkles, Eye, RotateCcw, Smile, Upload, Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,7 +15,9 @@ interface SelfieCaptureProps {
   documentUrl: string;
 }
 
-type CaptureStep = 'instructions' | 'loading-models' | 'camera' | 'liveness' | 'preview' | 'uploading';
+type CaptureStep = 'instructions' | 'loading-models' | 'camera' | 'calibration' | 'liveness' | 'preview' | 'uploading';
+
+type CalibrationStep = 'left' | 'right' | 'done';
 
 type LivenessChallenge = 'blink' | 'turn_left' | 'turn_right' | 'smile';
 
@@ -80,6 +82,13 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const [autoProgressCount, setAutoProgressCount] = useState(0); // Visual countdown
   const [livenessCountdown, setLivenessCountdown] = useState<number | null>(null); // 3-2-1 countdown before challenges
   
+  // Calibration state
+  const [calibrationStep, setCalibrationStep] = useState<CalibrationStep>('left');
+  const [calibrationLeftAngle, setCalibrationLeftAngle] = useState<number | null>(null);
+  const [calibrationRightAngle, setCalibrationRightAngle] = useState<number | null>(null);
+  const [calibrationProgress, setCalibrationProgress] = useState(0);
+  const calibrationHoldCountRef = useRef(0);
+  
   // Liveness detection state
   const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
   const [challengeProgress, setChallengeProgress] = useState(0);
@@ -92,6 +101,10 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const [eyesOpen, setEyesOpen] = useState<boolean>(true);
   const [blinkDetected, setBlinkDetected] = useState(false);
   const previousEyesOpenRef = useRef<boolean>(true);
+  
+  // Computed calibration thresholds (with fallback defaults)
+  const leftThreshold = calibrationLeftAngle !== null ? calibrationLeftAngle * 0.5 : 8;
+  const rightThreshold = calibrationRightAngle !== null ? calibrationRightAngle * 0.5 : -8;
 
   // Debug mode
   const [debugMode] = useState(() => {
@@ -629,9 +642,9 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
         // After ~2 seconds (6 x 300ms), auto-proceed
         if (faceDetectedCountRef.current >= 6) {
           clearInterval(interval);
-          console.log('[Auto] Proceeding to liveness challenges...');
-          toast.info('Démarrage des défis de vivacité...');
-          startLivenessDetection();
+          console.log('[Auto] Proceeding to calibration...');
+          toast.info('Calibration automatique...');
+          startCalibration();
         }
       } else {
         faceDetectedCountRef.current = 0;
@@ -641,6 +654,76 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
 
     return () => clearInterval(interval);
   }, [step, faceDetected, modelsLoaded, videoReady]);
+
+  // Start calibration before liveness challenges
+  const startCalibration = useCallback(() => {
+    setStep('calibration');
+    setCalibrationStep('left');
+    setCalibrationLeftAngle(null);
+    setCalibrationRightAngle(null);
+    setCalibrationProgress(0);
+    calibrationHoldCountRef.current = 0;
+    faceDetectedCountRef.current = 0;
+    setAutoProgressCount(0);
+  }, []);
+
+  // Calibration detection - track max angles for each direction
+  useEffect(() => {
+    if (step !== 'calibration' || !faceDetected) return;
+
+    const interval = setInterval(() => {
+      if (calibrationStep === 'left') {
+        // Expecting positive angle for left turn
+        if (headAngle > 5) {
+          calibrationHoldCountRef.current++;
+          setCalibrationProgress((calibrationHoldCountRef.current / 5) * 100);
+          
+          // Track max angle seen
+          setCalibrationLeftAngle(prev => 
+            prev === null ? headAngle : Math.max(prev, headAngle)
+          );
+          
+          if (calibrationHoldCountRef.current >= 5) {
+            console.log(`[Calibration] LEFT captured: ${headAngle.toFixed(1)}°`);
+            toast.success('Gauche calibré!');
+            setCalibrationStep('right');
+            calibrationHoldCountRef.current = 0;
+            setCalibrationProgress(0);
+          }
+        } else {
+          calibrationHoldCountRef.current = 0;
+          setCalibrationProgress(0);
+        }
+      } else if (calibrationStep === 'right') {
+        // Expecting negative angle for right turn
+        if (headAngle < -5) {
+          calibrationHoldCountRef.current++;
+          setCalibrationProgress((calibrationHoldCountRef.current / 5) * 100);
+          
+          // Track min (most negative) angle seen
+          setCalibrationRightAngle(prev => 
+            prev === null ? headAngle : Math.min(prev, headAngle)
+          );
+          
+          if (calibrationHoldCountRef.current >= 5) {
+            console.log(`[Calibration] RIGHT captured: ${headAngle.toFixed(1)}°`);
+            toast.success('Droite calibré! Démarrage des défis...');
+            setCalibrationStep('done');
+            
+            // Start liveness after short delay
+            setTimeout(() => {
+              startLivenessDetection();
+            }, 500);
+          }
+        } else {
+          calibrationHoldCountRef.current = 0;
+          setCalibrationProgress(0);
+        }
+      }
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [step, calibrationStep, faceDetected, headAngle]);
 
   // Start liveness detection with countdown
   const startLivenessDetection = useCallback(() => {
@@ -706,17 +789,17 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
         }
         break;
       case 'turn_left':
-        // LEFT = positive angle
-        if (headAngle > 8) {
+        // LEFT = positive angle, use calibrated threshold
+        if (headAngle > leftThreshold) {
           completed = true;
-          console.log(`[Liveness] Challenge TURN_LEFT completed! Angle: ${headAngle.toFixed(1)}°`);
+          console.log(`[Liveness] Challenge TURN_LEFT completed! Angle: ${headAngle.toFixed(1)}° (threshold: ${leftThreshold.toFixed(1)}°)`);
         }
         break;
       case 'turn_right':
-        // RIGHT = negative angle
-        if (headAngle < -8) {
+        // RIGHT = negative angle, use calibrated threshold
+        if (headAngle < rightThreshold) {
           completed = true;
-          console.log(`[Liveness] Challenge TURN_RIGHT completed! Angle: ${headAngle.toFixed(1)}°`);
+          console.log(`[Liveness] Challenge TURN_RIGHT completed! Angle: ${headAngle.toFixed(1)}° (threshold: ${rightThreshold.toFixed(1)}°)`);
         }
         break;
       case 'smile':
@@ -874,18 +957,18 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       case 'blink':
         return eyesOpen ? '👀 Yeux ouverts - Clignez!' : '😌 Yeux fermés - Parfait!';
       case 'turn_left':
-        // LEFT = positive angle (current headAngle calibration)
-        if (headAngle > 8) {
+        // LEFT = positive angle (use calibrated threshold)
+        if (headAngle > leftThreshold) {
           return `✅ Détecté! ${angleDisplay}`;
-        } else if (headAngle > 4) {
+        } else if (headAngle > leftThreshold * 0.5) {
           return `↩️ Encore un peu... ${angleDisplay}`;
         }
         return `⬅️ Tournez la tête à gauche ${angleDisplay}`;
       case 'turn_right':
-        // RIGHT = negative angle (current headAngle calibration)
-        if (headAngle < -8) {
+        // RIGHT = negative angle (use calibrated threshold)
+        if (headAngle < rightThreshold) {
           return `✅ Détecté! ${angleDisplay}`;
-        } else if (headAngle < -4) {
+        } else if (headAngle < rightThreshold * 0.5) {
           return `↪️ Encore un peu... ${angleDisplay}`;
         }
         return `➡️ Tournez la tête à droite ${angleDisplay}`;
@@ -1048,7 +1131,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
         )}
 
         {/* Camera + Liveness (shared video element) */}
-        {(step === 'camera' || step === 'liveness') && (
+        {(step === 'camera' || step === 'liveness' || step === 'calibration') && (
           <div className="space-y-4">
             {step === 'camera' && cameraError ? (
               <div className="p-6 bg-destructive/10 rounded-xl text-center space-y-3">
@@ -1097,18 +1180,41 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                     </div>
                   )}
 
-                  {/* Face guide overlay */}
+                  {/* Face guide overlay with directional arrows */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-2xl">
+                    {/* Left arrow indicator */}
+                    {((step === 'calibration' && calibrationStep === 'left') || 
+                      (step === 'liveness' && currentChallenge?.type === 'turn_left' && livenessCountdown === null && !livenessVerified)) && (
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 animate-pulse">
+                        <div className="bg-primary/80 rounded-full p-3">
+                          <ChevronLeft className="h-8 w-8 text-white" />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Right arrow indicator */}
+                    {((step === 'calibration' && calibrationStep === 'right') || 
+                      (step === 'liveness' && currentChallenge?.type === 'turn_right' && livenessCountdown === null && !livenessVerified)) && (
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 animate-pulse">
+                        <div className="bg-primary/80 rounded-full p-3">
+                          <ChevronRight className="h-8 w-8 text-white" />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Face oval guide */}
                     <div
                       className={cn(
                         "w-56 h-72 rounded-[50%] border-4 transition-all duration-300",
-                        step === 'liveness'
-                          ? livenessVerified
-                            ? "border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.5)]"
-                            : "border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)]"
-                          : faceDetected
-                            ? "border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
-                            : "border-white/50"
+                        step === 'calibration'
+                          ? "border-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.3)]"
+                          : step === 'liveness'
+                            ? livenessVerified
+                              ? "border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.5)]"
+                              : "border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+                            : faceDetected
+                              ? "border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+                              : "border-white/50"
                       )}
                     />
                   </div>
@@ -1140,6 +1246,35 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                           <Progress value={(autoProgressCount / 6) * 100} className="h-1" />
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Calibration overlay */}
+                  {step === 'calibration' && (
+                    <div className="absolute top-6 left-1/2 -translate-x-1/2 text-center pointer-events-none">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                          {calibrationStep === 'left' ? (
+                            <ChevronLeft className="h-10 w-10 text-yellow-500" />
+                          ) : (
+                            <ChevronRight className="h-10 w-10 text-yellow-500" />
+                          )}
+                        </div>
+                        <h3 className="text-2xl font-bold text-white drop-shadow-lg">
+                          {calibrationStep === 'left' ? 'Calibration: Gauche' : 'Calibration: Droite'}
+                        </h3>
+                        <p className="text-white/90 text-base drop-shadow-lg">
+                          {calibrationStep === 'left' 
+                            ? 'Tournez la tête vers la gauche' 
+                            : 'Tournez la tête vers la droite'}
+                        </p>
+                        <div className="w-[260px] max-w-[80vw] mt-1">
+                          <Progress value={calibrationProgress} className="h-3" />
+                        </div>
+                        <p className="text-sm text-white/80 drop-shadow-lg">
+                          Angle: {headAngle.toFixed(0)}° - Maintenez la position
+                        </p>
+                      </div>
                     </div>
                   )}
 
