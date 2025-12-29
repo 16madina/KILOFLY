@@ -65,6 +65,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const watchdogIntervalRef = useRef<number | null>(null);
   const frameCheckCountRef = useRef(0);
   const restartCountRef = useRef(0);
+  const faceDetectedCountRef = useRef(0); // Counter for auto-proceed
   
   const [step, setStep] = useState<CaptureStep>('instructions');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -76,6 +77,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [videoReady, setVideoReady] = useState(false);
   const [needsManualPlay, setNeedsManualPlay] = useState(false);
+  const [autoProgressCount, setAutoProgressCount] = useState(0); // Visual countdown
   
   // Liveness detection state
   const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
@@ -610,6 +612,36 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     }
   }, [modelsLoaded, videoReady, step, startFaceDetection, stopFaceDetection]);
 
+  // Auto-proceed to liveness when face detected for 2 seconds
+  useEffect(() => {
+    if (step !== 'camera' || !faceDetected || !modelsLoaded || !videoReady) {
+      faceDetectedCountRef.current = 0;
+      setAutoProgressCount(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      if (faceDetected) {
+        faceDetectedCountRef.current++;
+        setAutoProgressCount(faceDetectedCountRef.current);
+        console.log(`[Auto] Face detected count: ${faceDetectedCountRef.current}/6`);
+        
+        // After ~2 seconds (6 x 300ms), auto-proceed
+        if (faceDetectedCountRef.current >= 6) {
+          clearInterval(interval);
+          console.log('[Auto] Proceeding to liveness challenges...');
+          toast.info('Démarrage des défis de vivacité...');
+          startLivenessDetection();
+        }
+      } else {
+        faceDetectedCountRef.current = 0;
+        setAutoProgressCount(0);
+      }
+    }, 300);
+
+    return () => clearInterval(interval);
+  }, [step, faceDetected, modelsLoaded, videoReady]);
+
   // Start liveness detection
   const startLivenessDetection = useCallback(() => {
     setStep('liveness');
@@ -618,6 +650,8 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     setChallengeCompleted([false, false]);
     setLivenessVerified(false);
     setBlinkDetected(false);
+    faceDetectedCountRef.current = 0;
+    setAutoProgressCount(0);
   }, []);
 
   // Handle file upload fallback
@@ -1084,10 +1118,16 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                           : !modelsLoaded
                             ? "Chargement de la détection IA..."
                             : faceDetected
-                              ? "✅ Visage détecté - Prêt pour la vérification"
+                              ? `✅ Visage détecté - Démarrage dans ${Math.max(0, Math.ceil((6 - autoProgressCount) * 0.3))}s...`
                               : "Placez votre visage dans le cercle"
                         }
                       </p>
+                      {/* Auto-progress bar */}
+                      {faceDetected && modelsLoaded && videoReady && (
+                        <div className="mt-2 mx-auto max-w-[200px]">
+                          <Progress value={(autoProgressCount / 6) * 100} className="h-1" />
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1180,27 +1220,18 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                         Annuler
                       </Button>
                       <Button
-                        onClick={startLivenessDetection}
-                        disabled={!faceDetected || !modelsLoaded}
+                        variant="secondary"
+                        onClick={() => fileInputRef.current?.click()}
                         className="flex-1 gap-2"
                       >
-                        <Check className="h-4 w-4" />
-                        Continuer
+                        <Upload className="h-4 w-4" />
+                        Importer
                       </Button>
                     </div>
 
-                    {/* Fallback link */}
-                    <div className="text-center">
-                      <button
-                        onClick={() => {
-                          stopCamera();
-                          fileInputRef.current?.click();
-                        }}
-                        className="text-sm text-muted-foreground hover:text-primary underline"
-                      >
-                        Problème de caméra? Importer un selfie
-                      </button>
-                    </div>
+                    <p className="text-xs text-center text-muted-foreground">
+                      Gardez votre visage dans le cercle - la vérification démarre automatiquement
+                    </p>
                   </>
                 ) : (
                   <Button
