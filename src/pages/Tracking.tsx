@@ -2,11 +2,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { PackageTracker } from "@/components/tracking/PackageTracker";
-import { Package, Loader2, MapPin, ArrowRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { Package, Loader2, MapPin, ArrowRight, Filter } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 const IN_TRANSIT_STATUSES = [
   "approved",
@@ -18,8 +19,17 @@ const IN_TRANSIT_STATUSES = [
   "out_for_delivery"
 ];
 
+const STATUS_FILTERS = [
+  { key: "all", label: "Tous" },
+  { key: "picked_up", label: "Récupéré" },
+  { key: "in_transit", label: "En vol" },
+  { key: "arrived", label: "Arrivé" },
+  { key: "out_for_delivery", label: "Livraison" },
+];
+
 const Tracking = () => {
   const { user } = useAuth();
+  const [activeFilter, setActiveFilter] = useState("all");
 
   const { data: reservations, isLoading, refetch } = useQuery({
     queryKey: ["tracking-reservations", user?.id],
@@ -48,6 +58,43 @@ const Tracking = () => {
     },
     enabled: !!user,
   });
+
+  // Filter reservations based on active filter
+  const filteredReservations = useMemo(() => {
+    if (!reservations) return [];
+    if (activeFilter === "all") return reservations;
+    
+    // Group similar statuses
+    const statusGroups: Record<string, string[]> = {
+      picked_up: ["approved", "pickup_scheduled", "picked_up"],
+      in_transit: ["in_progress", "in_transit"],
+      arrived: ["arrived"],
+      out_for_delivery: ["out_for_delivery"],
+    };
+    
+    const targetStatuses = statusGroups[activeFilter] || [activeFilter];
+    return reservations.filter(r => targetStatuses.includes(r.status));
+  }, [reservations, activeFilter]);
+
+  // Count per filter
+  const filterCounts = useMemo(() => {
+    if (!reservations) return {};
+    
+    const statusGroups: Record<string, string[]> = {
+      picked_up: ["approved", "pickup_scheduled", "picked_up"],
+      in_transit: ["in_progress", "in_transit"],
+      arrived: ["arrived"],
+      out_for_delivery: ["out_for_delivery"],
+    };
+    
+    const counts: Record<string, number> = { all: reservations.length };
+    
+    Object.entries(statusGroups).forEach(([key, statuses]) => {
+      counts[key] = reservations.filter(r => statuses.includes(r.status)).length;
+    });
+    
+    return counts;
+  }, [reservations]);
 
   // Real-time subscription for reservation updates
   useEffect(() => {
@@ -130,8 +177,44 @@ const Tracking = () => {
         <div className="px-4 py-4 pt-safe">
           <h1 className="text-xl font-bold">Suivi des colis</h1>
           <p className="text-sm text-muted-foreground">
-            {reservations?.length || 0} colis en cours
+            {filteredReservations?.length || 0} colis{activeFilter !== "all" ? ` (${STATUS_FILTERS.find(f => f.key === activeFilter)?.label})` : " en cours"}
           </p>
+        </div>
+        
+        {/* Status Filters */}
+        <div className="px-4 pb-3 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2">
+            {STATUS_FILTERS.map((filter) => {
+              const count = filterCounts[filter.key] || 0;
+              const isActive = activeFilter === filter.key;
+              
+              return (
+                <motion.button
+                  key={filter.key}
+                  onClick={() => setActiveFilter(filter.key)}
+                  whileTap={{ scale: 0.95 }}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  )}
+                >
+                  {filter.label}
+                  {count > 0 && (
+                    <span className={cn(
+                      "px-1.5 py-0.5 rounded-full text-xs min-w-[20px] text-center",
+                      isActive
+                        ? "bg-primary-foreground/20 text-primary-foreground"
+                        : "bg-background text-foreground"
+                    )}>
+                      {count}
+                    </span>
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -141,8 +224,9 @@ const Tracking = () => {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : !reservations || reservations.length === 0 ? (
+        ) : !filteredReservations || filteredReservations.length === 0 ? (
           <motion.div
+            key="empty"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center py-12 space-y-4"
@@ -151,15 +235,20 @@ const Tracking = () => {
               <Package className="h-10 w-10 text-muted-foreground" />
             </div>
             <div>
-              <h3 className="font-semibold text-lg">Aucun colis en transit</h3>
+              <h3 className="font-semibold text-lg">
+                {activeFilter === "all" ? "Aucun colis en transit" : "Aucun colis dans cette catégorie"}
+              </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Vos colis en cours de livraison apparaîtront ici
+                {activeFilter === "all" 
+                  ? "Vos colis en cours de livraison apparaîtront ici"
+                  : "Essayez un autre filtre pour voir vos colis"}
               </p>
             </div>
           </motion.div>
         ) : (
-          <div className="space-y-4">
-            {reservations.map((reservation, index) => {
+          <AnimatePresence mode="popLayout">
+            <div className="space-y-4">
+              {filteredReservations.map((reservation, index) => {
               const listing = reservation.listing as {
                 departure: string;
                 arrival: string;
@@ -175,9 +264,11 @@ const Tracking = () => {
               return (
                 <motion.div
                   key={reservation.id}
+                  layout
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ delay: index * 0.05 }}
                   className="bg-card rounded-xl border border-border overflow-hidden"
                 >
                   {/* Reservation Header */}
@@ -232,6 +323,7 @@ const Tracking = () => {
               );
             })}
           </div>
+        </AnimatePresence>
         )}
       </div>
     </div>
