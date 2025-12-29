@@ -19,7 +19,7 @@ type CaptureStep = 'instructions' | 'loading-models' | 'camera' | 'calibration' 
 
 type CalibrationStep = 'left' | 'right' | 'done';
 
-type LivenessChallenge = 'blink' | 'turn_left' | 'turn_right' | 'smile';
+type LivenessChallenge = 'nod' | 'turn_left' | 'turn_right' | 'smile';
 
 interface Challenge {
   type: LivenessChallenge;
@@ -30,10 +30,10 @@ interface Challenge {
 
 const LIVENESS_CHALLENGES: Challenge[] = [
   {
-    type: 'blink',
-    label: 'Clignez des yeux',
-    instruction: 'Fermez les yeux puis rouvrez-les',
-    icon: <Eye className="h-6 w-6" />
+    type: 'nod',
+    label: 'Hochez la tête',
+    instruction: 'Faites oui de la tête (haut et bas)',
+    icon: <Check className="h-6 w-6" />
   },
   {
     type: 'turn_left',
@@ -100,9 +100,10 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   // Face detection state
   const [currentExpression, setCurrentExpression] = useState<string>('neutral');
   const [headAngle, setHeadAngle] = useState<number>(0);
-  const [eyesOpen, setEyesOpen] = useState<boolean>(true);
-  const [blinkDetected, setBlinkDetected] = useState(false);
-  const previousEyesOpenRef = useRef<boolean>(true);
+  const [headPitch, setHeadPitch] = useState<number>(0); // For nod detection (up/down)
+  const [nodDetected, setNodDetected] = useState(false);
+  const nodPhaseRef = useRef<'idle' | 'up' | 'down'>('idle');
+  const baselinePitchRef = useRef<number | null>(null);
   
   // Head-turn thresholds - VERY EASY (minimal movement required)
   // Fixed very low threshold - just 2 degrees of movement needed!
@@ -126,11 +127,9 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     lastEvent: ''
   });
 
-  // Get random 2 challenges for this session (exclude smile if no expression model needed for perf)
+  // Only use the nod challenge - simple and easy!
   const [selectedChallenges] = useState<Challenge[]>(() => {
-    const challenges = LIVENESS_CHALLENGES.filter(c => c.type !== 'smile');
-    const shuffled = [...challenges].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 2);
+    return [LIVENESS_CHALLENGES.find(c => c.type === 'nod')!];
   });
 
   const currentChallenge = selectedChallenges[currentChallengeIndex];
@@ -287,42 +286,50 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
             console.log(`[Liveness] Head angle: ${clampedAngle.toFixed(1)}° (ratio: ${ratio.toFixed(2)})`);
           }
           
-          // Eye aspect ratio for blink detection
-          const calculateEAR = (eye: faceapi.Point[]) => {
-            const vertical1 = Math.sqrt(
-              Math.pow(eye[1].x - eye[5].x, 2) + Math.pow(eye[1].y - eye[5].y, 2)
-            );
-            const vertical2 = Math.sqrt(
-              Math.pow(eye[2].x - eye[4].x, 2) + Math.pow(eye[2].y - eye[4].y, 2)
-            );
-            const horizontal = Math.sqrt(
-              Math.pow(eye[0].x - eye[3].x, 2) + Math.pow(eye[0].y - eye[3].y, 2)
-            );
-            return (vertical1 + vertical2) / (2.0 * horizontal);
-          };
+          // Head pitch estimation for nod detection (up/down)
+          // Use nose position relative to eyes to detect vertical movement
+          const eyesCenterY = (leftEyeCenter.y + rightEyeCenter.y) / 2;
+          const noseToEyesVertical = noseTip.y - eyesCenterY;
           
-          const leftEAR = calculateEAR(leftEye);
-          const rightEAR = calculateEAR(rightEye);
-          const avgEAR = (leftEAR + rightEAR) / 2;
+          // Set baseline on first detection
+          if (baselinePitchRef.current === null) {
+            baselinePitchRef.current = noseToEyesVertical;
+          }
           
-          // VERY HIGH threshold - extremely easy blink detection
-          // Higher value = eyes considered "closed" much more easily
-          const EAR_THRESHOLD = 0.32;
-          const areEyesOpen = avgEAR > EAR_THRESHOLD;
+          // Calculate pitch deviation from baseline
+          const pitchDeviation = noseToEyesVertical - baselinePitchRef.current;
+          setHeadPitch(pitchDeviation);
           
-          // Log EAR values during liveness for debugging
+          // Log pitch during liveness for debugging
           if (step === 'liveness') {
-            console.log(`[Liveness] EAR: ${avgEAR.toFixed(3)} | Threshold: ${EAR_THRESHOLD} | Eyes: ${areEyesOpen ? 'OPEN' : 'CLOSED'} | PrevOpen: ${previousEyesOpenRef.current}`);
+            console.log(`[Liveness] Head pitch: ${pitchDeviation.toFixed(1)} | Phase: ${nodPhaseRef.current}`);
           }
           
-          // Detect blink: eyes were open in previous frame, now closed
-          if (previousEyesOpenRef.current === true && areEyesOpen === false) {
-            console.log('[Liveness] *** BLINK DETECTED! *** EAR:', avgEAR.toFixed(3));
-            setBlinkDetected(true);
-          }
+          // Detect nod: head goes down then up (or up then down)
+          // Very easy threshold - just 5 pixels of movement
+          const NOD_THRESHOLD = 5;
           
-          previousEyesOpenRef.current = areEyesOpen;
-          setEyesOpen(areEyesOpen);
+          if (nodPhaseRef.current === 'idle') {
+            if (pitchDeviation > NOD_THRESHOLD) {
+              nodPhaseRef.current = 'down';
+              console.log('[Liveness] Nod phase: DOWN detected');
+            } else if (pitchDeviation < -NOD_THRESHOLD) {
+              nodPhaseRef.current = 'up';
+              console.log('[Liveness] Nod phase: UP detected');
+            }
+          } else if (nodPhaseRef.current === 'down') {
+            if (pitchDeviation < -NOD_THRESHOLD) {
+              console.log('[Liveness] *** NOD DETECTED! *** (down then up)');
+              setNodDetected(true);
+              nodPhaseRef.current = 'idle';
+            }
+          } else if (nodPhaseRef.current === 'up') {
+            if (pitchDeviation > NOD_THRESHOLD) {
+              console.log('[Liveness] *** NOD DETECTED! *** (up then down)');
+              setNodDetected(true);
+              nodPhaseRef.current = 'idle';
+            }
+          }
           
           if (debugMode) {
             setDebugStats(prev => ({ ...prev, framesOk: prev.framesOk + 1 }));
@@ -686,9 +693,11 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     setStep('liveness');
     setCurrentChallengeIndex(0);
     setChallengeProgress(0);
-    setChallengeCompleted([false, false]);
+    setChallengeCompleted([false]);
     setLivenessVerified(false);
-    setBlinkDetected(false);
+    setNodDetected(false);
+    nodPhaseRef.current = 'idle';
+    baselinePitchRef.current = null;
     faceDetectedCountRef.current = 0;
     setAutoProgressCount(0);
 
@@ -825,11 +834,11 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     // Visual LEFT turn → NEGATIVE headAngle (leftThreshold is negative)
     // Visual RIGHT turn → POSITIVE headAngle (rightThreshold is positive)
     switch (currentChallenge.type) {
-      case 'blink':
-        if (blinkDetected) {
+      case 'nod':
+        if (nodDetected) {
           completed = true;
-          setBlinkDetected(false);
-          console.log('[Liveness] Challenge BLINK completed!');
+          setNodDetected(false);
+          console.log('[Liveness] Challenge NOD completed!');
         }
         break;
       case 'turn_left':
@@ -905,8 +914,9 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     currentChallengeIndex,
     challengeCompleted,
     selectedChallenges.length,
-    blinkDetected,
+    nodDetected,
     headAngle,
+    headPitch,
     currentExpression,
     leftThreshold,
     rightThreshold,
@@ -968,8 +978,10 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     setFaceDetected(false);
     setLivenessVerified(false);
     setCurrentChallengeIndex(0);
-    setChallengeCompleted([false, false]);
-    setBlinkDetected(false);
+    setChallengeCompleted([false]);
+    setNodDetected(false);
+    nodPhaseRef.current = 'idle';
+    baselinePitchRef.current = null;
     startCamera();
   }, [startCamera]);
 
@@ -1025,8 +1037,12 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     const angleDisplay = `(${headAngle.toFixed(0)}°)`;
     
     switch (currentChallenge.type) {
-      case 'blink':
-        return eyesOpen ? '👀 Yeux ouverts - Clignez!' : '😌 Yeux fermés - Parfait!';
+      case 'nod':
+        const phase = nodPhaseRef.current;
+        if (phase === 'idle') return '⬆️⬇️ Hochez la tête de haut en bas';
+        if (phase === 'down') return '⬆️ Remontez la tête!';
+        if (phase === 'up') return '⬇️ Baissez la tête!';
+        return '⬆️⬇️ Hochez la tête';
       case 'turn_left':
         // LEFT = positive angle (use calibrated threshold)
         if (headAngle > leftThreshold) {
@@ -1418,19 +1434,23 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                             <h3 className="text-2xl font-bold text-white drop-shadow-lg">{currentChallenge.label}</h3>
                             <p className="text-white/90 text-base drop-shadow-lg">{currentChallenge.instruction}</p>
                             
-                            {/* Eye status indicator for blink challenge */}
-                            {currentChallenge.type === 'blink' && (
+                            {/* Nod status indicator for nod challenge */}
+                            {currentChallenge.type === 'nod' && (
                               <div className={cn(
                                 "px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2 transition-all duration-200",
-                                eyesOpen 
+                                nodPhaseRef.current === 'idle'
                                   ? "bg-blue-500/80 text-white" 
-                                  : "bg-green-500/80 text-white animate-pulse"
+                                  : "bg-yellow-500/80 text-white animate-pulse"
                               )}>
                                 <div className={cn(
                                   "w-3 h-3 rounded-full",
-                                  eyesOpen ? "bg-white" : "bg-white/50"
+                                  nodPhaseRef.current === 'idle' ? "bg-white" : "bg-white/50"
                                 )} />
-                                {eyesOpen ? "👁️ Yeux OUVERTS" : "😌 Yeux FERMÉS - Clignement!"}
+                                {nodPhaseRef.current === 'idle' 
+                                  ? "⬆️⬇️ Faites OUI de la tête" 
+                                  : nodPhaseRef.current === 'down' 
+                                    ? "⬆️ Maintenant remontez!" 
+                                    : "⬇️ Maintenant baissez!"}
                               </div>
                             )}
                             
