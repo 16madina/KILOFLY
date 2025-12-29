@@ -54,8 +54,12 @@ const VerifyIdentity = () => {
       // Determine current step based on status
       if (data.id_verified) {
         setCurrentStep('complete');
-      } else if (data.id_document_url && data.verification_method) {
-        // Document uploaded and being processed
+      } else if (data.verification_method === 'pending' && data.id_document_url) {
+        // Document uploaded with pending status - allow selfie capture
+        setDocumentUrl(data.id_document_url);
+        setCurrentStep('selfie');
+      } else if (data.id_document_url && data.verification_method && data.verification_method !== 'pending') {
+        // Document uploaded and being processed (flagged, rejected, etc.)
         setCurrentStep('complete');
       } else if (data.id_document_url && !data.verification_method) {
         // Document uploaded but needs selfie
@@ -195,6 +199,19 @@ const VerifyIdentity = () => {
           <div>
             <p className="font-semibold">❌ Document rejeté</p>
             <p className="text-sm">Veuillez soumettre un nouveau document</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Handle 'pending' status - document uploaded, waiting for selfie or admin review
+    if (status.verification_method === 'pending' && status.id_document_url) {
+      return (
+        <div className="flex items-center gap-2 p-4 rounded-xl bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400">
+          <Clock className="h-5 w-5" />
+          <div>
+            <p className="font-semibold">⏳ Document en attente de vérification</p>
+            <p className="text-sm">Complétez la vérification faciale pour accélérer le processus</p>
           </div>
         </div>
       );
