@@ -86,12 +86,17 @@ const IDDocumentUpload = ({ documentUrl, onUploadComplete }: IDDocumentUploadPro
 
       setPreviewUrl(publicUrl);
 
-      // Update profile with document URL and submission timestamp
+      // Update profile with document URL, reset verification status for new attempt
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
           id_document_url: publicUrl,
           id_submitted_at: new Date().toISOString(),
+          // Reset verification status for new document submission
+          verification_method: 'pending',
+          verification_notes: null,
+          ai_confidence_score: null,
+          id_verified: false,
         })
         .eq('id', user.id);
 
