@@ -34,6 +34,7 @@ const VerifyIdentity = () => {
   const [currentStep, setCurrentStep] = useState<VerificationStep>('document');
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState(5);
 
   useEffect(() => {
     if (!user) {
@@ -123,10 +124,25 @@ const VerifyIdentity = () => {
     }
   };
 
-  const handleCloseSuccessPopup = () => {
-    setShowSuccessPopup(false);
-    navigate('/profile');
-  };
+  // Auto-redirect countdown when success popup is shown
+  useEffect(() => {
+    if (!showSuccessPopup) {
+      setRedirectCountdown(5);
+      return;
+    }
+    
+    if (redirectCountdown <= 0) {
+      setShowSuccessPopup(false);
+      navigate('/profile');
+      return;
+    }
+    
+    const timer = setTimeout(() => {
+      setRedirectCountdown(prev => prev - 1);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [showSuccessPopup, redirectCountdown, navigate]);
 
   const handleSkipSelfie = async () => {
     setCurrentStep('verifying');
@@ -331,14 +347,17 @@ const VerifyIdentity = () => {
               <span>Vous pouvez profiter de toutes les fonctionnalités</span>
             </div>
             
-            <Button 
-              onClick={handleCloseSuccessPopup}
-              className="w-full mt-4 gap-2"
-              size="lg"
-            >
-              <CheckCircle2 className="h-5 w-5" />
-              Continuer
-            </Button>
+            <div className="mt-4 text-center text-muted-foreground">
+              <p className="text-sm">Redirection automatique dans</p>
+              <motion.span 
+                key={redirectCountdown}
+                initial={{ scale: 1.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="text-2xl font-bold text-primary block mt-1"
+              >
+                {redirectCountdown}s
+              </motion.span>
+            </div>
           </motion.div>
         </DialogContent>
       </Dialog>
