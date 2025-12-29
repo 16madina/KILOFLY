@@ -2,7 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { PackageTracker } from "@/components/tracking/PackageTracker";
-import { Package, Loader2, MapPin, ArrowRight } from "lucide-react";
+import { Package, Loader2, MapPin, ArrowRight, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -10,6 +10,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const IN_TRANSIT_STATUSES = [
   "approved",
@@ -31,6 +32,7 @@ const STATUS_FILTERS = [
 
 const Tracking = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState("all");
 
   const { data: reservations, isLoading, refetch } = useQuery({
@@ -309,12 +311,21 @@ const Tracking = () => {
                           </span>
                         </div>
 
-                        {/* Date info */}
-                        {listing?.arrival_date && (
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Arrivée prévue: {format(new Date(listing.arrival_date), "d MMMM yyyy", { locale: fr })}
-                          </p>
-                        )}
+                        {/* Date info + Details link */}
+                        <div className="flex items-center justify-between mt-2">
+                          {listing?.arrival_date && (
+                            <p className="text-xs text-muted-foreground">
+                              Arrivée prévue: {format(new Date(listing.arrival_date), "d MMMM yyyy", { locale: fr })}
+                            </p>
+                          )}
+                          <button
+                            onClick={() => navigate("/my-reservations")}
+                            className="flex items-center gap-1 text-xs text-primary hover:underline ml-auto"
+                          >
+                            Voir détails
+                            <ChevronRight className="h-3 w-3" />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Package Tracker */}
