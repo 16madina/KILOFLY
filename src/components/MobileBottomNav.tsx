@@ -67,7 +67,7 @@ const MobileBottomNav = () => {
           : "glass-nav"
       )}
     >
-      <div className="flex items-center justify-around h-18 px-2 relative">
+      <div className="flex items-center justify-around h-14 px-2 relative">
         {/* Animated background indicator */}
         <motion.div
           className="absolute h-12 rounded-2xl bg-primary/10 -z-10"
@@ -98,11 +98,11 @@ const MobileBottomNav = () => {
                 key={path}
                 to={path}
                 onClick={handleTabPress}
-                className="flex flex-col items-center justify-center flex-1 h-full -mt-4"
+                className="flex flex-col items-center justify-center flex-1 h-full -mt-3"
               >
                 <motion.div
                   className={cn(
-                    "flex items-center justify-center w-14 h-14 rounded-2xl fab",
+                    "flex items-center justify-center w-12 h-12 rounded-xl fab",
                     "bg-gradient-to-br from-primary to-accent"
                   )}
                   whileHover={{ scale: 1.05 }}
@@ -139,7 +139,7 @@ const MobileBottomNav = () => {
             >
               <motion.div
                 className={cn(
-                  "flex items-center justify-center w-11 h-11 rounded-xl relative",
+                  "flex items-center justify-center w-9 h-9 rounded-xl relative",
                 )}
                 animate={{
                   scale: isActive ? 1 : 0.92,
