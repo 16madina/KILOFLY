@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import * as faceapi from 'face-api.js';
 
 interface SelfieCaptureProps {
   onCaptureComplete: (selfieUrl: string) => void;
@@ -15,7 +16,7 @@ interface SelfieCaptureProps {
   documentUrl: string;
 }
 
-type CaptureStep = 'instructions' | 'camera' | 'liveness' | 'preview' | 'uploading';
+type CaptureStep = 'instructions' | 'loading-models' | 'camera' | 'liveness' | 'preview' | 'uploading';
 
 type LivenessChallenge = 'blink' | 'turn_left' | 'turn_right' | 'smile';
 
@@ -30,7 +31,7 @@ const LIVENESS_CHALLENGES: Challenge[] = [
   {
     type: 'blink',
     label: 'Clignez des yeux',
-    instruction: 'Clignez des yeux 2 fois',
+    instruction: 'Fermez les yeux puis rouvrez-les',
     icon: <Eye className="h-6 w-6" />
   },
   {
@@ -53,11 +54,14 @@ const LIVENESS_CHALLENGES: Challenge[] = [
   }
 ];
 
+const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model';
+
 const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCaptureProps) => {
   const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const detectionIntervalRef = useRef<number | null>(null);
   
   const [step, setStep] = useState<CaptureStep>('instructions');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -65,13 +69,21 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [faceDetected, setFaceDetected] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   
   // Liveness detection state
   const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
   const [challengeProgress, setChallengeProgress] = useState(0);
-  const [challengeCompleted, setChallengeCompleted] = useState<boolean[]>([false, false, false, false]);
+  const [challengeCompleted, setChallengeCompleted] = useState<boolean[]>([false, false]);
   const [livenessVerified, setLivenessVerified] = useState(false);
-  const [challengeTimer, setChallengeTimer] = useState<number>(5);
+  
+  // Face detection state
+  const [currentExpression, setCurrentExpression] = useState<string>('neutral');
+  const [headAngle, setHeadAngle] = useState<number>(0);
+  const [eyesOpen, setEyesOpen] = useState<boolean>(true);
+  const [blinkDetected, setBlinkDetected] = useState(false);
+  const previousEyesOpenRef = useRef<boolean>(true);
 
   // Get random 2 challenges for this session
   const [selectedChallenges] = useState<Challenge[]>(() => {
@@ -81,9 +93,141 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
 
   const currentChallenge = selectedChallenges[currentChallengeIndex];
 
+  // Load face-api.js models
+  const loadModels = useCallback(async () => {
+    setStep('loading-models');
+    setLoadingProgress(0);
+    
+    try {
+      // Load models sequentially with progress updates
+      setLoadingProgress(10);
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+      
+      setLoadingProgress(40);
+      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      
+      setLoadingProgress(70);
+      await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
+      
+      setLoadingProgress(100);
+      setModelsLoaded(true);
+      
+      console.log('Face-api models loaded successfully');
+      return true;
+    } catch (error) {
+      console.error('Error loading face-api models:', error);
+      setCameraError('Erreur lors du chargement des modèles de détection faciale');
+      setStep('instructions');
+      return false;
+    }
+  }, []);
+
+  // Real face detection using face-api.js
+  const startFaceDetection = useCallback(async () => {
+    if (!videoRef.current || !modelsLoaded) return;
+
+    const video = videoRef.current;
+    
+    const detectFace = async () => {
+      if (!video || video.paused || video.ended) return;
+
+      try {
+        const detections = await faceapi
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+          .withFaceLandmarks()
+          .withFaceExpressions();
+
+        if (detections) {
+          setFaceDetected(true);
+          
+          // Get expressions
+          const expressions = detections.expressions;
+          const dominantExpression = Object.entries(expressions).reduce((a, b) => 
+            a[1] > b[1] ? a : b
+          )[0];
+          setCurrentExpression(dominantExpression);
+          
+          // Calculate head angle from landmarks
+          const landmarks = detections.landmarks;
+          const leftEye = landmarks.getLeftEye();
+          const rightEye = landmarks.getRightEye();
+          
+          // Calculate head rotation based on eye positions
+          const leftEyeCenter = {
+            x: leftEye.reduce((sum, p) => sum + p.x, 0) / leftEye.length,
+            y: leftEye.reduce((sum, p) => sum + p.y, 0) / leftEye.length
+          };
+          const rightEyeCenter = {
+            x: rightEye.reduce((sum, p) => sum + p.x, 0) / rightEye.length,
+            y: rightEye.reduce((sum, p) => sum + p.y, 0) / rightEye.length
+          };
+          
+          // Estimate head angle based on face box position relative to frame
+          const faceBox = detections.detection.box;
+          const frameCenter = video.videoWidth / 2;
+          const faceCenter = faceBox.x + faceBox.width / 2;
+          const angle = ((faceCenter - frameCenter) / frameCenter) * 45; // -45 to +45 degrees
+          setHeadAngle(angle);
+          
+          // Eye aspect ratio for blink detection
+          const calculateEAR = (eye: faceapi.Point[]) => {
+            const vertical1 = Math.sqrt(
+              Math.pow(eye[1].x - eye[5].x, 2) + Math.pow(eye[1].y - eye[5].y, 2)
+            );
+            const vertical2 = Math.sqrt(
+              Math.pow(eye[2].x - eye[4].x, 2) + Math.pow(eye[2].y - eye[4].y, 2)
+            );
+            const horizontal = Math.sqrt(
+              Math.pow(eye[0].x - eye[3].x, 2) + Math.pow(eye[0].y - eye[3].y, 2)
+            );
+            return (vertical1 + vertical2) / (2.0 * horizontal);
+          };
+          
+          const leftEAR = calculateEAR(leftEye);
+          const rightEAR = calculateEAR(rightEye);
+          const avgEAR = (leftEAR + rightEAR) / 2;
+          
+          // Threshold for closed eyes
+          const EAR_THRESHOLD = 0.22;
+          const areEyesOpen = avgEAR > EAR_THRESHOLD;
+          
+          // Detect blink (eyes were open, now closed)
+          if (previousEyesOpenRef.current && !areEyesOpen) {
+            setBlinkDetected(true);
+          }
+          
+          previousEyesOpenRef.current = areEyesOpen;
+          setEyesOpen(areEyesOpen);
+          
+        } else {
+          setFaceDetected(false);
+        }
+      } catch (error) {
+        console.error('Face detection error:', error);
+      }
+    };
+
+    // Run detection every 150ms for smooth tracking
+    detectionIntervalRef.current = window.setInterval(detectFace, 150);
+  }, [modelsLoaded]);
+
+  // Stop face detection
+  const stopFaceDetection = useCallback(() => {
+    if (detectionIntervalRef.current) {
+      clearInterval(detectionIntervalRef.current);
+      detectionIntervalRef.current = null;
+    }
+  }, []);
+
   // Start camera
   const startCamera = useCallback(async () => {
     setCameraError(null);
+    
+    // Load models first if not loaded
+    if (!modelsLoaded) {
+      const loaded = await loadModels();
+      if (!loaded) return;
+    }
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -100,12 +244,14 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
+        
+        // Start face detection after video is playing
+        setTimeout(() => {
+          startFaceDetection();
+        }, 500);
       }
       
       setStep('camera');
-      
-      // Simulate face detection after a delay
-      setTimeout(() => setFaceDetected(true), 1500);
       
     } catch (error: any) {
       console.error('Camera error:', error);
@@ -117,10 +263,11 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
         setCameraError('Impossible d\'accéder à la caméra. Veuillez réessayer.');
       }
     }
-  }, []);
+  }, [modelsLoaded, loadModels, startFaceDetection]);
 
   // Stop camera
   const stopCamera = useCallback(() => {
+    stopFaceDetection();
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -128,7 +275,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-  }, []);
+  }, [stopFaceDetection]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -144,49 +291,75 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     setChallengeProgress(0);
     setChallengeCompleted([false, false]);
     setLivenessVerified(false);
-    setChallengeTimer(5);
+    setBlinkDetected(false);
   }, []);
 
-  // Simulate challenge detection (in production, use real ML models)
+  // Check challenge completion based on real face detection
   useEffect(() => {
-    if (step !== 'liveness' || livenessVerified) return;
+    if (step !== 'liveness' || livenessVerified || !currentChallenge) return;
 
-    // Timer countdown
-    const timerInterval = setInterval(() => {
-      setChallengeTimer(prev => {
-        if (prev <= 1) {
-          // Challenge completed (simulated)
-          const newCompleted = [...challengeCompleted];
-          newCompleted[currentChallengeIndex] = true;
-          setChallengeCompleted(newCompleted);
-          
-          if (currentChallengeIndex < selectedChallenges.length - 1) {
-            // Move to next challenge
-            setCurrentChallengeIndex(prev => prev + 1);
-            setChallengeProgress(0);
-            return 5;
-          } else {
-            // All challenges completed
-            setLivenessVerified(true);
-            clearInterval(timerInterval);
-            toast.success('Vérification de vivacité réussie!');
-            return 0;
-          }
+    let completed = false;
+
+    switch (currentChallenge.type) {
+      case 'blink':
+        if (blinkDetected) {
+          completed = true;
+          setBlinkDetected(false); // Reset for potential next blink challenge
         }
-        return prev - 1;
-      });
-    }, 1000);
+        break;
+      case 'turn_left':
+        // Head turned left (positive angle in mirrored view)
+        if (headAngle > 15) {
+          completed = true;
+        }
+        break;
+      case 'turn_right':
+        // Head turned right (negative angle in mirrored view)
+        if (headAngle < -15) {
+          completed = true;
+        }
+        break;
+      case 'smile':
+        if (currentExpression === 'happy') {
+          completed = true;
+        }
+        break;
+    }
 
-    // Progress animation
-    const progressInterval = setInterval(() => {
-      setChallengeProgress(prev => Math.min(prev + 5, 100));
-    }, 250);
-
-    return () => {
-      clearInterval(timerInterval);
-      clearInterval(progressInterval);
-    };
-  }, [step, currentChallengeIndex, livenessVerified, challengeCompleted, selectedChallenges.length]);
+    if (completed) {
+      // Update progress smoothly
+      const progressInterval = setInterval(() => {
+        setChallengeProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(progressInterval);
+            
+            // Mark current challenge as completed
+            const newCompleted = [...challengeCompleted];
+            newCompleted[currentChallengeIndex] = true;
+            setChallengeCompleted(newCompleted);
+            
+            if (currentChallengeIndex < selectedChallenges.length - 1) {
+              // Move to next challenge
+              setTimeout(() => {
+                setCurrentChallengeIndex(prev => prev + 1);
+                setChallengeProgress(0);
+              }, 500);
+            } else {
+              // All challenges completed
+              setTimeout(() => {
+                setLivenessVerified(true);
+                toast.success('Vérification de vivacité réussie!');
+              }, 500);
+            }
+            return 100;
+          }
+          return prev + 10;
+        });
+      }, 50);
+      
+      return () => clearInterval(progressInterval);
+    }
+  }, [step, currentChallenge, blinkDetected, headAngle, currentExpression, livenessVerified, currentChallengeIndex, challengeCompleted, selectedChallenges.length]);
 
   // Auto-capture after liveness verified
   useEffect(() => {
@@ -248,6 +421,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     setLivenessVerified(false);
     setCurrentChallengeIndex(0);
     setChallengeCompleted([false, false]);
+    setBlinkDetected(false);
     startCamera();
   }, [startCamera]);
 
@@ -300,6 +474,24 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     }
   };
 
+  // Get challenge status indicator
+  const getChallengeStatus = () => {
+    if (!currentChallenge) return '';
+    
+    switch (currentChallenge.type) {
+      case 'blink':
+        return eyesOpen ? '👀 Yeux ouverts - Clignez!' : '😌 Yeux fermés';
+      case 'turn_left':
+        return headAngle > 5 ? `↩️ Angle: ${Math.round(headAngle)}°` : '➡️ Tournez plus à gauche';
+      case 'turn_right':
+        return headAngle < -5 ? `↪️ Angle: ${Math.round(Math.abs(headAngle))}°` : '⬅️ Tournez plus à droite';
+      case 'smile':
+        return currentExpression === 'happy' ? '😊 Sourire détecté!' : `Expression: ${currentExpression}`;
+      default:
+        return '';
+    }
+  };
+
   return (
     <Card className="p-6 overflow-hidden">
       <div className="space-y-4">
@@ -313,6 +505,8 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
             <p className="text-sm text-muted-foreground">
               {step === 'liveness' 
                 ? 'Suivez les instructions pour prouver votre identité'
+                : step === 'loading-models'
+                ? 'Chargement de la détection faciale...'
                 : 'Prenez un selfie pour confirmer votre identité'
               }
             </p>
@@ -332,26 +526,26 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
               <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-xl p-5 border border-primary/10">
                 <div className="flex items-center gap-2 mb-3">
                   <Sparkles className="h-5 w-5 text-primary" />
-                  <span className="font-semibold">Vérification de vivacité</span>
+                  <span className="font-semibold">Vérification de vivacité IA</span>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Pour garantir que vous êtes une vraie personne et non une photo, 
-                  nous allons vous demander d'effectuer quelques mouvements simples 
-                  devant la caméra.
+                  Notre système utilise l'intelligence artificielle pour détecter 
+                  les mouvements réels de votre visage et garantir que vous êtes 
+                  une vraie personne.
                 </p>
                 
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
                     <Eye className="h-4 w-4 text-primary" />
-                    <span>Clignez des yeux sur demande</span>
+                    <span>Détection du clignement des yeux</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <RotateCcw className="h-4 w-4 text-primary" />
-                    <span>Tournez la tête dans la direction indiquée</span>
+                    <span>Suivi des mouvements de la tête</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Smile className="h-4 w-4 text-primary" />
-                    <span>Souriez à la caméra</span>
+                    <span>Reconnaissance des expressions</span>
                   </div>
                 </div>
 
@@ -381,6 +575,28 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                   </Button>
                 )}
               </div>
+            </motion.div>
+          )}
+
+          {/* Loading Models Step */}
+          {step === 'loading-models' && (
+            <motion.div
+              key="loading-models"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="py-8 text-center space-y-4"
+            >
+              <div className="relative mx-auto w-16 h-16">
+                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold">Chargement de l'IA...</p>
+                <p className="text-sm text-muted-foreground">
+                  Préparation des modèles de détection faciale
+                </p>
+              </div>
+              <Progress value={loadingProgress} className="max-w-xs mx-auto" />
             </motion.div>
           )}
 
@@ -430,7 +646,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                     <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
                       <p className="text-white text-center text-sm">
                         {faceDetected 
-                          ? "✅ Visage détecté - Prêt pour la vérification"
+                          ? "✅ Visage détecté par IA - Prêt pour la vérification"
                           : "Placez votre visage dans le cercle"
                         }
                       </p>
@@ -512,11 +728,11 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                           <p className="font-semibold text-sm">{currentChallenge.label}</p>
                           <p className="text-xs text-muted-foreground">{currentChallenge.instruction}</p>
                         </div>
-                        <div className="text-2xl font-bold text-primary">
-                          {challengeTimer}
-                        </div>
                       </div>
                       <Progress value={challengeProgress} className="mt-3 h-2" />
+                      <p className="text-xs text-center mt-2 text-muted-foreground">
+                        {getChallengeStatus()}
+                      </p>
                     </div>
                   </motion.div>
                 )}
@@ -621,14 +837,14 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                 <div className="absolute top-4 right-4 space-y-2">
                   <div className="bg-green-500 text-white rounded-full p-2 flex items-center gap-1 px-3">
                     <Check className="h-4 w-4" />
-                    <span className="text-xs font-medium">Vivacité ✓</span>
+                    <span className="text-xs font-medium">IA Vérifié ✓</span>
                   </div>
                 </div>
               </div>
 
               <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 border border-green-200 dark:border-green-800">
                 <p className="text-sm text-green-700 dark:text-green-400 text-center">
-                  ✅ Vérification de vivacité réussie! Votre photo est prête.
+                  ✅ Vérification de vivacité par IA réussie! Votre photo est prête.
                 </p>
               </div>
 
