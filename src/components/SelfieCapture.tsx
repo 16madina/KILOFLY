@@ -68,7 +68,8 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const frameCheckCountRef = useRef(0);
   const restartCountRef = useRef(0);
   const faceDetectedCountRef = useRef(0); // Counter for auto-proceed
-  
+  const challengeCompletionLockRef = useRef(false); // Prevent effect cleanup cancelling liveness completion
+
   const [step, setStep] = useState<CaptureStep>('instructions');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -828,8 +829,8 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     if (step !== 'liveness' || livenessVerified || !currentChallenge || livenessCountdown !== null) return;
 
     // Avoid double-triggering while we animate progress / switch to the next challenge
-    if (challengeProgress > 0) return;
     if (challengeCompleted[currentChallengeIndex]) return;
+    if (challengeCompletionLockRef.current) return;
 
     let completed = false;
 
@@ -872,7 +873,10 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
 
     if (!completed) return;
 
-    // Mark as started immediately to prevent multiple intervals from being created
+    // Lock immediately so re-renders (challengeProgress updates) don't cancel completion
+    challengeCompletionLockRef.current = true;
+
+    // Kick off progress animation
     setChallengeProgress(1);
 
     const progressInterval = window.setInterval(() => {
@@ -893,11 +897,13 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
 
       if (idx < selectedChallenges.length - 1) {
         window.setTimeout(() => {
+          challengeCompletionLockRef.current = false;
           setCurrentChallengeIndex((prev) => prev + 1);
           setChallengeProgress(0);
         }, 300);
       } else {
         window.setTimeout(() => {
+          challengeCompletionLockRef.current = false;
           setLivenessVerified(true);
           toast.success('Vérification de vivacité réussie!');
         }, 300);
@@ -907,20 +913,19 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     return () => {
       window.clearInterval(progressInterval);
       window.clearTimeout(finishTimeout);
+      challengeCompletionLockRef.current = false;
     };
   }, [
     step,
     livenessVerified,
     currentChallenge,
     livenessCountdown,
-    challengeProgress,
     currentChallengeIndex,
     challengeCompleted,
     selectedChallenges.length,
     nodUpValidated,
     nodDownValidated,
     headAngle,
-    headPitch,
     currentExpression,
     leftThreshold,
     rightThreshold,

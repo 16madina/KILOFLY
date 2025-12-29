@@ -97,6 +97,7 @@ const VerifyIdentity = () => {
         body: {
           userId: user?.id,
           documentUrl: documentUrl,
+          selfieUrl,
         },
       });
 
