@@ -2,12 +2,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { PackageTracker } from "@/components/tracking/PackageTracker";
-import { Package, Loader2, MapPin, ArrowRight, Filter } from "lucide-react";
+import { Package, Loader2, MapPin, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import PullToRefresh from "@/components/mobile/PullToRefresh";
+import { toast } from "sonner";
 
 const IN_TRANSIT_STATUSES = [
   "approved",
@@ -96,6 +98,12 @@ const Tracking = () => {
     return counts;
   }, [reservations]);
 
+  // Pull to refresh handler
+  const handleRefresh = useCallback(async () => {
+    await refetch();
+    toast.success("Données actualisées");
+  }, [refetch]);
+
   // Real-time subscription for reservation updates
   useEffect(() => {
     if (!user) return;
@@ -171,162 +179,164 @@ const Tracking = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <div className="bg-card border-b border-border sticky top-0 z-40">
-        <div className="px-4 py-4 pt-safe">
-          <h1 className="text-xl font-bold">Suivi des colis</h1>
-          <p className="text-sm text-muted-foreground">
-            {filteredReservations?.length || 0} colis{activeFilter !== "all" ? ` (${STATUS_FILTERS.find(f => f.key === activeFilter)?.label})` : " en cours"}
-          </p>
-        </div>
-        
-        {/* Status Filters */}
-        <div className="px-4 pb-3 overflow-x-auto scrollbar-hide">
-          <div className="flex gap-2">
-            {STATUS_FILTERS.map((filter) => {
-              const count = filterCounts[filter.key] || 0;
-              const isActive = activeFilter === filter.key;
-              
-              return (
-                <motion.button
-                  key={filter.key}
-                  onClick={() => setActiveFilter(filter.key)}
-                  whileTap={{ scale: 0.95 }}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
-                    isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  )}
-                >
-                  {filter.label}
-                  {count > 0 && (
-                    <span className={cn(
-                      "px-1.5 py-0.5 rounded-full text-xs min-w-[20px] text-center",
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="min-h-screen bg-background pb-24">
+        {/* Header */}
+        <div className="bg-card border-b border-border sticky top-0 z-40">
+          <div className="px-4 py-4 pt-safe">
+            <h1 className="text-xl font-bold">Suivi des colis</h1>
+            <p className="text-sm text-muted-foreground">
+              {filteredReservations?.length || 0} colis{activeFilter !== "all" ? ` (${STATUS_FILTERS.find(f => f.key === activeFilter)?.label})` : " en cours"}
+            </p>
+          </div>
+          
+          {/* Status Filters */}
+          <div className="px-4 pb-3 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2">
+              {STATUS_FILTERS.map((filter) => {
+                const count = filterCounts[filter.key] || 0;
+                const isActive = activeFilter === filter.key;
+                
+                return (
+                  <motion.button
+                    key={filter.key}
+                    onClick={() => setActiveFilter(filter.key)}
+                    whileTap={{ scale: 0.95 }}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
                       isActive
-                        ? "bg-primary-foreground/20 text-primary-foreground"
-                        : "bg-background text-foreground"
-                    )}>
-                      {count}
-                    </span>
-                  )}
-                </motion.button>
-              );
-            })}
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    )}
+                  >
+                    {filter.label}
+                    {count > 0 && (
+                      <span className={cn(
+                        "px-1.5 py-0.5 rounded-full text-xs min-w-[20px] text-center",
+                        isActive
+                          ? "bg-primary-foreground/20 text-primary-foreground"
+                          : "bg-background text-foreground"
+                      )}>
+                        {count}
+                      </span>
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="p-4 space-y-4">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : !filteredReservations || filteredReservations.length === 0 ? (
-          <motion.div
-            key="empty"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-12 space-y-4"
-          >
-            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto">
-              <Package className="h-10 w-10 text-muted-foreground" />
+        {/* Content */}
+        <div className="p-4 space-y-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-            <div>
-              <h3 className="font-semibold text-lg">
-                {activeFilter === "all" ? "Aucun colis en transit" : "Aucun colis dans cette catégorie"}
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {activeFilter === "all" 
-                  ? "Vos colis en cours de livraison apparaîtront ici"
-                  : "Essayez un autre filtre pour voir vos colis"}
-              </p>
-            </div>
-          </motion.div>
-        ) : (
-          <AnimatePresence mode="popLayout">
-            <div className="space-y-4">
-              {filteredReservations.map((reservation, index) => {
-              const listing = reservation.listing as {
-                departure: string;
-                arrival: string;
-                departure_date: string;
-                arrival_date: string;
-              } | null;
-              
-              const isBuyer = reservation.buyer_id === user.id;
-              const otherParty = isBuyer 
-                ? reservation.seller as { full_name: string; avatar_url: string } | null
-                : reservation.buyer as { full_name: string; avatar_url: string } | null;
+          ) : !filteredReservations || filteredReservations.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-12 space-y-4"
+            >
+              <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto">
+                <Package className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">
+                  {activeFilter === "all" ? "Aucun colis en transit" : "Aucun colis dans cette catégorie"}
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {activeFilter === "all" 
+                    ? "Vos colis en cours de livraison apparaîtront ici"
+                    : "Essayez un autre filtre pour voir vos colis"}
+                </p>
+              </div>
+            </motion.div>
+          ) : (
+            <AnimatePresence mode="popLayout">
+              <div className="space-y-4">
+                {filteredReservations.map((reservation, index) => {
+                  const listing = reservation.listing as {
+                    departure: string;
+                    arrival: string;
+                    departure_date: string;
+                    arrival_date: string;
+                  } | null;
+                  
+                  const isBuyer = reservation.buyer_id === user.id;
+                  const otherParty = isBuyer 
+                    ? reservation.seller as { full_name: string; avatar_url: string } | null
+                    : reservation.buyer as { full_name: string; avatar_url: string } | null;
 
-              return (
-                <motion.div
-                  key={reservation.id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="bg-card rounded-xl border border-border overflow-hidden"
-                >
-                  {/* Reservation Header */}
-                  <div className="p-4 border-b border-border">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        {/* Route */}
-                        <div className="flex items-center gap-2 text-sm font-medium mb-2">
-                          <MapPin className="h-4 w-4 text-primary shrink-0" />
-                          <span className="truncate">{listing?.departure}</span>
-                          <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
-                          <span className="truncate">{listing?.arrival}</span>
+                  return (
+                    <motion.div
+                      key={reservation.id}
+                      layout
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="bg-card rounded-xl border border-border overflow-hidden"
+                    >
+                      {/* Reservation Header */}
+                      <div className="p-4 border-b border-border">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            {/* Route */}
+                            <div className="flex items-center gap-2 text-sm font-medium mb-2">
+                              <MapPin className="h-4 w-4 text-primary shrink-0" />
+                              <span className="truncate">{listing?.departure}</span>
+                              <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="truncate">{listing?.arrival}</span>
+                            </div>
+
+                            {/* Item description */}
+                            <p className="text-sm text-muted-foreground line-clamp-1 mb-2">
+                              {reservation.item_description}
+                            </p>
+
+                            {/* Party info */}
+                            <p className="text-xs text-muted-foreground">
+                              {isBuyer ? "Voyageur" : "Client"}: {otherParty?.full_name || "Inconnu"}
+                            </p>
+                          </div>
+
+                          {/* Status badge */}
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${getStatusColor(reservation.status)}`}>
+                            {getStatusLabel(reservation.status)}
+                          </span>
                         </div>
 
-                        {/* Item description */}
-                        <p className="text-sm text-muted-foreground line-clamp-1 mb-2">
-                          {reservation.item_description}
-                        </p>
-
-                        {/* Party info */}
-                        <p className="text-xs text-muted-foreground">
-                          {isBuyer ? "Voyageur" : "Client"}: {otherParty?.full_name || "Inconnu"}
-                        </p>
+                        {/* Date info */}
+                        {listing?.arrival_date && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Arrivée prévue: {format(new Date(listing.arrival_date), "d MMMM yyyy", { locale: fr })}
+                          </p>
+                        )}
                       </div>
 
-                      {/* Status badge */}
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${getStatusColor(reservation.status)}`}>
-                        {getStatusLabel(reservation.status)}
-                      </span>
-                    </div>
-
-                    {/* Date info */}
-                    {listing?.arrival_date && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Arrivée prévue: {format(new Date(listing.arrival_date), "d MMMM yyyy", { locale: fr })}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Package Tracker */}
-                  {listing && (
-                    <PackageTracker
-                      reservationId={reservation.id}
-                      departure={listing.departure}
-                      arrival={listing.arrival}
-                      initialStatus={reservation.status}
-                      sellerId={reservation.seller_id}
-                      compact={true}
-                    />
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
-        </AnimatePresence>
-        )}
+                      {/* Package Tracker */}
+                      {listing && (
+                        <PackageTracker
+                          reservationId={reservation.id}
+                          departure={listing.departure}
+                          arrival={listing.arrival}
+                          initialStatus={reservation.status}
+                          sellerId={reservation.seller_id}
+                          compact={true}
+                        />
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </AnimatePresence>
+          )}
+        </div>
       </div>
-    </div>
+    </PullToRefresh>
   );
 };
 
