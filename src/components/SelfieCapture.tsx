@@ -78,6 +78,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const [videoReady, setVideoReady] = useState(false);
   const [needsManualPlay, setNeedsManualPlay] = useState(false);
   const [autoProgressCount, setAutoProgressCount] = useState(0); // Visual countdown
+  const [livenessCountdown, setLivenessCountdown] = useState<number | null>(null); // 3-2-1 countdown before challenges
   
   // Liveness detection state
   const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
@@ -642,7 +643,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     return () => clearInterval(interval);
   }, [step, faceDetected, modelsLoaded, videoReady]);
 
-  // Start liveness detection
+  // Start liveness detection with countdown
   const startLivenessDetection = useCallback(() => {
     setStep('liveness');
     setCurrentChallengeIndex(0);
@@ -652,6 +653,18 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     setBlinkDetected(false);
     faceDetectedCountRef.current = 0;
     setAutoProgressCount(0);
+    
+    // Start 3-2-1 countdown before showing challenges
+    setLivenessCountdown(3);
+    const countdownInterval = setInterval(() => {
+      setLivenessCountdown(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(countdownInterval);
+          return null; // Countdown finished, show challenges
+        }
+        return prev - 1;
+      });
+    }, 1000);
   }, []);
 
   // Handle file upload fallback
@@ -676,7 +689,8 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
 
   // Check challenge completion based on real face detection
   useEffect(() => {
-    if (step !== 'liveness' || livenessVerified || !currentChallenge) return;
+    // Don't process challenges during countdown
+    if (step !== 'liveness' || livenessVerified || !currentChallenge || livenessCountdown !== null) return;
 
     let completed = false;
 
@@ -744,7 +758,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       
       return () => clearInterval(progressInterval);
     }
-  }, [step, currentChallenge, blinkDetected, headAngle, currentExpression, livenessVerified, currentChallengeIndex, challengeCompleted, selectedChallenges.length]);
+  }, [step, currentChallenge, blinkDetected, headAngle, currentExpression, livenessVerified, currentChallengeIndex, challengeCompleted, selectedChallenges.length, livenessCountdown]);
 
   // Auto-capture after liveness verified
   useEffect(() => {
@@ -1134,23 +1148,35 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                   {/* Liveness overlays */}
                   {step === 'liveness' && (
                     <>
-                      {/* Challenge instruction overlay - no motion */}
-                      {!livenessVerified && currentChallenge && (
-                        <div className="absolute top-4 left-4 right-4 pointer-events-none">
-                          <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-xl p-4 shadow-lg">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-full bg-primary/10 text-primary">
-                                {currentChallenge.icon}
-                              </div>
-                              <div className="flex-1">
-                                <p className="font-semibold text-sm">{currentChallenge.label}</p>
-                                <p className="text-xs text-muted-foreground">{currentChallenge.instruction}</p>
-                              </div>
+                      {/* Initial 3-2-1 countdown before challenges start */}
+                      {livenessCountdown !== null && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 rounded-2xl pointer-events-none">
+                          <p className="text-white text-lg mb-4 font-medium">Préparez-vous...</p>
+                          <div className="relative">
+                            <div className="w-32 h-32 rounded-full border-4 border-primary flex items-center justify-center bg-primary/20">
+                              <span className="text-7xl font-bold text-white animate-pulse">{livenessCountdown}</span>
                             </div>
-                            <Progress value={challengeProgress} className="mt-3 h-2" />
-                            <p className="text-xs text-center mt-2 text-muted-foreground">
-                              {getChallengeStatus()}
-                            </p>
+                          </div>
+                          <p className="text-white/80 text-sm mt-4">Gardez votre visage visible</p>
+                        </div>
+                      )}
+
+                      {/* Challenge instruction overlay - LARGE and visible */}
+                      {!livenessVerified && currentChallenge && livenessCountdown === null && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                          {/* Large centered instruction */}
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+                            <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-6 min-w-[280px]">
+                              <div className="w-20 h-20 mx-auto rounded-full bg-primary/30 flex items-center justify-center mb-4">
+                                <div className="text-primary scale-150">
+                                  {currentChallenge.icon}
+                                </div>
+                              </div>
+                              <h3 className="text-2xl font-bold text-white mb-2">{currentChallenge.label}</h3>
+                              <p className="text-white/80 text-base mb-4">{currentChallenge.instruction}</p>
+                              <Progress value={challengeProgress} className="h-3 mb-2" />
+                              <p className="text-sm text-white/70">{getChallengeStatus()}</p>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1164,7 +1190,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                         </div>
                       )}
 
-                      {/* Countdown overlay - no motion */}
+                      {/* Photo countdown overlay - no motion */}
                       {countdown !== null && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl pointer-events-none">
                           <span className="text-8xl font-bold text-white">{countdown}</span>
@@ -1173,31 +1199,29 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
 
                       {/* Bottom progress indicators */}
                       <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl pointer-events-none">
-                        <div className="flex items-center justify-center gap-2">
-                          {selectedChallenges.map((_, index) => (
+                        <div className="flex items-center justify-center gap-3">
+                          {selectedChallenges.map((challenge, index) => (
                             <div
                               key={index}
                               className={cn(
-                                "w-3 h-3 rounded-full transition-colors",
+                                "flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-all",
                                 challengeCompleted[index]
-                                  ? 'bg-green-500'
-                                  : index === currentChallengeIndex
-                                    ? 'bg-blue-500'
-                                    : 'bg-white/50'
+                                  ? 'bg-green-500 text-white'
+                                  : index === currentChallengeIndex && livenessCountdown === null
+                                    ? 'bg-primary text-white scale-110'
+                                    : 'bg-white/30 text-white/70'
                               )}
-                            />
+                            >
+                              {challengeCompleted[index] ? <Check className="h-3 w-3" /> : <span>{index + 1}</span>}
+                            </div>
                           ))}
-                          <div
-                            className={cn(
-                              "w-3 h-3 rounded-full transition-colors",
-                              livenessVerified ? 'bg-green-500' : 'bg-white/50'
-                            )}
-                          />
                         </div>
                         <p className="text-white text-center text-sm mt-2">
                           {livenessVerified
                             ? "✅ Vivacité confirmée - Photo dans 3s..."
-                            : `Défi ${currentChallengeIndex + 1}/${selectedChallenges.length}`
+                            : livenessCountdown !== null
+                              ? "Préparation..."
+                              : `Défi ${currentChallengeIndex + 1}/${selectedChallenges.length}`
                           }
                         </p>
                       </div>
