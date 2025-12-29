@@ -4,38 +4,45 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { isIOS } from "@/lib/platform";
 import { useUnreadConversations } from "@/hooks/useUnreadConversations";
+import { useActivePackages } from "@/hooks/useActivePackages";
 import { hapticImpact } from "@/hooks/useHaptics";
 import { ImpactStyle } from "@capacitor/haptics";
 
 const MobileBottomNav = () => {
   const location = useLocation();
   const unreadCount = useUnreadConversations();
+  const activePackages = useActivePackages();
   
   const navItems = [
     {
       path: "/",
       label: "Accueil",
       icon: Home,
+      badge: 0,
     },
     {
       path: "/tracking",
       label: "Suivi",
       icon: Package,
+      badge: activePackages,
     },
     {
       path: "/post",
       label: "Poster",
       icon: Plus,
+      badge: 0,
     },
     {
       path: "/messages",
       label: "Messages",
       icon: MessageCircle,
+      badge: unreadCount,
     },
     {
       path: "/profile",
       label: "Profil",
       icon: User,
+      badge: 0,
     },
   ];
 
@@ -69,9 +76,9 @@ const MobileBottomNav = () => {
           }}
         />
 
-        {navItems.map(({ path, label, icon: Icon }) => {
+        {navItems.map(({ path, label, icon: Icon, badge }) => {
           const isActive = location.pathname === path;
-          const showBadge = path === "/messages" && unreadCount > 0;
+          const showBadge = badge > 0;
           
           return (
             <Link
@@ -115,9 +122,14 @@ const MobileBottomNav = () => {
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1"
+                    className={cn(
+                      "absolute -top-1 -right-1 text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1",
+                      path === "/tracking" 
+                        ? "bg-primary text-primary-foreground" 
+                        : "bg-destructive text-destructive-foreground"
+                    )}
                   >
-                    {unreadCount > 9 ? "9+" : unreadCount}
+                    {badge > 9 ? "9+" : badge}
                   </motion.div>
                 )}
               </motion.div>
