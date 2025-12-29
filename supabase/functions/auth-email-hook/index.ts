@@ -241,8 +241,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { token, token_hash, redirect_to, email_action_type } = email_data;
     
-    // Build the confirmation URL
-    const siteUrl = redirect_to || "https://2b7a5f77-5ecc-4622-bc5b-450979c265cc.lovableproject.com";
+    // Build the confirmation URL - use the production URL
+    const siteUrl = redirect_to || "https://kiloflyappcom.lovable.app";
     const confirmationUrl = `${SUPABASE_URL}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(siteUrl)}`;
 
     const subject = getSubject(email_action_type);
