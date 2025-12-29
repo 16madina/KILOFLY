@@ -11,7 +11,7 @@ import { ImpactStyle } from "@capacitor/haptics";
 const MobileBottomNav = () => {
   const location = useLocation();
   const unreadCount = useUnreadConversations();
-  const activePackages = useActivePackages();
+  const { count: activePackages, hasNewPackage } = useActivePackages();
   
   const navItems = [
     {
@@ -19,30 +19,35 @@ const MobileBottomNav = () => {
       label: "Accueil",
       icon: Home,
       badge: 0,
+      pulse: false,
     },
     {
       path: "/tracking",
       label: "Suivi",
       icon: Package,
       badge: activePackages,
+      pulse: hasNewPackage,
     },
     {
       path: "/post",
       label: "Poster",
       icon: Plus,
       badge: 0,
+      pulse: false,
     },
     {
       path: "/messages",
       label: "Messages",
       icon: MessageCircle,
       badge: unreadCount,
+      pulse: false,
     },
     {
       path: "/profile",
       label: "Profil",
       icon: User,
       badge: 0,
+      pulse: false,
     },
   ];
 
@@ -76,7 +81,7 @@ const MobileBottomNav = () => {
           }}
         />
 
-        {navItems.map(({ path, label, icon: Icon, badge }) => {
+        {navItems.map(({ path, label, icon: Icon, badge, pulse }) => {
           const isActive = location.pathname === path;
           const showBadge = badge > 0;
           
@@ -117,11 +122,13 @@ const MobileBottomNav = () => {
                   <Icon className="h-5 w-5" />
                 </motion.div>
                 
-                {/* Notification badge */}
+                {/* Notification badge with pulse animation */}
                 {showBadge && (
                   <motion.div
                     initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
+                    animate={{ 
+                      scale: 1,
+                    }}
                     className={cn(
                       "absolute -top-1 -right-1 text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1",
                       path === "/tracking" 
@@ -130,6 +137,23 @@ const MobileBottomNav = () => {
                     )}
                   >
                     {badge > 9 ? "9+" : badge}
+                    
+                    {/* Pulse ring animation */}
+                    {pulse && (
+                      <motion.span
+                        className="absolute inset-0 rounded-full bg-primary"
+                        initial={{ scale: 1, opacity: 0.7 }}
+                        animate={{ 
+                          scale: [1, 2, 2.5],
+                          opacity: [0.7, 0.3, 0],
+                        }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "easeOut",
+                        }}
+                      />
+                    )}
                   </motion.div>
                 )}
               </motion.div>
