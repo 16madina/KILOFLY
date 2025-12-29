@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,7 +18,8 @@ import {
   X,
   Clock,
   Trash2,
-  MessageSquare
+  MessageSquare,
+  Pencil
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -34,6 +35,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { EditTransportRequestDialog } from "@/components/transport-requests/EditTransportRequestDialog";
 
 interface TransportRequest {
   id: string;
@@ -74,6 +76,8 @@ const MyTransportRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [requestToDelete, setRequestToDelete] = useState<string | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [requestToEdit, setRequestToEdit] = useState<TransportRequest | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -289,6 +293,10 @@ const MyTransportRequests = () => {
                     setRequestToDelete(request.id);
                     setDeleteDialogOpen(true);
                   }}
+                  onEdit={() => {
+                    setRequestToEdit(request);
+                    setEditDialogOpen(true);
+                  }}
                   onAcceptOffer={(offerId) => handleAcceptOffer(offerId, request.id)}
                   onRejectOffer={handleRejectOffer}
                   formatDate={formatDate}
@@ -339,6 +347,13 @@ const MyTransportRequests = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <EditTransportRequestDialog
+        request={requestToEdit}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSuccess={fetchRequests}
+      />
     </div>
   );
 };
@@ -350,6 +365,7 @@ interface RequestCardProps {
   isExpanded: boolean;
   onToggle: () => void;
   onDelete?: () => void;
+  onEdit?: () => void;
   onAcceptOffer?: (offerId: string) => void;
   onRejectOffer?: (offerId: string) => void;
   formatDate: (date: string) => string;
@@ -363,6 +379,7 @@ const RequestCard = ({
   isExpanded,
   onToggle,
   onDelete,
+  onEdit,
   onAcceptOffer,
   onRejectOffer,
   formatDate,
@@ -512,20 +529,35 @@ const RequestCard = ({
           )}
 
           {/* Actions */}
-          {request.status === 'active' && onDelete && (
-            <div className="flex justify-end pt-2 border-t">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
-                className="text-destructive hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                Supprimer
-              </Button>
+          {request.status === 'active' && (onDelete || onEdit) && (
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              {onEdit && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit();
+                  }}
+                >
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Modifier
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Supprimer
+                </Button>
+              )}
             </div>
           )}
         </CardContent>
