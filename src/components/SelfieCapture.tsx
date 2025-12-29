@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Camera, RefreshCw, Check, X, Loader2, AlertCircle, Sparkles, Eye, RotateCcw, Smile } from "lucide-react";
+import { Camera, RefreshCw, Check, X, Loader2, AlertCircle, Sparkles, Eye, RotateCcw, Smile, Upload, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -60,6 +60,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectionIntervalRef = useRef<number | null>(null);
   
@@ -71,6 +72,8 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const [countdown, setCountdown] = useState<number | null>(null);
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [videoReady, setVideoReady] = useState(false);
+  const [needsManualPlay, setNeedsManualPlay] = useState(false);
   
   // Liveness detection state
   const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
@@ -85,6 +88,14 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const [blinkDetected, setBlinkDetected] = useState(false);
   const previousEyesOpenRef = useRef<boolean>(true);
 
+  // Debug mode
+  const [debugMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('debugCamera') === '1';
+    }
+    return false;
+  });
+
   // Get random 2 challenges for this session
   const [selectedChallenges] = useState<Challenge[]>(() => {
     const shuffled = [...LIVENESS_CHALLENGES].sort(() => Math.random() - 0.5);
@@ -93,13 +104,13 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
 
   const currentChallenge = selectedChallenges[currentChallengeIndex];
 
-  // Load face-api.js models
+  // Load face-api.js models (can run in background)
   const loadModels = useCallback(async () => {
-    setStep('loading-models');
+    if (modelsLoaded) return true;
+    
     setLoadingProgress(0);
     
     try {
-      // Load models sequentially with progress updates
       setLoadingProgress(10);
       await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
       
@@ -116,11 +127,9 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       return true;
     } catch (error) {
       console.error('Error loading face-api models:', error);
-      setCameraError('Erreur lors du chargement des modèles de détection faciale');
-      setStep('instructions');
       return false;
     }
-  }, []);
+  }, [modelsLoaded]);
 
   // Real face detection using face-api.js
   const startFaceDetection = useCallback(async () => {
@@ -152,21 +161,11 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
           const leftEye = landmarks.getLeftEye();
           const rightEye = landmarks.getRightEye();
           
-          // Calculate head rotation based on eye positions
-          const leftEyeCenter = {
-            x: leftEye.reduce((sum, p) => sum + p.x, 0) / leftEye.length,
-            y: leftEye.reduce((sum, p) => sum + p.y, 0) / leftEye.length
-          };
-          const rightEyeCenter = {
-            x: rightEye.reduce((sum, p) => sum + p.x, 0) / rightEye.length,
-            y: rightEye.reduce((sum, p) => sum + p.y, 0) / rightEye.length
-          };
-          
           // Estimate head angle based on face box position relative to frame
           const faceBox = detections.detection.box;
           const frameCenter = video.videoWidth / 2;
           const faceCenter = faceBox.x + faceBox.width / 2;
-          const angle = ((faceCenter - frameCenter) / frameCenter) * 45; // -45 to +45 degrees
+          const angle = ((faceCenter - frameCenter) / frameCenter) * 45;
           setHeadAngle(angle);
           
           // Eye aspect ratio for blink detection
@@ -187,11 +186,9 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
           const rightEAR = calculateEAR(rightEye);
           const avgEAR = (leftEAR + rightEAR) / 2;
           
-          // Threshold for closed eyes
           const EAR_THRESHOLD = 0.22;
           const areEyesOpen = avgEAR > EAR_THRESHOLD;
           
-          // Detect blink (eyes were open, now closed)
           if (previousEyesOpenRef.current && !areEyesOpen) {
             setBlinkDetected(true);
           }
@@ -207,7 +204,6 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       }
     };
 
-    // Run detection every 150ms for smooth tracking
     detectionIntervalRef.current = window.setInterval(detectFace, 150);
   }, [modelsLoaded]);
 
@@ -219,24 +215,51 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     }
   }, []);
 
-  // Start camera
+  // Attempt to play video with iOS workaround
+  const tryPlayVideo = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video) return false;
+    
+    try {
+      await video.play();
+      setVideoReady(true);
+      setNeedsManualPlay(false);
+      return true;
+    } catch (playError) {
+      console.warn('Auto-play blocked, user gesture needed:', playError);
+      setNeedsManualPlay(true);
+      return false;
+    }
+  }, []);
+
+  // Manual play handler for iOS
+  const handleManualPlay = useCallback(async () => {
+    const success = await tryPlayVideo();
+    if (success && modelsLoaded) {
+      stopFaceDetection();
+      setTimeout(() => startFaceDetection(), 200);
+    }
+  }, [tryPlayVideo, modelsLoaded, stopFaceDetection, startFaceDetection]);
+
+  // Attach stream to video element
   const attachStreamToVideo = useCallback(async () => {
     const stream = streamRef.current;
     const video = videoRef.current;
 
     if (!stream || !video) return;
 
-    // Ensure inline playback on iOS
+    // iOS Safari requirements
     video.muted = true;
     video.playsInline = true;
     video.setAttribute('playsinline', 'true');
     video.setAttribute('webkit-playsinline', 'true');
+    video.setAttribute('autoplay', 'true');
 
     if (video.srcObject !== stream) {
       video.srcObject = stream;
     }
 
-    // Wait until metadata is available (prevents silent play failures on mobile)
+    // Wait for metadata
     if (video.readyState < 1) {
       await new Promise<void>((resolve) => {
         const onLoaded = () => resolve();
@@ -244,33 +267,28 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       });
     }
 
-    try {
-      await video.play();
+    // Try to play
+    const played = await tryPlayVideo();
+    
+    if (played && modelsLoaded) {
       stopFaceDetection();
       setTimeout(() => startFaceDetection(), 200);
-    } catch (playError) {
-      console.error('Video play blocked:', playError);
-      setCameraError("La caméra est autorisée mais la vidéo ne démarre pas. Touchez l'aperçu vidéo puis réessayez.");
     }
-  }, [startFaceDetection, stopFaceDetection]);
+  }, [tryPlayVideo, modelsLoaded, startFaceDetection, stopFaceDetection]);
 
-  // Start camera
+  // Start camera - now starts immediately, models load in background
   const startCamera = useCallback(async () => {
     setCameraError(null);
-
-    // Load models first if not loaded
-    if (!modelsLoaded) {
-      const loaded = await loadModels();
-      if (!loaded) return;
-    }
+    setVideoReady(false);
+    setNeedsManualPlay(false);
 
     try {
-      // Check if mediaDevices is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setCameraError("Votre navigateur ne supporte pas l'accès à la caméra. Essayez avec Chrome ou Safari.");
         return;
       }
 
+      // Start camera immediately
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'user',
@@ -281,14 +299,21 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       });
 
       streamRef.current = stream;
-
-      // IMPORTANT: mount the video element first (it only exists in step 'camera' / 'liveness')
       setStep('camera');
 
-      // Attach stream on next tick after the video mounts
+      // Attach stream immediately
       setTimeout(() => {
         attachStreamToVideo();
-      }, 0);
+      }, 50);
+
+      // Load models in background if not loaded
+      if (!modelsLoaded) {
+        loadModels().then((loaded) => {
+          if (loaded && videoRef.current && !videoRef.current.paused) {
+            startFaceDetection();
+          }
+        });
+      }
 
     } catch (error: any) {
       console.error('Camera error:', error);
@@ -299,7 +324,6 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       } else if (error?.name === 'NotReadableError') {
         setCameraError('La caméra est utilisée par une autre application. Fermez les autres apps et réessayez.');
       } else if (error?.name === 'OverconstrainedError') {
-        // Try again with less constraints
         try {
           const fallbackStream = await navigator.mediaDevices.getUserMedia({
             video: true,
@@ -307,7 +331,11 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
           });
           streamRef.current = fallbackStream;
           setStep('camera');
-          setTimeout(() => attachStreamToVideo(), 0);
+          setTimeout(() => attachStreamToVideo(), 50);
+          
+          if (!modelsLoaded) {
+            loadModels();
+          }
         } catch {
           setCameraError('Impossible de configurer la caméra.');
         }
@@ -315,7 +343,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
         setCameraError(`Impossible d'accéder à la caméra: ${error?.message || 'Erreur inconnue'}`);
       }
     }
-  }, [modelsLoaded, loadModels, attachStreamToVideo]);
+  }, [modelsLoaded, loadModels, attachStreamToVideo, startFaceDetection]);
 
   // Stop camera
   const stopCamera = useCallback(() => {
@@ -327,6 +355,8 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
+    setVideoReady(false);
+    setNeedsManualPlay(false);
   }, [stopFaceDetection]);
 
   // Cleanup on unmount
@@ -336,12 +366,20 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     };
   }, [stopCamera]);
 
-  // When the UI switches to a step that renders the video element, re-attach the stream
+  // Re-attach stream when step changes to camera/liveness
   useEffect(() => {
-    if (step === 'camera' || step === 'liveness') {
+    if ((step === 'camera' || step === 'liveness') && streamRef.current) {
       attachStreamToVideo();
     }
   }, [step, attachStreamToVideo]);
+
+  // Start face detection when models are loaded and video is playing
+  useEffect(() => {
+    if (modelsLoaded && videoReady && (step === 'camera' || step === 'liveness')) {
+      stopFaceDetection();
+      startFaceDetection();
+    }
+  }, [modelsLoaded, videoReady, step, startFaceDetection, stopFaceDetection]);
 
   // Start liveness detection
   const startLivenessDetection = useCallback(() => {
@@ -351,6 +389,28 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     setChallengeCompleted([false, false]);
     setLivenessVerified(false);
     setBlinkDetected(false);
+  }, []);
+
+  // Handle file upload fallback
+  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Veuillez sélectionner une image');
+      return;
+    }
+
+    // Read file as data URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const imageUrl = e.target?.result as string;
+      setCapturedImage(imageUrl);
+      setStep('preview');
+      setLivenessVerified(true); // Skip liveness for fallback
+    };
+    reader.readAsDataURL(file);
   }, []);
 
   // Check challenge completion based on real face detection
@@ -363,17 +423,15 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       case 'blink':
         if (blinkDetected) {
           completed = true;
-          setBlinkDetected(false); // Reset for potential next blink challenge
+          setBlinkDetected(false);
         }
         break;
       case 'turn_left':
-        // Head turned left (positive angle in mirrored view)
         if (headAngle > 15) {
           completed = true;
         }
         break;
       case 'turn_right':
-        // Head turned right (negative angle in mirrored view)
         if (headAngle < -15) {
           completed = true;
         }
@@ -386,25 +444,21 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     }
 
     if (completed) {
-      // Update progress smoothly
       const progressInterval = setInterval(() => {
         setChallengeProgress(prev => {
           if (prev >= 100) {
             clearInterval(progressInterval);
             
-            // Mark current challenge as completed
             const newCompleted = [...challengeCompleted];
             newCompleted[currentChallengeIndex] = true;
             setChallengeCompleted(newCompleted);
             
             if (currentChallengeIndex < selectedChallenges.length - 1) {
-              // Move to next challenge
               setTimeout(() => {
                 setCurrentChallengeIndex(prev => prev + 1);
                 setChallengeProgress(0);
               }, 500);
             } else {
-              // All challenges completed
               setTimeout(() => {
                 setLivenessVerified(true);
                 toast.success('Vérification de vivacité réussie!');
@@ -455,7 +509,6 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     
     if (!ctx) return;
     
-    // Set canvas size to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     
@@ -464,11 +517,9 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     ctx.scale(-1, 1);
     ctx.drawImage(video, 0, 0);
     
-    // Convert to data URL
     const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
     setCapturedImage(imageDataUrl);
     
-    // Stop camera and show preview
     stopCamera();
     setStep('preview');
   }, [stopCamera]);
@@ -492,11 +543,9 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     setStep('uploading');
     
     try {
-      // Convert data URL to blob
       const response = await fetch(capturedImage);
       const blob = await response.blob();
       
-      // Upload to storage
       const fileName = `${user.id}/selfie-${Date.now()}.jpg`;
       
       const { error: uploadError } = await supabase.storage
@@ -508,12 +557,10 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       
       if (uploadError) throw uploadError;
       
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName);
       
-      // Update profile with new avatar
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
@@ -551,8 +598,58 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     }
   };
 
+  // Debug info component
+  const DebugInfo = () => {
+    if (!debugMode) return null;
+    
+    const video = videoRef.current;
+    const track = streamRef.current?.getVideoTracks()[0];
+    
+    return (
+      <div className="absolute top-2 left-2 bg-black/80 text-white text-xs p-2 rounded z-50 font-mono">
+        <div>readyState: {video?.readyState ?? 'N/A'}</div>
+        <div>videoW: {video?.videoWidth ?? 0} x {video?.videoHeight ?? 0}</div>
+        <div>paused: {video?.paused ? 'true' : 'false'}</div>
+        <div>track: {track?.readyState ?? 'none'}</div>
+        <div>models: {modelsLoaded ? '✓' : '...'}</div>
+        <div>face: {faceDetected ? '✓' : '✗'}</div>
+        <Button 
+          size="sm" 
+          variant="secondary"
+          className="mt-2 text-xs h-6"
+          onClick={() => {
+            stopCamera();
+            startCamera();
+          }}
+        >
+          Restart
+        </Button>
+      </div>
+    );
+  };
+
+  // Video container component - no overflow-hidden on parent, styles on video directly
+  const VideoContainer = ({ children }: { children: React.ReactNode }) => (
+    <div className="relative aspect-square bg-black rounded-2xl">
+      {children}
+    </div>
+  );
+
   return (
-    <Card className="p-6 overflow-hidden">
+    <Card className="p-6">
+      {/* Hidden canvas for capture */}
+      <canvas ref={canvasRef} className="hidden" />
+      
+      {/* Hidden file input for fallback */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="user"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center gap-2">
@@ -577,9 +674,9 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
           {step === 'instructions' && (
             <motion.div
               key="instructions"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className="space-y-4"
             >
               <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-xl p-5 border border-primary/10">
@@ -634,6 +731,17 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                   </Button>
                 )}
               </div>
+
+              {/* Fallback option */}
+              <div className="text-center">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-sm text-muted-foreground hover:text-primary underline"
+                >
+                  <Upload className="h-3 w-3 inline mr-1" />
+                  Ou importer un selfie
+                </button>
+              </div>
             </motion.div>
           )}
 
@@ -663,34 +771,62 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
           {step === 'camera' && (
             <motion.div
               key="camera"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className="space-y-4"
             >
               {cameraError ? (
                 <div className="p-6 bg-destructive/10 rounded-xl text-center space-y-3">
                   <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
                   <p className="text-destructive">{cameraError}</p>
-                  <Button variant="outline" onClick={startCamera}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Réessayer
-                  </Button>
+                  <div className="flex gap-2 justify-center">
+                    <Button variant="outline" onClick={startCamera}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Réessayer
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Importer
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <>
-                  <div className="relative aspect-square bg-black rounded-2xl overflow-hidden">
-                    {/* Video feed */}
+                  <VideoContainer>
+                    <DebugInfo />
+                    
+                    {/* Video feed - no overflow-hidden, apply rounded directly */}
                     <video
                       ref={videoRef}
                       autoPlay
                       playsInline
                       muted
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-2xl"
+                      style={{ 
+                        WebkitTransform: 'translateZ(0)',
+                        transform: 'translateZ(0)'
+                      }}
                     />
                     
+                    {/* Tap to play overlay for iOS */}
+                    {needsManualPlay && (
+                      <div 
+                        className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-2xl cursor-pointer z-10"
+                        onClick={handleManualPlay}
+                      >
+                        <div className="text-center text-white">
+                          <Play className="h-16 w-16 mx-auto mb-2" />
+                          <p className="text-sm">Touchez pour activer la caméra</p>
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Face guide overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-2xl">
                       <div 
                         className={cn(
                           "w-56 h-72 rounded-[50%] border-4 transition-colors duration-300",
@@ -701,16 +837,28 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                       />
                     </div>
                     
+                    {/* Loading models indicator */}
+                    {!modelsLoaded && videoReady && (
+                      <div className="absolute top-4 left-4 right-4 bg-white/90 dark:bg-gray-900/90 rounded-lg p-3 flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        <span className="text-sm">Chargement IA... {loadingProgress}%</span>
+                      </div>
+                    )}
+                    
                     {/* Instructions overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl">
                       <p className="text-white text-center text-sm">
-                        {faceDetected 
-                          ? "✅ Visage détecté par IA - Prêt pour la vérification"
-                          : "Placez votre visage dans le cercle"
+                        {!videoReady 
+                          ? "Démarrage de la caméra..."
+                          : !modelsLoaded
+                          ? "Chargement de la détection IA..."
+                          : faceDetected 
+                            ? "✅ Visage détecté - Prêt pour la vérification"
+                            : "Placez votre visage dans le cercle"
                         }
                       </p>
                     </div>
-                  </div>
+                  </VideoContainer>
 
                   <div className="flex gap-3">
                     <Button
@@ -726,12 +874,25 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                     </Button>
                     <Button
                       onClick={startLivenessDetection}
-                      disabled={!faceDetected}
+                      disabled={!faceDetected || !modelsLoaded}
                       className="flex-1 gap-2"
                     >
                       <Check className="h-4 w-4" />
                       Continuer
                     </Button>
+                  </div>
+                  
+                  {/* Fallback link */}
+                  <div className="text-center">
+                    <button
+                      onClick={() => {
+                        stopCamera();
+                        fileInputRef.current?.click();
+                      }}
+                      className="text-sm text-muted-foreground hover:text-primary underline"
+                    >
+                      Problème de caméra? Importer un selfie
+                    </button>
                   </div>
                 </>
               )}
@@ -742,31 +903,36 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
           {step === 'liveness' && (
             <motion.div
               key="liveness"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className="space-y-4"
             >
-              <div className="relative aspect-square bg-black rounded-2xl overflow-hidden">
+              <VideoContainer>
+                <DebugInfo />
+                
                 {/* Video feed */}
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover rounded-2xl"
+                  style={{ 
+                    WebkitTransform: 'translateZ(0)',
+                    transform: 'translateZ(0)'
+                  }}
                 />
                 
                 {/* Face guide overlay with liveness indicator */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <motion.div 
-                    animate={{ 
-                      borderColor: livenessVerified ? '#22c55e' : '#3b82f6',
-                      boxShadow: livenessVerified 
-                        ? '0 0 30px rgba(34,197,94,0.5)' 
-                        : '0 0 20px rgba(59,130,246,0.3)'
-                    }}
-                    className="w-56 h-72 rounded-[50%] border-4 transition-all duration-300"
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-2xl">
+                  <div 
+                    className={cn(
+                      "w-56 h-72 rounded-[50%] border-4 transition-all duration-300",
+                      livenessVerified 
+                        ? "border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.5)]"
+                        : "border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+                    )}
                   />
                 </div>
                 
@@ -801,7 +967,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="absolute inset-0 flex items-center justify-center bg-black/50"
+                    className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl"
                   >
                     <div className="bg-green-500 text-white rounded-full p-6">
                       <Check className="h-12 w-12" />
@@ -814,7 +980,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                   <motion.div
                     initial={{ scale: 0.5, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="absolute inset-0 flex items-center justify-center bg-black/50"
+                    className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl"
                   >
                     <motion.span
                       key={countdown}
@@ -829,26 +995,26 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                 )}
 
                 {/* Bottom progress indicators */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl">
                   <div className="flex items-center justify-center gap-2">
                     {selectedChallenges.map((_, index) => (
-                      <motion.div
+                      <div
                         key={index}
-                        animate={{
-                          backgroundColor: challengeCompleted[index] 
-                            ? '#22c55e' 
+                        className={cn(
+                          "w-3 h-3 rounded-full transition-colors",
+                          challengeCompleted[index] 
+                            ? 'bg-green-500' 
                             : index === currentChallengeIndex 
-                              ? '#3b82f6' 
-                              : '#ffffff50'
-                        }}
-                        className="w-3 h-3 rounded-full"
+                              ? 'bg-blue-500' 
+                              : 'bg-white/50'
+                        )}
                       />
                     ))}
-                    <motion.div
-                      animate={{
-                        backgroundColor: livenessVerified ? '#22c55e' : '#ffffff50'
-                      }}
-                      className="w-3 h-3 rounded-full"
+                    <div
+                      className={cn(
+                        "w-3 h-3 rounded-full transition-colors",
+                        livenessVerified ? 'bg-green-500' : 'bg-white/50'
+                      )}
                     />
                   </div>
                   <p className="text-white text-center text-sm mt-2">
@@ -858,7 +1024,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                     }
                   </p>
                 </div>
-              </div>
+              </VideoContainer>
 
               <Button
                 variant="outline"
@@ -880,30 +1046,35 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
           {step === 'preview' && capturedImage && (
             <motion.div
               key="preview"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className="space-y-4"
             >
-              <div className="relative aspect-square bg-black rounded-2xl overflow-hidden">
+              <div className="relative aspect-square bg-black rounded-2xl">
                 <img
                   src={capturedImage}
                   alt="Selfie capturé"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover rounded-2xl"
                 />
                 
                 {/* Success indicators */}
                 <div className="absolute top-4 right-4 space-y-2">
                   <div className="bg-green-500 text-white rounded-full p-2 flex items-center gap-1 px-3">
                     <Check className="h-4 w-4" />
-                    <span className="text-xs font-medium">IA Vérifié ✓</span>
+                    <span className="text-xs font-medium">
+                      {livenessVerified ? 'IA Vérifié ✓' : 'Photo importée'}
+                    </span>
                   </div>
                 </div>
               </div>
 
               <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 border border-green-200 dark:border-green-800">
                 <p className="text-sm text-green-700 dark:text-green-400 text-center">
-                  ✅ Vérification de vivacité par IA réussie! Votre photo est prête.
+                  {livenessVerified 
+                    ? '✅ Vérification de vivacité par IA réussie! Votre photo est prête.'
+                    : '✅ Photo prête pour la vérification.'
+                  }
                 </p>
               </div>
 
@@ -941,15 +1112,12 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
               <div>
                 <p className="font-semibold">Envoi en cours...</p>
                 <p className="text-sm text-muted-foreground">
-                  Nous enregistrons votre selfie et lançons la vérification
+                  Votre photo de profil est en cours d'envoi
                 </p>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Hidden canvas for capture */}
-        <canvas ref={canvasRef} className="hidden" />
       </div>
     </Card>
   );
