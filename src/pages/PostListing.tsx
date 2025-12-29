@@ -278,7 +278,7 @@ const PostListing = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/post")}
             className="h-9 w-9 transition-all duration-200 hover:scale-110"
           >
             <ArrowLeft className="h-5 w-5" />
