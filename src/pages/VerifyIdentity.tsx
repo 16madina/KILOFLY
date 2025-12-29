@@ -98,11 +98,31 @@ const VerifyIdentity = () => {
     }
   };
 
-  const handleDocumentUploaded = (url: string) => {
-    console.log('[VerifyIdentity] Document uploaded, transitioning to selfie step:', url);
+  const handleDocumentUploaded = async (url: string) => {
+    console.log('[VerifyIdentity] Document uploaded:', url);
     setDocumentUrl(url);
-    setCurrentStep('selfie');
-    // Toast is already shown in IDDocumentUpload, no need to duplicate
+    
+    // Check if user already has a valid selfie/avatar
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('id', user?.id)
+      .single();
+    
+    const hasValidSelfie = profile?.avatar_url && 
+      profile.avatar_url.includes('selfie-') && 
+      profile.avatar_url.includes('/avatars/');
+    
+    if (hasValidSelfie) {
+      // User already has a selfie, go directly to AI verification
+      console.log('[VerifyIdentity] User has existing selfie, proceeding to verification');
+      toast.info('Selfie existant détecté, vérification en cours...');
+      handleSelfieComplete(profile.avatar_url);
+    } else {
+      // Need to capture selfie
+      console.log('[VerifyIdentity] No selfie found, proceeding to selfie capture');
+      setCurrentStep('selfie');
+    }
   };
 
   // Progress animation for AI stages
