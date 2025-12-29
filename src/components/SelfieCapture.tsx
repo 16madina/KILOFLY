@@ -305,19 +305,20 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
           const rightEAR = calculateEAR(rightEye);
           const avgEAR = (leftEAR + rightEAR) / 2;
           
-          // Lower threshold makes blink detection easier (0.20 instead of 0.22)
-          const EAR_THRESHOLD = 0.20;
+          // VERY lenient threshold - makes blink detection much easier
+          // Higher threshold = eyes considered "closed" more easily
+          const EAR_THRESHOLD = 0.25;
           const areEyesOpen = avgEAR > EAR_THRESHOLD;
-          
-          // Detect blink: eyes were open, now closed
-          if (previousEyesOpenRef.current && !areEyesOpen) {
-            setBlinkDetected(true);
-            console.log('[Liveness] Blink detected! EAR:', avgEAR.toFixed(3));
-          }
           
           // Log EAR values during liveness for debugging
           if (step === 'liveness') {
-            console.log(`[Liveness] EAR: ${avgEAR.toFixed(3)} | Eyes: ${areEyesOpen ? 'OPEN' : 'CLOSED'}`);
+            console.log(`[Liveness] EAR: ${avgEAR.toFixed(3)} | Threshold: ${EAR_THRESHOLD} | Eyes: ${areEyesOpen ? 'OPEN' : 'CLOSED'} | PrevOpen: ${previousEyesOpenRef.current}`);
+          }
+          
+          // Detect blink: eyes were open in previous frame, now closed
+          if (previousEyesOpenRef.current === true && areEyesOpen === false) {
+            console.log('[Liveness] *** BLINK DETECTED! *** EAR:', avgEAR.toFixed(3));
+            setBlinkDetected(true);
           }
           
           previousEyesOpenRef.current = areEyesOpen;
