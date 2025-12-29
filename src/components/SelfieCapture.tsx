@@ -1190,19 +1190,9 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
 
                   {/* Face guide overlay with directional arrows */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-2xl">
-                    {/* Left arrow indicator */}
-                    {((step === 'calibration' && calibrationStep === 'left') || 
-                      (step === 'liveness' && currentChallenge?.type === 'turn_left' && livenessCountdown === null && !livenessVerified)) && (
-                      <div className="absolute left-4 top-1/2 -translate-y-1/2 animate-pulse">
-                        <div className="bg-primary/80 rounded-full p-3">
-                          <ChevronLeft className="h-8 w-8 text-white" />
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Right arrow indicator */}
-                    {((step === 'calibration' && calibrationStep === 'right') || 
-                      (step === 'liveness' && currentChallenge?.type === 'turn_right' && livenessCountdown === null && !livenessVerified)) && (
+                    {/* Arrow indicators during calibration - INVERTED: show where to turn */}
+                    {/* LEFT calibration: show RIGHT arrow (user turns head right) */}
+                    {step === 'calibration' && calibrationStep === 'left' && calibrationProgress < 100 && (
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 animate-pulse">
                         <div className="bg-primary/80 rounded-full p-3">
                           <ChevronRight className="h-8 w-8 text-white" />
@@ -1210,10 +1200,36 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                       </div>
                     )}
                     
-                    {/* Face oval guide - LARGER for better detection */}
+                    {/* RIGHT calibration: show LEFT arrow (user turns head left) */}
+                    {step === 'calibration' && calibrationStep === 'right' && calibrationProgress < 100 && (
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 animate-pulse">
+                        <div className="bg-primary/80 rounded-full p-3">
+                          <ChevronLeft className="h-8 w-8 text-white" />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Liveness arrows - also inverted */}
+                    {step === 'liveness' && currentChallenge?.type === 'turn_left' && livenessCountdown === null && !livenessVerified && (
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 animate-pulse">
+                        <div className="bg-primary/80 rounded-full p-3">
+                          <ChevronRight className="h-8 w-8 text-white" />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {step === 'liveness' && currentChallenge?.type === 'turn_right' && livenessCountdown === null && !livenessVerified && (
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 animate-pulse">
+                        <div className="bg-primary/80 rounded-full p-3">
+                          <ChevronLeft className="h-8 w-8 text-white" />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Face oval guide - normal face size */}
                     <div
                       className={cn(
-                        "w-72 h-80 rounded-[50%] border-4 transition-all duration-300",
+                        "w-52 h-64 rounded-[50%] border-4 transition-all duration-300",
                         step === 'calibration'
                           ? calibrationProgress >= 100
                             ? "border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.5)]"
