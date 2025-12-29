@@ -812,16 +812,16 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
             </motion.div>
           )}
 
-          {/* Camera Step - Face Detection */}
-          {step === 'camera' && (
+          {/* Camera + Liveness (shared video element to avoid black screen on step switch) */}
+          {(step === 'camera' || step === 'liveness') && (
             <motion.div
-              key="camera"
+              key="camera-liveness"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="space-y-4"
             >
-              {cameraError ? (
+              {step === 'camera' && cameraError ? (
                 <div className="p-6 bg-destructive/10 rounded-xl text-center space-y-3">
                   <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
                   <p className="text-destructive">{cameraError}</p>
@@ -830,10 +830,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Réessayer
                     </Button>
-                    <Button 
-                      variant="secondary" 
-                      onClick={() => fileInputRef.current?.click()}
-                    >
+                    <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
                       <Upload className="h-4 w-4 mr-2" />
                       Importer
                     </Button>
@@ -843,8 +840,8 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                 <>
                   <VideoContainer>
                     <DebugInfo />
-                    
-                    {/* Video feed - iOS Safari safe: no transform, no overflow-hidden on parent */}
+
+                    {/* Shared video element (must stay mounted across steps) */}
                     <video
                       ref={videoRef}
                       autoPlay
@@ -852,15 +849,14 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                       muted
                       className="w-full h-full object-cover rounded-2xl"
                       style={{
-                        // iOS Safari requires explicit dimensions and no CSS transform
                         minWidth: '100%',
                         minHeight: '100%'
                       }}
                     />
-                    
-                    {/* Tap to play overlay for iOS */}
-                    {needsManualPlay && (
-                      <div 
+
+                    {/* Tap to play overlay (only when needed) */}
+                    {needsManualPlay && step === 'camera' && (
+                      <div
                         className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-2xl cursor-pointer z-10"
                         onClick={handleManualPlay}
                       >
@@ -870,209 +866,181 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                         </div>
                       </div>
                     )}
-                    
+
                     {/* Face guide overlay */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-2xl">
-                      <div 
+                      <div
                         className={cn(
-                          "w-56 h-72 rounded-[50%] border-4 transition-colors duration-300",
-                          faceDetected 
-                            ? "border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)]" 
-                            : "border-white/50"
+                          "w-56 h-72 rounded-[50%] border-4 transition-all duration-300",
+                          step === 'liveness'
+                            ? livenessVerified
+                              ? "border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.5)]"
+                              : "border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+                            : faceDetected
+                              ? "border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+                              : "border-white/50"
                         )}
                       />
                     </div>
-                    
+
                     {/* Loading models indicator */}
-                    {!modelsLoaded && videoReady && (
+                    {!modelsLoaded && videoReady && step === 'camera' && (
                       <div className="absolute top-4 left-4 right-4 bg-white/90 dark:bg-gray-900/90 rounded-lg p-3 flex items-center gap-2 pointer-events-none">
                         <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         <span className="text-sm">Chargement IA... {loadingProgress}%</span>
                       </div>
                     )}
-                    
-                    {/* Instructions overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl pointer-events-none">
-                      <p className="text-white text-center text-sm">
-                        {!videoReady 
-                          ? "Démarrage de la caméra..."
-                          : !modelsLoaded
-                          ? "Chargement de la détection IA..."
-                          : faceDetected 
-                            ? "✅ Visage détecté - Prêt pour la vérification"
-                            : "Placez votre visage dans le cercle"
-                        }
-                      </p>
-                    </div>
+
+                    {/* Camera step instructions */}
+                    {step === 'camera' && (
+                      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl pointer-events-none">
+                        <p className="text-white text-center text-sm">
+                          {!videoReady
+                            ? "Démarrage de la caméra..."
+                            : !modelsLoaded
+                              ? "Chargement de la détection IA..."
+                              : faceDetected
+                                ? "✅ Visage détecté - Prêt pour la vérification"
+                                : "Placez votre visage dans le cercle"
+                          }
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Liveness overlays */}
+                    {step === 'liveness' && (
+                      <>
+                        {/* Challenge instruction overlay */}
+                        {!livenessVerified && currentChallenge && (
+                          <div
+                            key={currentChallengeIndex}
+                            className="absolute top-4 left-4 right-4 pointer-events-none"
+                          >
+                            <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-xl p-4 shadow-lg">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-full bg-primary/10 text-primary">
+                                  {currentChallenge.icon}
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-semibold text-sm">{currentChallenge.label}</p>
+                                  <p className="text-xs text-muted-foreground">{currentChallenge.instruction}</p>
+                                </div>
+                              </div>
+                              <Progress value={challengeProgress} className="mt-3 h-2" />
+                              <p className="text-xs text-center mt-2 text-muted-foreground">
+                                {getChallengeStatus()}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Success overlay */}
+                        {livenessVerified && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl pointer-events-none">
+                            <div className="bg-green-500 text-white rounded-full p-6">
+                              <Check className="h-12 w-12" />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Countdown overlay */}
+                        {countdown !== null && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl pointer-events-none">
+                            <span className="text-8xl font-bold text-white">{countdown}</span>
+                          </div>
+                        )}
+
+                        {/* Bottom progress indicators */}
+                        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl pointer-events-none">
+                          <div className="flex items-center justify-center gap-2">
+                            {selectedChallenges.map((_, index) => (
+                              <div
+                                key={index}
+                                className={cn(
+                                  "w-3 h-3 rounded-full transition-colors",
+                                  challengeCompleted[index]
+                                    ? 'bg-green-500'
+                                    : index === currentChallengeIndex
+                                      ? 'bg-blue-500'
+                                      : 'bg-white/50'
+                                )}
+                              />
+                            ))}
+                            <div
+                              className={cn(
+                                "w-3 h-3 rounded-full transition-colors",
+                                livenessVerified ? 'bg-green-500' : 'bg-white/50'
+                              )}
+                            />
+                          </div>
+                          <p className="text-white text-center text-sm mt-2">
+                            {livenessVerified
+                              ? "✅ Vivacité confirmée - Photo dans 3s..."
+                              : `Défi ${currentChallengeIndex + 1}/${selectedChallenges.length}`
+                            }
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </VideoContainer>
 
-                  <div className="flex gap-3">
+                  {step === 'camera' ? (
+                    <>
+                      <div className="flex gap-3">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            stopCamera();
+                            setStep('instructions');
+                          }}
+                          className="flex-1"
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Annuler
+                        </Button>
+                        <Button
+                          onClick={startLivenessDetection}
+                          disabled={!faceDetected || !modelsLoaded}
+                          className="flex-1 gap-2"
+                        >
+                          <Check className="h-4 w-4" />
+                          Continuer
+                        </Button>
+                      </div>
+
+                      {/* Fallback link */}
+                      <div className="text-center">
+                        <button
+                          onClick={() => {
+                            stopCamera();
+                            fileInputRef.current?.click();
+                          }}
+                          className="text-sm text-muted-foreground hover:text-primary underline"
+                        >
+                          Problème de caméra? Importer un selfie
+                        </button>
+                      </div>
+                    </>
+                  ) : (
                     <Button
                       variant="outline"
                       onClick={() => {
                         stopCamera();
                         setStep('instructions');
+                        setLivenessVerified(false);
+                        setCurrentChallengeIndex(0);
                       }}
-                      className="flex-1"
+                      className="w-full"
                     >
                       <X className="h-4 w-4 mr-2" />
                       Annuler
                     </Button>
-                    <Button
-                      onClick={startLivenessDetection}
-                      disabled={!faceDetected || !modelsLoaded}
-                      className="flex-1 gap-2"
-                    >
-                      <Check className="h-4 w-4" />
-                      Continuer
-                    </Button>
-                  </div>
-                  
-                  {/* Fallback link */}
-                  <div className="text-center">
-                    <button
-                      onClick={() => {
-                        stopCamera();
-                        fileInputRef.current?.click();
-                      }}
-                      className="text-sm text-muted-foreground hover:text-primary underline"
-                    >
-                      Problème de caméra? Importer un selfie
-                    </button>
-                  </div>
+                  )}
                 </>
               )}
             </motion.div>
           )}
 
-          {/* Liveness Detection Step */}
-          {step === 'liveness' && (
-            <motion.div
-              key="liveness"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="space-y-4"
-            >
-              <VideoContainer>
-                <DebugInfo />
-                
-                {/* Video feed - iOS Safari safe */}
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover rounded-2xl"
-                  style={{
-                    minWidth: '100%',
-                    minHeight: '100%'
-                  }}
-                />
-                
-                {/* Face guide overlay with liveness indicator */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-2xl">
-                  <div 
-                    className={cn(
-                      "w-56 h-72 rounded-[50%] border-4 transition-all duration-300",
-                      livenessVerified 
-                        ? "border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.5)]"
-                        : "border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)]"
-                    )}
-                  />
-                </div>
-                
-                {/* Challenge instruction overlay */}
-                {!livenessVerified && currentChallenge && (
-                  <div
-                    key={currentChallengeIndex}
-                    className="absolute top-4 left-4 right-4 pointer-events-none"
-                  >
-                    <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-xl p-4 shadow-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-full bg-primary/10 text-primary">
-                          {currentChallenge.icon}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm">{currentChallenge.label}</p>
-                          <p className="text-xs text-muted-foreground">{currentChallenge.instruction}</p>
-                        </div>
-                      </div>
-                      <Progress value={challengeProgress} className="mt-3 h-2" />
-                      <p className="text-xs text-center mt-2 text-muted-foreground">
-                        {getChallengeStatus()}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Success overlay */}
-                {livenessVerified && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl pointer-events-none">
-                    <div className="bg-green-500 text-white rounded-full p-6">
-                      <Check className="h-12 w-12" />
-                    </div>
-                  </div>
-                )}
-
-                {/* Countdown overlay for photo capture */}
-                {countdown !== null && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl pointer-events-none">
-                    <span className="text-8xl font-bold text-white">
-                      {countdown}
-                    </span>
-                  </div>
-                )}
-
-                {/* Bottom progress indicators */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl pointer-events-none">
-                  <div className="flex items-center justify-center gap-2">
-                    {selectedChallenges.map((_, index) => (
-                      <div
-                        key={index}
-                        className={cn(
-                          "w-3 h-3 rounded-full transition-colors",
-                          challengeCompleted[index] 
-                            ? 'bg-green-500' 
-                            : index === currentChallengeIndex 
-                              ? 'bg-blue-500' 
-                              : 'bg-white/50'
-                        )}
-                      />
-                    ))}
-                    <div
-                      className={cn(
-                        "w-3 h-3 rounded-full transition-colors",
-                        livenessVerified ? 'bg-green-500' : 'bg-white/50'
-                      )}
-                    />
-                  </div>
-                  <p className="text-white text-center text-sm mt-2">
-                    {livenessVerified 
-                      ? "✅ Vivacité confirmée - Photo dans 3s..."
-                      : `Défi ${currentChallengeIndex + 1}/${selectedChallenges.length}`
-                    }
-                  </p>
-                </div>
-              </VideoContainer>
-
-              <Button
-                variant="outline"
-                onClick={() => {
-                  stopCamera();
-                  setStep('instructions');
-                  setLivenessVerified(false);
-                  setCurrentChallengeIndex(0);
-                }}
-                className="w-full"
-              >
-                <X className="h-4 w-4 mr-2" />
-                Annuler
-              </Button>
-            </motion.div>
-          )}
-
-          {/* Preview Step */}
           {step === 'preview' && capturedImage && (
             <motion.div
               key="preview"
