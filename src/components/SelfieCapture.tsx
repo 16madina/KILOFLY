@@ -103,8 +103,10 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const previousEyesOpenRef = useRef<boolean>(true);
   
   // Computed calibration thresholds (with fallback defaults)
-  const leftThreshold = calibrationLeftAngle !== null ? calibrationLeftAngle * 0.5 : 8;
-  const rightThreshold = calibrationRightAngle !== null ? calibrationRightAngle * 0.5 : -8;
+  // Visual LEFT turn = negative angle (due to mirrored video), so leftThreshold is negative
+  // Visual RIGHT turn = positive angle, so rightThreshold is positive
+  const leftThreshold = calibrationLeftAngle !== null ? calibrationLeftAngle * 0.5 : -8;
+  const rightThreshold = calibrationRightAngle !== null ? calibrationRightAngle * 0.5 : 8;
 
   // Debug mode
   const [debugMode] = useState(() => {
@@ -673,14 +675,14 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
 
     const interval = setInterval(() => {
       if (calibrationStep === 'left') {
-        // Expecting positive angle for left turn
-        if (headAngle > 5) {
+        // Visual LEFT turn = NEGATIVE angle (due to mirrored video + face-api raw analysis)
+        if (headAngle < -5) {
           calibrationHoldCountRef.current++;
           setCalibrationProgress((calibrationHoldCountRef.current / 5) * 100);
           
-          // Track max angle seen
+          // Track min (most negative) angle seen for left
           setCalibrationLeftAngle(prev => 
-            prev === null ? headAngle : Math.max(prev, headAngle)
+            prev === null ? headAngle : Math.min(prev, headAngle)
           );
           
           if (calibrationHoldCountRef.current >= 5) {
@@ -695,14 +697,14 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
           setCalibrationProgress(0);
         }
       } else if (calibrationStep === 'right') {
-        // Expecting negative angle for right turn
-        if (headAngle < -5) {
+        // Visual RIGHT turn = POSITIVE angle
+        if (headAngle > 5) {
           calibrationHoldCountRef.current++;
           setCalibrationProgress((calibrationHoldCountRef.current / 5) * 100);
           
-          // Track min (most negative) angle seen
+          // Track max (most positive) angle seen for right
           setCalibrationRightAngle(prev => 
-            prev === null ? headAngle : Math.min(prev, headAngle)
+            prev === null ? headAngle : Math.max(prev, headAngle)
           );
           
           if (calibrationHoldCountRef.current >= 5) {
@@ -776,10 +778,9 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
 
     let completed = false;
 
-    // Note: Video display is mirrored (scaleX(-1)) but face-api sees raw video.
-    // In practice (based on our landmark ratio), turning LEFT tends to produce a POSITIVE angle,
-    // and turning RIGHT tends to produce a NEGATIVE angle.
-    // If this ever flips on some devices, we can calibrate, but this mapping matches current behavior.
+    // Video display is mirrored (scaleX(-1)) but face-api sees raw video.
+    // Visual LEFT turn → NEGATIVE headAngle (leftThreshold is negative)
+    // Visual RIGHT turn → POSITIVE headAngle (rightThreshold is positive)
     switch (currentChallenge.type) {
       case 'blink':
         if (blinkDetected) {
@@ -789,15 +790,15 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
         }
         break;
       case 'turn_left':
-        // LEFT = positive angle, use calibrated threshold
-        if (headAngle > leftThreshold) {
+        // Visual LEFT = negative angle, threshold is negative
+        if (headAngle < leftThreshold) {
           completed = true;
           console.log(`[Liveness] Challenge TURN_LEFT completed! Angle: ${headAngle.toFixed(1)}° (threshold: ${leftThreshold.toFixed(1)}°)`);
         }
         break;
       case 'turn_right':
-        // RIGHT = negative angle, use calibrated threshold
-        if (headAngle < rightThreshold) {
+        // Visual RIGHT = positive angle, threshold is positive
+        if (headAngle > rightThreshold) {
           completed = true;
           console.log(`[Liveness] Challenge TURN_RIGHT completed! Angle: ${headAngle.toFixed(1)}° (threshold: ${rightThreshold.toFixed(1)}°)`);
         }
