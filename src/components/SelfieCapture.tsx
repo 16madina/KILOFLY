@@ -63,6 +63,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectionIntervalRef = useRef<number | null>(null);
+  const triedFallbackRef = useRef(false);
   
   const [step, setStep] = useState<CaptureStep>('instructions');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -281,6 +282,7 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     setCameraError(null);
     setVideoReady(false);
     setNeedsManualPlay(false);
+    triedFallbackRef.current = false;
 
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -288,13 +290,19 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
         return;
       }
 
-      // Start camera immediately
+      const isMobile =
+        typeof navigator !== "undefined" &&
+        /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent);
+
+      // Start camera immediately (desktop: be permissive to avoid black frames)
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-          width: { ideal: 720 },
-          height: { ideal: 720 },
-        },
+        video: isMobile
+          ? {
+              facingMode: { ideal: "user" },
+              width: { ideal: 720 },
+              height: { ideal: 720 },
+            }
+          : true,
         audio: false,
       });
 
@@ -305,6 +313,36 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
       setTimeout(() => {
         attachStreamToVideo();
       }, 50);
+
+      // If we get a stream but the video stays black (0x0), retry with very loose constraints.
+      setTimeout(async () => {
+        const video = videoRef.current;
+        const track = streamRef.current?.getVideoTracks?.()[0];
+
+        if (!video || !track) return;
+        if (triedFallbackRef.current) return;
+
+        const hasFrames = video.videoWidth > 0 && video.videoHeight > 0;
+        if (hasFrames) return;
+
+        triedFallbackRef.current = true;
+        console.warn('[SelfieCapture] Video has no frames yet, retrying with fallback constraints');
+
+        try {
+          const fallbackStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false,
+          });
+
+          // Stop previous tracks and swap streams
+          streamRef.current?.getTracks().forEach((t) => t.stop());
+          streamRef.current = fallbackStream;
+
+          await attachStreamToVideo();
+        } catch (e) {
+          console.error('[SelfieCapture] Fallback camera attempt failed:', e);
+        }
+      }, 1500);
 
       // Load models in background if not loaded
       if (!modelsLoaded) {
@@ -847,14 +885,14 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                     
                     {/* Loading models indicator */}
                     {!modelsLoaded && videoReady && (
-                      <div className="absolute top-4 left-4 right-4 bg-white/90 dark:bg-gray-900/90 rounded-lg p-3 flex items-center gap-2">
+                      <div className="absolute top-4 left-4 right-4 bg-white/90 dark:bg-gray-900/90 rounded-lg p-3 flex items-center gap-2 pointer-events-none">
                         <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         <span className="text-sm">Chargement IA... {loadingProgress}%</span>
                       </div>
                     )}
                     
                     {/* Instructions overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl">
+                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl pointer-events-none">
                       <p className="text-white text-center text-sm">
                         {!videoReady 
                           ? "Démarrage de la caméra..."
@@ -946,11 +984,9 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                 
                 {/* Challenge instruction overlay */}
                 {!livenessVerified && currentChallenge && (
-                  <motion.div 
+                  <div
                     key={currentChallengeIndex}
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="absolute top-4 left-4 right-4"
+                    className="absolute top-4 left-4 right-4 pointer-events-none"
                   >
                     <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-xl p-4 shadow-lg">
                       <div className="flex items-center gap-3">
@@ -967,43 +1003,29 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                         {getChallengeStatus()}
                       </p>
                     </div>
-                  </motion.div>
+                  </div>
                 )}
 
                 {/* Success overlay */}
                 {livenessVerified && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl"
-                  >
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl pointer-events-none">
                     <div className="bg-green-500 text-white rounded-full p-6">
                       <Check className="h-12 w-12" />
                     </div>
-                  </motion.div>
+                  </div>
                 )}
 
                 {/* Countdown overlay for photo capture */}
                 {countdown !== null && (
-                  <motion.div
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl"
-                  >
-                    <motion.span
-                      key={countdown}
-                      initial={{ scale: 1.5, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.5, opacity: 0 }}
-                      className="text-8xl font-bold text-white"
-                    >
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl pointer-events-none">
+                    <span className="text-8xl font-bold text-white">
                       {countdown}
-                    </motion.span>
-                  </motion.div>
+                    </span>
+                  </div>
                 )}
 
                 {/* Bottom progress indicators */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl">
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl pointer-events-none">
                   <div className="flex items-center justify-center gap-2">
                     {selectedChallenges.map((_, index) => (
                       <div
