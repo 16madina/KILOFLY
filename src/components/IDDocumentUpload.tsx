@@ -8,13 +8,12 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface IDDocumentUploadProps {
   documentUrl?: string;
-  onUploadComplete?: () => void;
+  onUploadComplete?: (url?: string) => void;
 }
 
 const IDDocumentUpload = ({ documentUrl, onUploadComplete }: IDDocumentUploadProps) => {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
-  const [verifying, setVerifying] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | undefined>(documentUrl);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,32 +78,9 @@ const IDDocumentUpload = ({ documentUrl, onUploadComplete }: IDDocumentUploadPro
       toast.success('Document téléchargé avec succès');
       setUploading(false);
 
-      // Start AI verification
-      setVerifying(true);
-      toast.info('🤖 Vérification automatique en cours...');
-
-      const { data, error: verifyError } = await supabase.functions.invoke('verify-id-document', {
-        body: {
-          userId: user.id,
-          documentUrl: publicUrl,
-        },
-      });
-
-      setVerifying(false);
-
-      if (verifyError) {
-        console.error('Verification error:', verifyError);
-        toast.warning('⚠️ La vérification automatique a échoué. Un admin vérifiera manuellement votre document.');
-      } else if (data?.success) {
-        if (data.idVerified) {
-          toast.success('✅ Document vérifié automatiquement! Vous pouvez maintenant créer des annonces.');
-        } else {
-          toast.info('⏳ Votre document nécessite une vérification manuelle. Nous vous contacterons sous 24-48h.');
-        }
-      }
-
+      // Notify parent component with the URL for next step (selfie capture)
       if (onUploadComplete) {
-        onUploadComplete();
+        onUploadComplete(publicUrl);
       }
 
     } catch (error: any) {
@@ -112,7 +88,6 @@ const IDDocumentUpload = ({ documentUrl, onUploadComplete }: IDDocumentUploadPro
       toast.error(error.message || 'Erreur lors du téléchargement');
     } finally {
       setUploading(false);
-      setVerifying(false);
     }
   };
 
@@ -145,18 +120,13 @@ const IDDocumentUpload = ({ documentUrl, onUploadComplete }: IDDocumentUploadPro
               type="button"
               variant="outline"
               className="w-full"
-              disabled={uploading || verifying}
+              disabled={uploading}
               onClick={() => document.getElementById('id-document-upload')?.click()}
             >
               {uploading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Téléchargement...
-                </>
-              ) : verifying ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Vérification IA en cours...
                 </>
               ) : (
                 <>
@@ -170,8 +140,9 @@ const IDDocumentUpload = ({ documentUrl, onUploadComplete }: IDDocumentUploadPro
             id="id-document-upload"
             type="file"
             accept="image/*"
+            capture="environment"
             onChange={handleFileChange}
-            disabled={uploading || verifying}
+            disabled={uploading}
             className="hidden"
           />
 
