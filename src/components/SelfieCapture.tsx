@@ -104,29 +104,11 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
   const [blinkDetected, setBlinkDetected] = useState(false);
   const previousEyesOpenRef = useRef<boolean>(true);
   
-  // Head-turn thresholds (smaller = more comfortable)
-  const MIN_TURN_DEG = 3;
-  const MAX_TURN_DEG = 6;
-  const FALLBACK_TURN_DEG = 5;
-  const TURN_FACTOR = 0.25;
-
-  const deriveTurnThreshold = useCallback(
-    (angle: number | null, sign: -1 | 1) => {
-      if (angle === null) return sign * FALLBACK_TURN_DEG;
-      const deg = Math.min(
-        MAX_TURN_DEG,
-        Math.max(MIN_TURN_DEG, Math.abs(angle) * TURN_FACTOR)
-      );
-      return sign * deg;
-    },
-    [FALLBACK_TURN_DEG, MAX_TURN_DEG, MIN_TURN_DEG, TURN_FACTOR]
-  );
-
-  // Computed calibration thresholds (with fallback defaults)
-  // Visual LEFT turn = negative angle (due to mirrored video), so leftThreshold is negative
-  // Visual RIGHT turn = positive angle, so rightThreshold is positive
-  const leftThreshold = deriveTurnThreshold(calibrationLeftAngle, -1);
-  const rightThreshold = deriveTurnThreshold(calibrationRightAngle, 1);
+  // Head-turn thresholds - VERY EASY (minimal movement required)
+  // Fixed very low threshold - just 2 degrees of movement needed!
+  const TURN_THRESHOLD_DEG = 2;
+  const leftThreshold = -TURN_THRESHOLD_DEG;  // Just -2° for left
+  const rightThreshold = TURN_THRESHOLD_DEG;  // Just +2° for right
 
   // Debug mode
   const [debugMode] = useState(() => {
