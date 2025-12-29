@@ -7,6 +7,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Security thresholds
+const AUTO_APPROVE_CONFIDENCE_THRESHOLD = 0.90; // Increased from 0.85
+const MANUAL_REVIEW_THRESHOLD = 0.70;
+const REJECT_THRESHOLD = 0.40;
+const MAX_FILE_SIZE_MB = 10;
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -15,8 +22,24 @@ serve(async (req) => {
   try {
     const { userId, documentUrl } = await req.json();
 
-    if (!userId || !documentUrl) {
-      throw new Error('Missing userId or documentUrl');
+    // Input validation
+    if (!userId || typeof userId !== 'string') {
+      throw new Error('Invalid or missing userId');
+    }
+    
+    if (!documentUrl || typeof documentUrl !== 'string') {
+      throw new Error('Invalid or missing documentUrl');
+    }
+
+    // Validate UUID format for userId
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId)) {
+      throw new Error('Invalid userId format');
+    }
+
+    // Validate document URL is from our storage
+    if (!documentUrl.includes('id-documents')) {
+      throw new Error('Invalid document URL: must be from id-documents storage');
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -29,7 +52,57 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    console.log('Starting AI verification for user:', userId);
+    console.log('Starting enhanced AI verification for user:', userId);
+    console.log('Timestamp:', new Date().toISOString());
+
+    // Verify user exists and hasn't already been verified
+    const { data: existingProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, id_verified, id_document_url, full_name')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !existingProfile) {
+      throw new Error('User profile not found');
+    }
+
+    if (existingProfile.id_verified) {
+      console.log('User already verified, skipping:', userId);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'User already verified',
+          idVerified: true
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check for duplicate document submissions (fraud prevention)
+    const { data: duplicateCheck } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .eq('id_document_url', documentUrl)
+      .neq('id', userId);
+
+    if (duplicateCheck && duplicateCheck.length > 0) {
+      console.warn('Duplicate document detected:', documentUrl);
+      
+      await supabase.from('profiles').update({
+        verification_method: 'ai_rejected',
+        verification_notes: '🚨 FRAUDE DÉTECTÉE: Ce document a déjà été soumis par un autre utilisateur. Vérification refusée.',
+        id_verified: false
+      }).eq('id', userId);
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Duplicate document detected',
+          fraud: true
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Extract the file path from the public URL
     const urlPath = new URL(documentUrl).pathname;
@@ -47,6 +120,19 @@ serve(async (req) => {
       console.error('Error downloading file:', downloadError);
       throw new Error('Failed to download document from storage');
     }
+
+    // File size validation
+    const fileSizeMB = fileData.size / (1024 * 1024);
+    if (fileSizeMB > MAX_FILE_SIZE_MB) {
+      throw new Error(`File too large: ${fileSizeMB.toFixed(2)}MB (max ${MAX_FILE_SIZE_MB}MB)`);
+    }
+
+    // Validate MIME type
+    if (!ALLOWED_MIME_TYPES.includes(fileData.type)) {
+      throw new Error(`Invalid file type: ${fileData.type}. Allowed: ${ALLOWED_MIME_TYPES.join(', ')}`);
+    }
+
+    console.log('File validated - Size:', fileSizeMB.toFixed(2), 'MB, Type:', fileData.type);
 
     // Convert the blob to base64
     const arrayBuffer = await fileData.arrayBuffer();
@@ -67,7 +153,70 @@ serve(async (req) => {
     
     console.log('Image converted to base64, size:', base64Image.length, 'mime type:', mimeType);
 
-    // Call Lovable AI with vision capabilities to analyze the ID document
+    // Enhanced AI prompt with more security checks
+    const systemPrompt = `You are a STRICT identity document verification AI for KiloFly, a luggage-sharing marketplace. Your role is CRITICAL for fraud prevention.
+
+## DOCUMENT ANALYSIS REQUIREMENTS
+
+Analyze the provided ID document image for ALL of the following:
+
+### 1. DOCUMENT AUTHENTICITY (30% weight)
+- Is this a real government-issued document (passport, national ID card, driver's license)?
+- Check for official watermarks, holograms, and security features
+- Look for signs of digital manipulation (Photoshop, AI-generated)
+- Verify document format matches known templates
+
+### 2. IMAGE QUALITY (20% weight)
+- Is the text clearly readable?
+- Is the photo visible and clear?
+- No excessive blur, glare, or shadows
+- Document fully visible without cropping
+
+### 3. DOCUMENT VALIDITY (25% weight)  
+- Check if document appears expired (look for expiration date)
+- Verify document number format is realistic
+- Check for valid issue dates
+- Ensure all required fields are present
+
+### 4. FRAUD INDICATORS (25% weight)
+- Check for photo tampering or overlay
+- Look for text inconsistencies or different fonts
+- Detect signs of physical document alteration
+- Verify hologram/security feature visibility
+- Check for screenshot of another document
+- Detect if this is a photo of a screen
+
+## RESPONSE FORMAT
+
+Respond with ONLY a JSON object (no markdown):
+{
+  "approved": boolean,
+  "confidence": number (0.0 to 1.0),
+  "document_type": "passport" | "national_id" | "drivers_license" | "unknown",
+  "extracted_info": {
+    "document_country": string or null,
+    "document_number_visible": boolean,
+    "photo_visible": boolean,
+    "expiration_visible": boolean,
+    "appears_expired": boolean
+  },
+  "quality_score": number (0.0 to 1.0),
+  "authenticity_score": number (0.0 to 1.0),
+  "fraud_risk": "low" | "medium" | "high" | "critical",
+  "reasons": string[],
+  "flags": string[],
+  "recommendation": "auto_approve" | "manual_review" | "reject"
+}
+
+## DECISION CRITERIA
+
+- AUTO_APPROVE: confidence >= 0.90, fraud_risk = "low", no flags, all quality checks pass
+- MANUAL_REVIEW: confidence 0.70-0.89 OR fraud_risk = "medium" OR minor flags
+- REJECT: confidence < 0.40 OR fraud_risk = "high"/"critical" OR obvious fraud
+
+BE STRICT. When in doubt, flag for manual review. Never auto-approve suspicious documents.`;
+
+    // Call Lovable AI with enhanced vision analysis
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -75,37 +224,19 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro', // Using Pro for better accuracy
         messages: [
-          {
-            role: 'system',
-            content: `You are an identity document verification AI. Analyze the provided ID document image and determine if it appears to be:
-1. A valid government-issued identification document (passport, national ID card, driver's license)
-2. Clear and readable with visible text and photo
-3. Not altered, tampered with, or suspicious
-4. Contains essential information (name, photo, document number, expiration date)
-
-Respond with a JSON object containing:
-- "approved": boolean (true if document appears valid, false if suspicious)
-- "confidence": number between 0 and 1 (your confidence level)
-- "reasons": array of strings explaining your decision
-- "document_type": string (passport/national_id/drivers_license/unknown)
-- "flags": array of strings for any concerns (blur/glare/tampering/missing_info/expired/etc)
-
-Be strict but fair. Auto-approve only documents that are clearly valid with no red flags.`
-          },
+          { role: 'system', content: systemPrompt },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: 'Please analyze this identity document and verify its authenticity.'
+                text: `Analyze this identity document submitted by user "${existingProfile.full_name}". Perform thorough security verification.`
               },
               {
                 type: 'image_url',
-                image_url: {
-                  url: base64DataUrl
-                }
+                image_url: { url: base64DataUrl }
               }
             ]
           }
@@ -137,38 +268,102 @@ Be strict but fair. Auto-approve only documents that are clearly valid with no r
     // Parse AI response
     let analysisResult;
     try {
-      // Extract JSON from markdown code blocks if present
       const jsonMatch = aiMessage.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || 
                        aiMessage.match(/(\{[\s\S]*\})/);
       const jsonString = jsonMatch ? jsonMatch[1] : aiMessage;
       analysisResult = JSON.parse(jsonString);
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError);
-      throw new Error('Failed to parse AI analysis result');
+      // Flag for manual review if parsing fails
+      analysisResult = {
+        approved: false,
+        confidence: 0.5,
+        fraud_risk: 'medium',
+        recommendation: 'manual_review',
+        reasons: ['AI response parsing failed - manual review required'],
+        flags: ['parsing_error']
+      };
     }
 
     const {
       approved,
       confidence,
-      reasons,
       document_type,
-      flags
+      extracted_info,
+      quality_score,
+      authenticity_score,
+      fraud_risk,
+      reasons,
+      flags,
+      recommendation
     } = analysisResult;
 
-    // Determine verification status based on AI analysis
+    console.log('Analysis result:', {
+      approved,
+      confidence,
+      fraud_risk,
+      recommendation,
+      flags_count: flags?.length || 0
+    });
+
+    // Enhanced decision logic with multiple security layers
     let verificationMethod: string;
     let idVerified: boolean;
     let verificationNotes: string;
 
-    // Auto-approve only if confidence is high (>= 0.85) and approved is true
-    if (approved && confidence >= 0.85 && (!flags || flags.length === 0)) {
+    // CRITICAL: Check for high-risk fraud indicators first
+    if (fraud_risk === 'critical' || fraud_risk === 'high') {
+      verificationMethod = 'ai_rejected';
+      idVerified = false;
+      verificationNotes = `🚨 RISQUE ÉLEVÉ DE FRAUDE DÉTECTÉ\n` +
+        `Type: ${document_type || 'unknown'}\n` +
+        `Score confiance: ${(confidence * 100).toFixed(0)}%\n` +
+        `Niveau risque: ${fraud_risk.toUpperCase()}\n` +
+        `Problèmes: ${flags?.join(', ') || 'N/A'}\n` +
+        `Raisons: ${reasons?.join(', ') || 'N/A'}`;
+        
+      console.warn('HIGH FRAUD RISK detected for user:', userId);
+    }
+    // Auto-approve only with very high confidence and no risk
+    else if (
+      approved && 
+      confidence >= AUTO_APPROVE_CONFIDENCE_THRESHOLD && 
+      fraud_risk === 'low' &&
+      (!flags || flags.length === 0) &&
+      recommendation === 'auto_approve'
+    ) {
       verificationMethod = 'ai_approved';
       idVerified = true;
-      verificationNotes = `✅ Document auto-verified by AI\nType: ${document_type}\nConfidence: ${(confidence * 100).toFixed(0)}%\nReasons: ${reasons.join(', ')}`;
-    } else {
+      verificationNotes = `✅ Document vérifié automatiquement par IA\n` +
+        `Type: ${document_type || 'unknown'}\n` +
+        `Score confiance: ${(confidence * 100).toFixed(0)}%\n` +
+        `Qualité: ${((quality_score || 0) * 100).toFixed(0)}%\n` +
+        `Authenticité: ${((authenticity_score || 0) * 100).toFixed(0)}%\n` +
+        `Raisons: ${reasons?.join(', ') || 'Document valide'}`;
+        
+      console.log('AUTO-APPROVED:', userId);
+    }
+    // Flag for manual review in all other cases
+    else {
       verificationMethod = 'ai_flagged';
       idVerified = false;
-      verificationNotes = `⚠️ Document flagged for manual review\nType: ${document_type}\nConfidence: ${(confidence * 100).toFixed(0)}%\nReasons: ${reasons.join(', ')}\nFlags: ${flags?.join(', ') || 'None'}`;
+      
+      const reviewReasons = [];
+      if (confidence < MANUAL_REVIEW_THRESHOLD) reviewReasons.push('Score confiance insuffisant');
+      if (fraud_risk === 'medium') reviewReasons.push('Risque moyen détecté');
+      if (flags && flags.length > 0) reviewReasons.push(`Alertes: ${flags.join(', ')}`);
+      if (extracted_info?.appears_expired) reviewReasons.push('Document potentiellement expiré');
+      
+      verificationNotes = `⚠️ RÉVISION MANUELLE REQUISE\n` +
+        `Type: ${document_type || 'unknown'}\n` +
+        `Score confiance: ${(confidence * 100).toFixed(0)}%\n` +
+        `Niveau risque: ${fraud_risk || 'unknown'}\n` +
+        `Qualité: ${((quality_score || 0) * 100).toFixed(0)}%\n` +
+        `Authenticité: ${((authenticity_score || 0) * 100).toFixed(0)}%\n` +
+        `Raisons de révision: ${reviewReasons.join('; ')}\n` +
+        `Analyse IA: ${reasons?.join(', ') || 'N/A'}`;
+        
+      console.log('FLAGGED FOR REVIEW:', userId, reviewReasons);
     }
 
     // Update user profile with verification result
@@ -188,24 +383,40 @@ Be strict but fair. Auto-approve only documents that are clearly valid with no r
       throw new Error('Failed to update verification status');
     }
 
-    // Send notification to user
+    // Send appropriate notification to user
+    let notificationTitle: string;
+    let notificationMessage: string;
+    let notificationType: string;
+
     if (idVerified) {
-      await supabase.rpc('send_notification', {
-        p_user_id: userId,
-        p_title: '✅ Vérification automatique réussie',
-        p_message: 'Votre document d\'identité a été vérifié automatiquement par notre système IA. Vous pouvez maintenant créer des annonces !',
-        p_type: 'verification'
-      });
+      notificationTitle = '✅ Vérification automatique réussie';
+      notificationMessage = 'Votre document d\'identité a été vérifié automatiquement. Vous pouvez maintenant créer des annonces et effectuer des réservations !';
+      notificationType = 'success';
+    } else if (verificationMethod === 'ai_rejected') {
+      notificationTitle = '❌ Document rejeté';
+      notificationMessage = 'Votre document a été rejeté pour des raisons de sécurité. Veuillez soumettre un document valide et authentique.';
+      notificationType = 'error';
     } else {
-      await supabase.rpc('send_notification', {
-        p_user_id: userId,
-        p_title: '⏳ Vérification en cours',
-        p_message: 'Votre document d\'identité nécessite une vérification manuelle par notre équipe. Nous vous contacterons sous 24-48h.',
-        p_type: 'verification'
-      });
+      notificationTitle = '⏳ Vérification en cours';
+      notificationMessage = 'Votre document nécessite une vérification manuelle par notre équipe. Délai estimé: 24-48h.';
+      notificationType = 'info';
     }
 
-    console.log('Verification completed:', { verificationMethod, idVerified, confidence });
+    await supabase.rpc('send_notification', {
+      p_user_id: userId,
+      p_title: notificationTitle,
+      p_message: notificationMessage,
+      p_type: notificationType
+    });
+
+    console.log('Verification completed:', { 
+      userId,
+      verificationMethod, 
+      idVerified, 
+      confidence,
+      fraud_risk,
+      timestamp: new Date().toISOString()
+    });
 
     return new Response(
       JSON.stringify({
@@ -214,7 +425,11 @@ Be strict but fair. Auto-approve only documents that are clearly valid with no r
         idVerified,
         confidence,
         documentType: document_type,
-        notes: verificationNotes
+        fraudRisk: fraud_risk,
+        qualityScore: quality_score,
+        authenticityScore: authenticity_score,
+        notes: verificationNotes,
+        flags: flags || []
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -223,6 +438,8 @@ Be strict but fair. Auto-approve only documents that are clearly valid with no r
 
   } catch (error) {
     console.error('Error in verify-id-document function:', error);
+    console.error('Stack:', error instanceof Error ? error.stack : 'N/A');
+    
     return new Response(
       JSON.stringify({
         success: false,
