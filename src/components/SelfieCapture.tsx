@@ -307,32 +307,28 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
           
           // Log pitch during liveness for debugging
           if (step === 'liveness') {
-            console.log(`[Liveness] Head pitch: ${pitchDeviation.toFixed(1)} | Phase: ${nodPhaseRef.current}`);
+            console.log(`[Liveness] Head pitch: ${pitchDeviation.toFixed(1)} | UP: ${nodUpValidated} | DOWN: ${nodDownValidated}`);
           }
           
-          // Detect nod: head goes down then up (or up then down)
+          // Simplified nod detection: validate UP once, DOWN once, then done
           // Very easy threshold - just 5 pixels of movement
           const NOD_THRESHOLD = 5;
+          const now = Date.now();
           
-          if (nodPhaseRef.current === 'idle') {
-            if (pitchDeviation > NOD_THRESHOLD) {
-              nodPhaseRef.current = 'down';
-              console.log('[Liveness] Nod phase: DOWN detected');
-            } else if (pitchDeviation < -NOD_THRESHOLD) {
-              nodPhaseRef.current = 'up';
-              console.log('[Liveness] Nod phase: UP detected');
+          // Debounce: only register new events after 300ms
+          if (now - lastNodEventAtRef.current > 300) {
+            // Detect UP movement (head tilted back = negative pitch)
+            if (pitchDeviation < -NOD_THRESHOLD && !nodUpValidated) {
+              setNodUpValidated(true);
+              lastNodEventAtRef.current = now;
+              console.log('[Liveness] ✅ UP validated!');
             }
-          } else if (nodPhaseRef.current === 'down') {
-            if (pitchDeviation < -NOD_THRESHOLD) {
-              console.log('[Liveness] *** NOD DETECTED! *** (down then up)');
-              setNodDetected(true);
-              nodPhaseRef.current = 'idle';
-            }
-          } else if (nodPhaseRef.current === 'up') {
-            if (pitchDeviation > NOD_THRESHOLD) {
-              console.log('[Liveness] *** NOD DETECTED! *** (up then down)');
-              setNodDetected(true);
-              nodPhaseRef.current = 'idle';
+            
+            // Detect DOWN movement (head tilted forward = positive pitch)
+            if (pitchDeviation > NOD_THRESHOLD && !nodDownValidated) {
+              setNodDownValidated(true);
+              lastNodEventAtRef.current = now;
+              console.log('[Liveness] ✅ DOWN validated!');
             }
           }
           
@@ -701,8 +697,10 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     setChallengeCompleted([false]);
     setLivenessVerified(false);
     setNodDetected(false);
-    nodPhaseRef.current = 'idle';
+    setNodUpValidated(false);
+    setNodDownValidated(false);
     baselinePitchRef.current = null;
+    lastNodEventAtRef.current = 0;
     faceDetectedCountRef.current = 0;
     setAutoProgressCount(0);
 
@@ -840,10 +838,10 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     // Visual RIGHT turn → POSITIVE headAngle (rightThreshold is positive)
     switch (currentChallenge.type) {
       case 'nod':
-        if (nodDetected) {
+        // Nod is complete when both UP and DOWN are validated
+        if (nodUpValidated && nodDownValidated) {
           completed = true;
-          setNodDetected(false);
-          console.log('[Liveness] Challenge NOD completed!');
+          console.log('[Liveness] Challenge NOD completed! (UP + DOWN validated)');
         }
         break;
       case 'turn_left':
@@ -985,8 +983,10 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     setCurrentChallengeIndex(0);
     setChallengeCompleted([false]);
     setNodDetected(false);
-    nodPhaseRef.current = 'idle';
+    setNodUpValidated(false);
+    setNodDownValidated(false);
     baselinePitchRef.current = null;
+    lastNodEventAtRef.current = 0;
     startCamera();
   }, [startCamera]);
 
@@ -1043,11 +1043,10 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
     
     switch (currentChallenge.type) {
       case 'nod':
-        const phase = nodPhaseRef.current;
-        if (phase === 'idle') return '⬆️⬇️ Hochez la tête de haut en bas';
-        if (phase === 'down') return '⬆️ Remontez la tête!';
-        if (phase === 'up') return '⬇️ Baissez la tête!';
-        return '⬆️⬇️ Hochez la tête';
+        if (nodUpValidated && nodDownValidated) return '✅✅ Hochement validé!';
+        if (nodUpValidated) return '✅ Montée OK - Maintenant baissez!';
+        if (nodDownValidated) return '✅ Descente OK - Maintenant montez!';
+        return '⬆️ Montez la tête une fois';
       case 'turn_left':
         // LEFT = positive angle (use calibrated threshold)
         if (headAngle > leftThreshold) {
@@ -1439,23 +1438,45 @@ const SelfieCapture = ({ onCaptureComplete, onSkip, documentUrl }: SelfieCapture
                             <h3 className="text-2xl font-bold text-white drop-shadow-lg">{currentChallenge.label}</h3>
                             <p className="text-white/90 text-base drop-shadow-lg">{currentChallenge.instruction}</p>
                             
-                            {/* Nod status indicator for nod challenge */}
+                            {/* Nod status indicator with 2 checkboxes */}
                             {currentChallenge.type === 'nod' && (
-                              <div className={cn(
-                                "px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2 transition-all duration-200",
-                                nodPhaseRef.current === 'idle'
-                                  ? "bg-blue-500/80 text-white" 
-                                  : "bg-yellow-500/80 text-white animate-pulse"
-                              )}>
+                              <div className="flex flex-col items-center gap-2">
+                                {/* Two validation indicators */}
+                                <div className="flex items-center gap-4">
+                                  <div className={cn(
+                                    "px-3 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all duration-300",
+                                    nodUpValidated
+                                      ? "bg-green-500 text-white scale-105" 
+                                      : "bg-white/20 text-white/70"
+                                  )}>
+                                    <span className="text-lg">{nodUpValidated ? '✅' : '⬆️'}</span>
+                                    <span>Montée</span>
+                                  </div>
+                                  <div className={cn(
+                                    "px-3 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all duration-300",
+                                    nodDownValidated
+                                      ? "bg-green-500 text-white scale-105" 
+                                      : "bg-white/20 text-white/70"
+                                  )}>
+                                    <span className="text-lg">{nodDownValidated ? '✅' : '⬇️'}</span>
+                                    <span>Descente</span>
+                                  </div>
+                                </div>
+                                {/* Dynamic instruction */}
                                 <div className={cn(
-                                  "w-3 h-3 rounded-full",
-                                  nodPhaseRef.current === 'idle' ? "bg-white" : "bg-white/50"
-                                )} />
-                                {nodPhaseRef.current === 'idle' 
-                                  ? "⬆️⬇️ Faites OUI de la tête" 
-                                  : nodPhaseRef.current === 'down' 
-                                    ? "⬆️ Maintenant remontez!" 
-                                    : "⬇️ Maintenant baissez!"}
+                                  "px-4 py-2 rounded-full font-bold text-sm transition-all duration-200",
+                                  (nodUpValidated && nodDownValidated)
+                                    ? "bg-green-500 text-white" 
+                                    : "bg-yellow-500/80 text-white animate-pulse"
+                                )}>
+                                  {nodUpValidated && nodDownValidated 
+                                    ? "✅ Parfait! Capture en cours..." 
+                                    : nodUpValidated 
+                                      ? "⬇️ Maintenant baissez la tête!" 
+                                      : nodDownValidated
+                                        ? "⬆️ Maintenant montez la tête!"
+                                        : "⬆️ Montez la tête une fois"}
+                                </div>
                               </div>
                             )}
                             
