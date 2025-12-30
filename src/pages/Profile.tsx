@@ -3,10 +3,9 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import VerifiedBadge from "@/components/VerifiedBadge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrustScore } from "@/components/TrustScore";
 import { 
   ChevronLeft,
@@ -29,8 +28,12 @@ import {
   FileText,
   CalendarCheck,
   AlertCircle,
-  Mail,
-  Camera
+  Camera,
+  Wallet,
+  Lock,
+  Globe,
+  Palette,
+  LogOut
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -129,9 +132,9 @@ const Profile = () => {
 
     setStats({
       activeListings: listingsCount || 0,
-      soldItems: 0, // TODO: implement sold items tracking
+      soldItems: 0,
       averageRating: avgRating,
-      followers: 0 // TODO: implement followers system
+      followers: 0
     });
 
     // Calculate trust score
@@ -305,342 +308,388 @@ const Profile = () => {
           </Card>
         )}
 
-        {/* Profile Header - Large Square Photo on Left */}
-        <div className="flex gap-5">
-          {/* Large Square Avatar */}
-          <div className="flex flex-col items-center">
-            <div className="relative">
-              <div className="w-28 h-28 rounded-xl overflow-hidden border-2 border-border shadow-lg">
-                {profile.avatar_url ? (
-                  <img 
-                    src={profile.avatar_url} 
-                    alt={profile.full_name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-primary flex items-center justify-center">
-                    <span className="text-primary-foreground text-3xl font-bold">
-                      {profile.full_name.charAt(0).toUpperCase()}
-                    </span>
+        {/* Profile Card with Glassmorphism */}
+        <Card className="p-5 backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10 shadow-xl">
+          <div className="flex gap-5">
+            {/* Large Square Avatar with Diagonal Banner */}
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <div className="w-28 h-28 rounded-xl overflow-hidden border-2 border-white/30 shadow-lg">
+                  {profile.avatar_url ? (
+                    <img 
+                      src={profile.avatar_url} 
+                      alt={profile.full_name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                      <span className="text-primary-foreground text-3xl font-bold">
+                        {profile.full_name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Diagonal Verified Banner */}
+                  {profile.id_verified && (
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                      <div className="absolute top-[14px] -right-[32px] w-[120px] bg-gradient-to-r from-green-500 to-emerald-500 text-white text-[10px] font-bold py-1 text-center transform rotate-45 shadow-md uppercase tracking-wider">
+                        Vérifié
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 bg-background/80 rounded-xl flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
                 )}
               </div>
-              {profile.id_verified && (
-                <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1.5 border-2 border-background">
-                  <CheckCircle2 className="h-4 w-4 text-white" />
-                </div>
-              )}
-              {uploadingAvatar && (
-                <div className="absolute inset-0 bg-background/80 rounded-xl flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
+              
+              {/* Modifier profil button */}
+              {profile.id_verified ? (
+                <label className="mt-3 flex items-center gap-1.5 text-sm text-primary font-medium cursor-pointer hover:underline">
+                  <Camera className="h-4 w-4" />
+                  <span>Modifier profil</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                    disabled={uploadingAvatar}
+                  />
+                </label>
+              ) : (
+                <p className="mt-3 text-xs text-muted-foreground text-center max-w-[112px]">
+                  📷 Photo modifiable après vérification
+                </p>
               )}
             </div>
-            
-            {/* Modifier profil button */}
-            {profile.id_verified ? (
-              <label className="mt-3 flex items-center gap-1.5 text-sm text-primary font-medium cursor-pointer hover:underline">
-                <Camera className="h-4 w-4" />
-                <span>Modifier profil</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="hidden"
-                  disabled={uploadingAvatar}
-                />
-              </label>
-            ) : (
-              <p className="mt-3 text-xs text-muted-foreground text-center max-w-[112px]">
-                📷 Photo modifiable après vérification
-              </p>
-            )}
-          </div>
 
-          {/* User Info on Right */}
-          <div className="flex-1 flex flex-col justify-center space-y-2">
-            <div className="flex items-center gap-2">
+            {/* User Info on Right */}
+            <div className="flex-1 flex flex-col justify-center space-y-2">
               <h1 className="text-xl font-bold">{profile.full_name}</h1>
-              {profile.id_verified && <VerifiedBadge verified={true} size="sm" />}
-            </div>
-            
-            <p className="text-sm text-muted-foreground">{user?.email}</p>
-            
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <MapPin className="h-4 w-4 flex-shrink-0" />
-              <span>{profile.city}, {profile.country}</span>
-            </div>
-            
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4 flex-shrink-0" />
-              <span>Membre depuis {formatDistanceToNow(new Date(profile.created_at), { addSuffix: false, locale: fr })}</span>
-            </div>
+              
+              <p className="text-sm text-muted-foreground">{user?.email}</p>
+              
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <MapPin className="h-4 w-4 flex-shrink-0" />
+                <span>{profile.city}, {profile.country}</span>
+              </div>
+              
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4 flex-shrink-0" />
+                <span>Membre depuis {formatDistanceToNow(new Date(profile.created_at), { addSuffix: false, locale: fr })}</span>
+              </div>
 
-            {/* Trust Score */}
-            <button onClick={() => navigate('/trust-score-info')} className="w-fit transition-transform hover:scale-105 mt-1">
-              <TrustScore score={trustScore} />
-            </button>
+              {/* Trust Score */}
+              <button onClick={() => navigate('/trust-score-info')} className="w-fit transition-transform hover:scale-105 mt-1">
+                <TrustScore score={trustScore} />
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-4 gap-2">
-          <Card className="p-3">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
-                <Package className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+          {/* Stats Grid */}
+          <div className="grid grid-cols-4 gap-2 mt-5 pt-5 border-t border-border/50">
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+                <Package className="h-4 w-4 text-orange-600 dark:text-orange-400" />
               </div>
-              <div className="text-center">
-                <p className="text-xl font-bold">{stats.activeListings}</p>
-                <p className="text-xs text-muted-foreground">Annonces actives</p>
-              </div>
+              <p className="text-lg font-bold">{stats.activeListings}</p>
+              <p className="text-[10px] text-muted-foreground text-center">Annonces</p>
             </div>
-          </Card>
 
-          <Card className="p-3">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
               </div>
-              <div className="text-center">
-                <p className="text-xl font-bold">{stats.soldItems}</p>
-                <p className="text-xs text-muted-foreground">Articles vendus</p>
-              </div>
+              <p className="text-lg font-bold">{stats.soldItems}</p>
+              <p className="text-[10px] text-muted-foreground text-center">Vendus</p>
             </div>
-          </Card>
 
-          <Card className="p-3">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
-                <Star className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-9 h-9 rounded-lg bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
+                <Star className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
               </div>
-              <div className="text-center">
-                <p className="text-xl font-bold">{stats.averageRating.toFixed(1)}</p>
-                <p className="text-xs text-muted-foreground">Note moyenne</p>
-              </div>
+              <p className="text-lg font-bold">{stats.averageRating.toFixed(1)}</p>
+              <p className="text-[10px] text-muted-foreground text-center">Note</p>
             </div>
-          </Card>
 
-          <Card className="p-3">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
-                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
-              <div className="text-center">
-                <p className="text-xl font-bold">{stats.followers}</p>
-                <p className="text-xs text-muted-foreground">Abonnés</p>
-              </div>
+              <p className="text-lg font-bold">{stats.followers}</p>
+              <p className="text-[10px] text-muted-foreground text-center">Abonnés</p>
             </div>
-          </Card>
-        </div>
+          </div>
 
-        {/* Verification Badges */}
-        <div className="flex flex-wrap gap-2 justify-center">
-          {user?.email_confirmed_at ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>Email vérifié</span>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2 w-full max-w-xs mx-auto">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 text-sm justify-center">
-                <AlertCircle className="h-4 w-4" />
-                <span>Email non vérifié</span>
+          {/* Verification Badges */}
+          <div className="flex flex-wrap gap-2 justify-center mt-4 pt-4 border-t border-border/50">
+            {user?.email_confirmed_at ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span>Email</span>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
+            ) : (
+              <button 
                 onClick={handleResendVerificationEmail}
                 disabled={resendingEmail}
-                className="w-full"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 text-xs hover:opacity-80"
               >
-                {resendingEmail ? "Envoi..." : "Renvoyer l'email"}
-              </Button>
-            </div>
-          )}
-          {profile.phone_verified && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>Téléphone vérifié</span>
-            </div>
-          )}
-          {profile.id_verified && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>Identité vérifiée</span>
-            </div>
-          )}
-        </div>
-
-        {/* Navigation Sections */}
-        <div className="space-y-2">
-          {/* Informations personnelles */}
-          <Link to="/settings">
-            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
-                  <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <span className="font-medium">Informations personnelles</span>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </Card>
-          </Link>
-
-          {/* Vérification */}
-          <Card className="p-4">
-            <button
-              onClick={() => setVerificationExpanded(!verificationExpanded)}
-              className="w-full flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                  <ShieldCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
-                </div>
-                <span className="font-medium">Vérification</span>
-              </div>
-              <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform ${verificationExpanded ? 'rotate-90' : ''}`} />
-            </button>
-            
-            {verificationExpanded && (
-              <div className="mt-4 space-y-3 pl-13">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Je suis voyageur</span>
-                  <Switch />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Je suis transitaire professionnel</span>
-                  <Switch />
-                </div>
-                <button className="w-full text-left text-sm text-primary hover:underline">
-                  Je veux envoyer un colis
-                </button>
+                <AlertCircle className="h-3.5 w-3.5" />
+                <span>{resendingEmail ? "Envoi..." : "Email non vérifié"}</span>
+              </button>
+            )}
+            {profile.phone_verified && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span>Téléphone</span>
               </div>
             )}
-          </Card>
-
-          {/* Mes annonces */}
-          <Link to="/my-listings">
-            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
-                  <Package className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                </div>
-                <span className="font-medium">Mes annonces</span>
+            {profile.id_verified && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span>Identité</span>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </Card>
-          </Link>
+            )}
+          </div>
+        </Card>
 
-          {/* Mes transactions */}
-          <Link to="/user-transactions">
-            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
-                  <Receipt className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                <span className="font-medium">Mes transactions</span>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </Card>
-          </Link>
+        {/* Tabs */}
+        <Tabs defaultValue="annonces" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 h-12 backdrop-blur-xl bg-card/70 border border-white/20 dark:border-white/10">
+            <TabsTrigger value="annonces" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Package className="h-4 w-4 mr-1" />
+              Annonces
+            </TabsTrigger>
+            <TabsTrigger value="reservations" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <CalendarCheck className="h-4 w-4 mr-1" />
+              RDV
+            </TabsTrigger>
+            <TabsTrigger value="transactions" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Receipt className="h-4 w-4 mr-1" />
+              Transactions
+            </TabsTrigger>
+            <TabsTrigger value="parametres" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <SettingsIcon className="h-4 w-4 mr-1" />
+              Paramètres
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Mes demandes de transport */}
-          <Link to="/my-transport-requests">
-            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
-                  <Package className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                </div>
-                <span className="font-medium">Mes demandes de transport</span>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </Card>
-          </Link>
-
-          {/* Mes réservations */}
-          <Link to="/my-reservations">
-            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center">
-                  <CalendarCheck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                </div>
-                <span className="font-medium">Mes réservations</span>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </Card>
-          </Link>
-
-          {/* Sécurité du compte */}
-          <Link to="/account-security">
-            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-red-600 dark:text-red-400" />
-                </div>
-                <span className="font-medium">Sécurité du compte</span>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </Card>
-          </Link>
-
-          {/* Paramètres */}
-          <Link to="/settings">
-            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-900/20 flex items-center justify-center">
-                  <SettingsIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                </div>
-                <span className="font-medium">Paramètres</span>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </Card>
-          </Link>
-
-          {/* Support & aide */}
-          <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
-                <HelpCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-              </div>
-              <span className="font-medium">Support & aide</span>
-            </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </Card>
-
-          {/* Identity Verification */}
-          <Link to="/verify-identity">
-            <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center">
-                  <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-medium">Vérification d'identité</span>
-                  {!profile.id_verified && (
-                    <span className="text-xs text-muted-foreground">🤖 Vérification automatique IA</span>
-                  )}
-                </div>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </Card>
-          </Link>
-
-          {/* Admin Panel Button */}
-          {isAdmin && (
-            <Link to="/admin">
-              <Card className="p-4 flex items-center justify-between bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90 transition-opacity cursor-pointer">
+          {/* Tab: Mes annonces */}
+          <TabsContent value="annonces" className="mt-4 space-y-2">
+            <Link to="/my-listings">
+              <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                    <Shield className="h-5 w-5" />
+                  <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+                    <Package className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                   </div>
-                  <span className="font-medium">Panneau d'Administration</span>
+                  <span className="font-medium">Mes annonces</span>
                 </div>
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </Card>
             </Link>
-          )}
-        </div>
+
+            <Link to="/my-transport-requests">
+              <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
+                    <Package className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <span className="font-medium">Mes demandes de transport</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </Card>
+            </Link>
+          </TabsContent>
+
+          {/* Tab: Mes rendez-vous / réservations */}
+          <TabsContent value="reservations" className="mt-4 space-y-2">
+            <Link to="/my-reservations">
+              <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center">
+                    <CalendarCheck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <span className="font-medium">Mes réservations</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </Card>
+            </Link>
+
+            <Link to="/route-alerts">
+              <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                    <Bell className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <span className="font-medium">Alertes de trajet</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </Card>
+            </Link>
+          </TabsContent>
+
+          {/* Tab: Mes transactions */}
+          <TabsContent value="transactions" className="mt-4 space-y-2">
+            <Link to="/user-transactions">
+              <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                    <Receipt className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <span className="font-medium">Mes transactions</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </Card>
+            </Link>
+
+            <Link to="/currency-settings">
+              <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                    <Wallet className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <span className="font-medium">Devise préférée</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </Card>
+            </Link>
+          </TabsContent>
+
+          {/* Tab: Paramètres */}
+          <TabsContent value="parametres" className="mt-4 space-y-2">
+            {/* Informations personnelles */}
+            <Link to="/settings">
+              <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                    <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <span className="font-medium">Informations personnelles</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </Card>
+            </Link>
+
+            {/* Vérification */}
+            <Card className="p-4 backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
+              <button
+                onClick={() => setVerificationExpanded(!verificationExpanded)}
+                className="w-full flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                    <ShieldCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <span className="font-medium">Type d'utilisateur</span>
+                </div>
+                <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform ${verificationExpanded ? 'rotate-90' : ''}`} />
+              </button>
+              
+              {verificationExpanded && (
+                <div className="mt-4 space-y-3 pl-13">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Je suis voyageur</span>
+                    <Switch />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Je suis transitaire professionnel</span>
+                    <Switch />
+                  </div>
+                  <button className="w-full text-left text-sm text-primary hover:underline">
+                    Je veux envoyer un colis
+                  </button>
+                </div>
+              )}
+            </Card>
+
+            {/* Identity Verification */}
+            <Link to="/verify-identity">
+              <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-medium">Vérification d'identité</span>
+                    {!profile.id_verified && (
+                      <span className="text-xs text-muted-foreground">🤖 Vérification automatique IA</span>
+                    )}
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </Card>
+            </Link>
+
+            {/* Sécurité du compte */}
+            <Link to="/account-security">
+              <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                    <Lock className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  </div>
+                  <span className="font-medium">Sécurité du compte</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </Card>
+            </Link>
+
+            {/* Confidentialité */}
+            <Link to="/privacy-settings">
+              <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-900/20 flex items-center justify-center">
+                    <Globe className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                  </div>
+                  <span className="font-medium">Confidentialité</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </Card>
+            </Link>
+
+            {/* Support & aide */}
+            <Link to="/faq">
+              <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
+                    <HelpCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <span className="font-medium">Support & aide</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </Card>
+            </Link>
+
+            {/* Admin Panel Button */}
+            {isAdmin && (
+              <Link to="/admin">
+                <Card className="p-4 flex items-center justify-between bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90 transition-opacity cursor-pointer">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                      <Shield className="h-5 w-5" />
+                    </div>
+                    <span className="font-medium">Panneau d'Administration</span>
+                  </div>
+                  <ChevronRight className="h-5 w-5" />
+                </Card>
+              </Link>
+            )}
+
+            {/* Déconnexion */}
+            <Card 
+              className="p-4 flex items-center justify-between hover:bg-destructive/10 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10"
+              onClick={handleSignOut}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <LogOut className="h-5 w-5 text-destructive" />
+                </div>
+                <span className="font-medium text-destructive">Déconnexion</span>
+              </div>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
