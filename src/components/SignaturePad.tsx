@@ -57,7 +57,8 @@ const SignaturePad = ({ onSignatureChange, className, disabled = false }: Signat
     ctx.beginPath();
     ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y);
     ctx.lineTo(coords.x, coords.y);
-    ctx.strokeStyle = 'hsl(var(--foreground))';
+    // Use a dark blue color that's visible on light backgrounds
+    ctx.strokeStyle = '#1e3a5f';
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -101,8 +102,8 @@ const SignaturePad = ({ onSignatureChange, className, disabled = false }: Signat
     canvas.width = rect.width * 2;
     canvas.height = rect.height * 2;
 
-    // Style the canvas
-    ctx.fillStyle = 'hsl(var(--muted))';
+    // Use a light cream/white background that works in both themes
+    ctx.fillStyle = '#fafafa';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }, []);
 
