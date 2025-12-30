@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert, Package, AlertTriangle, FileSignature, Download, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+
 import SignaturePad from "./SignaturePad";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -248,13 +248,25 @@ const LegalConfirmationDialog = ({
             <div className="mt-4 p-3 bg-muted rounded-lg">
               <p className="text-xs text-muted-foreground">
                 Pour plus d'informations sur les objets interdits, consultez notre{" "}
-                <Link to="/prohibited-items" className="text-primary underline">
+                <a 
+                  href="/prohibited-items" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   page des réglementations
-                </Link>{" "}
+                </a>{" "}
                 et nos{" "}
-                <Link to="/terms" className="text-primary underline">
+                <a 
+                  href="/terms" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   conditions d'utilisation
-                </Link>
+                </a>
                 .
               </p>
             </div>
