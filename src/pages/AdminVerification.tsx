@@ -63,11 +63,15 @@ const AdminVerification = () => {
   const fetchPendingVerifications = async () => {
     setLoading(true);
 
+    // Fetch profiles that need verification:
+    // 1. Has ID document AND not verified yet
+    // 2. Includes ai_pre_approved (AI approved, awaiting admin) AND ai_flagged (needs manual review)
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
       .not('id_document_url', 'is', null)
       .eq('id_verified', false)
+      .in('verification_method', ['ai_pre_approved', 'ai_flagged', 'pending'])
       .order('id_submitted_at', { ascending: true });
 
     if (profilesError) {
@@ -78,11 +82,11 @@ const AdminVerification = () => {
     }
 
     // Get user emails from auth.users
-    const userIds = profiles.map(p => p.id);
+    const userIds = profiles?.map(p => p.id) || [];
     
     // For now, we'll just use the profiles without emails from auth
     // In production, you would use the Supabase admin API to get user emails
-    const profilesWithEmails = profiles.map(profile => ({
+    const profilesWithEmails = (profiles || []).map(profile => ({
       ...profile,
       email: user?.email || 'Non disponible' // Placeholder
     }));
@@ -229,15 +233,21 @@ const AdminVerification = () => {
                   {/* AI Verification Status */}
                   {verification.verification_method && (
                     <div className={`p-4 rounded-lg ${
-                      verification.verification_method === 'ai_flagged' 
+                      verification.verification_method === 'ai_pre_approved'
+                        ? 'bg-green-100 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+                        : verification.verification_method === 'ai_flagged' 
                         ? 'bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
                         : 'bg-blue-100 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
                     }`}>
                       <div className="flex items-start gap-3">
-                        <span className="text-2xl mt-0.5">🤖</span>
+                        <span className="text-2xl mt-0.5">
+                          {verification.verification_method === 'ai_pre_approved' ? '✅' : '🤖'}
+                        </span>
                         <div className="flex-1">
                           <p className="font-semibold text-sm mb-1">
-                            {verification.verification_method === 'ai_flagged' 
+                            {verification.verification_method === 'ai_pre_approved' 
+                              ? '✅ Pré-approuvé par l\'IA - En attente de confirmation'
+                              : verification.verification_method === 'ai_flagged'
                               ? '⚠️ Document signalé par l\'IA pour révision manuelle'
                               : '🔄 En cours d\'analyse automatique'
                             }

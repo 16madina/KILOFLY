@@ -29,7 +29,8 @@ import {
   FileText,
   CalendarCheck,
   AlertCircle,
-  Mail
+  Mail,
+  Camera
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -70,6 +71,7 @@ const Profile = () => {
   const [verificationExpanded, setVerificationExpanded] = useState(false);
   const [trustScore, setTrustScore] = useState(0);
   const [resendingEmail, setResendingEmail] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   // Hook pour les notifications de score de confiance
   useTrustScoreNotifications(trustScore);
@@ -171,6 +173,55 @@ const Profile = () => {
     setResendingEmail(false);
   };
 
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      toast.error("Veuillez sélectionner une image");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("L'image ne doit pas dépasser 5MB");
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = fileName;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: urlData.publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      setProfile(prev => prev ? { ...prev, avatar_url: urlData.publicUrl } : null);
+      toast.success("Photo de profil mise à jour !");
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error("Erreur lors du téléchargement");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const isVerificationIncomplete = () => {
     const emailVerified = user?.email_confirmed_at != null;
     const idVerified = profile?.id_verified || false;
@@ -254,7 +305,7 @@ const Profile = () => {
           </Card>
         )}
 
-        {/* Profile Avatar with Badge */}
+        {/* Profile Avatar with Badge and Edit Option */}
         <div className="flex justify-center mb-4">
           <div className="relative">
             <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
@@ -263,13 +314,42 @@ const Profile = () => {
                 {profile.full_name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            {profile.id_verified && (
-              <div className="absolute bottom-0 right-0 bg-green-500 rounded-full p-2 border-4 border-background">
-                <CheckCircle2 className="h-5 w-5 text-white" />
+            {profile.id_verified ? (
+              <>
+                <div className="absolute bottom-0 right-0 bg-green-500 rounded-full p-2 border-4 border-background">
+                  <CheckCircle2 className="h-5 w-5 text-white" />
+                </div>
+                {/* Camera button for verified users */}
+                <label className="absolute bottom-0 left-0 bg-primary rounded-full p-2 border-4 border-background cursor-pointer hover:bg-primary/90 transition-colors">
+                  <Camera className="h-5 w-5 text-primary-foreground" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                    disabled={uploadingAvatar}
+                  />
+                </label>
+              </>
+            ) : (
+              <div className="absolute bottom-0 right-0 bg-muted rounded-full p-2 border-4 border-background">
+                <Camera className="h-5 w-5 text-muted-foreground" />
+              </div>
+            )}
+            {uploadingAvatar && (
+              <div className="absolute inset-0 bg-background/80 rounded-full flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             )}
           </div>
         </div>
+        
+        {/* Photo change info for non-verified users */}
+        {!profile.id_verified && (
+          <p className="text-center text-xs text-muted-foreground mb-2">
+            📷 Changez votre photo après vérification d'identité
+          </p>
+        )}
 
         {/* User Info */}
         <div className="text-center space-y-2">
