@@ -205,13 +205,6 @@ const Payment = () => {
           </>
         )}
 
-        {selectedMethod === 'wave' && (
-          <MobileMoneyPlaceholder provider="wave" />
-        )}
-
-        {selectedMethod === 'orange_money' && (
-          <MobileMoneyPlaceholder provider="orange_money" />
-        )}
 
         <p className="text-xs text-center text-muted-foreground">
           Votre paiement est sécurisé. L'argent sera conservé jusqu'à la livraison confirmée, 
