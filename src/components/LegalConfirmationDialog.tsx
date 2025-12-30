@@ -1,6 +1,5 @@
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -9,7 +8,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert, Package, AlertTriangle, FileSignature, Download, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -225,7 +223,7 @@ const LegalConfirmationDialog = ({
 
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
-      <AlertDialogContent className="max-w-md max-h-[85vh] flex flex-col overflow-hidden">
+      <AlertDialogContent className="!flex !flex-col max-w-md w-[min(92vw,28rem)] h-[85vh] overflow-hidden">
         <AlertDialogHeader className="shrink-0">
           <AlertDialogTitle className="flex items-center gap-3">
             {content.icon}
@@ -236,7 +234,7 @@ const LegalConfirmationDialog = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0 pr-4 -mr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4 -mr-4 touch-pan-y">
           <div className="pr-4">
             <div className="space-y-3">
               {conditions.map((point, index) => (
@@ -261,7 +259,7 @@ const LegalConfirmationDialog = ({
               </p>
             </div>
 
-            <div className="mt-4 space-y-4 pb-2">
+            <div className="mt-4 space-y-4 pb-6">
               <div className="flex items-start gap-3">
                 <Checkbox
                   id="legal-accept"
@@ -285,10 +283,7 @@ const LegalConfirmationDialog = ({
                     Signature requise
                   </p>
                 </div>
-                <SignaturePad 
-                  onSignatureChange={handleSignatureChange} 
-                  disabled={signatureSaved}
-                />
+                <SignaturePad onSignatureChange={handleSignatureChange} disabled={signatureSaved} />
                 <p className="text-xs text-muted-foreground mt-2">
                   Votre signature électronique sera horodatée et enregistrée avec votre adresse IP comme preuve légale.
                 </p>
@@ -301,7 +296,9 @@ const LegalConfirmationDialog = ({
                     <p className="font-medium">Signature enregistrée avec succès</p>
                   </div>
                   <div className="text-xs text-muted-foreground space-y-1">
-                    <p>Horodatage: {format(new Date(savedSignatureRecord.signed_at), "PPPp", { locale: fr })}</p>
+                    <p>
+                      Horodatage: {format(new Date(savedSignatureRecord.signed_at), "PPPp", { locale: fr })}
+                    </p>
                     {savedSignatureRecord.ip_address && (
                       <p>Adresse IP: {savedSignatureRecord.ip_address}</p>
                     )}
@@ -329,7 +326,7 @@ const LegalConfirmationDialog = ({
               )}
             </div>
           </div>
-        </ScrollArea>
+        </div>
 
         <AlertDialogFooter className="shrink-0 gap-2 sm:gap-0 pt-4 border-t mt-2 relative z-50 bg-background">
           <AlertDialogCancel disabled={isProcessing}>
