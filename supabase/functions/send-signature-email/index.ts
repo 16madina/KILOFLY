@@ -167,7 +167,7 @@ const handler = async (req: Request): Promise<Response> => {
     const pdfBuffer = Uint8Array.from(atob(pdfBase64.split(",")[1] || pdfBase64), (c) => c.charCodeAt(0));
 
     const { data, error } = await resend.emails.send({
-      from: "KiloFly <noreply@kilofly.com>",
+      from: "KiloFly <noreply@kiloflyapp.com>",
       to: [userEmail],
       subject: `✅ Confirmation de signature - ${typeLabel}`,
       html: emailHtml,
