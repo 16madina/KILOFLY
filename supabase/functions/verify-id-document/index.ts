@@ -503,7 +503,7 @@ Be REASONABLE. Real-world photos vary in quality. Only reject when there's CLEAR
         
       console.log('NAME MISMATCH flagged for manual review:', userId);
     }
-    // AI pre-approved - BUT requires admin confirmation
+    // AI AUTO-APPROVED - User is verified immediately, admin can review later
     else if (
       approved && 
       confidence >= AUTO_APPROVE_CONFIDENCE_THRESHOLD && 
@@ -514,9 +514,9 @@ Be REASONABLE. Real-world photos vary in quality. Only reject when there's CLEAR
       (!face_comparison || (face_comparison.same_person && face_comparison.match_score >= FACE_MATCH_THRESHOLD)) &&
       analysisResult.name_verification?.name_matches !== false
     ) {
-      // AI approved but still needs admin confirmation
-      verificationMethod = 'ai_pre_approved';
-      idVerified = false; // NOT verified until admin confirms
+      // AI approved - user is verified immediately
+      verificationMethod = 'ai_auto_approved';
+      idVerified = true; // User is verified immediately
       
       let faceInfo = '';
       if (face_comparison) {
@@ -528,14 +528,14 @@ Be REASONABLE. Real-world photos vary in quality. Only reject when there's CLEAR
         nameInfo = `\n✅ Nom vérifié: ${analysisResult.name_verification.document_name || 'Correspond'}`;
       }
       
-      verificationNotes = `✅ PRÉ-APPROUVÉ PAR IA - En attente de confirmation admin\n` +
+      verificationNotes = `✅ VÉRIFIÉ AUTOMATIQUEMENT PAR IA\n` +
         `Type: ${document_type || 'unknown'}\n` +
         `Score confiance: ${(confidence * 100).toFixed(0)}%\n` +
         `Qualité: ${((quality_score || 0) * 100).toFixed(0)}%\n` +
         `Authenticité: ${((authenticity_score || 0) * 100).toFixed(0)}%${faceInfo}${nameInfo}\n` +
         `Raisons: ${reasons?.join(', ') || 'Document valide'}`;
         
-      console.log('AI PRE-APPROVED, awaiting admin confirmation:', userId);
+      console.log('AI AUTO-APPROVED, user is now verified:', userId);
     }
     // Flag for manual review in all other cases
     else {
@@ -592,9 +592,9 @@ Be REASONABLE. Real-world photos vary in quality. Only reject when there's CLEAR
     let notificationMessage: string;
     let notificationType: string;
 
-    if (verificationMethod === 'ai_pre_approved') {
-      notificationTitle = '✅ Pré-approbation IA réussie';
-      notificationMessage = 'Votre document a passé la vérification automatique ! Un administrateur confirmera votre identité sous 24h.';
+    if (verificationMethod === 'ai_auto_approved') {
+      notificationTitle = '✅ Identité vérifiée !';
+      notificationMessage = 'Félicitations ! Votre document a été vérifié automatiquement. Vous pouvez maintenant utiliser toutes les fonctionnalités de KiloFly.';
       notificationType = 'success';
     } else if (verificationMethod === 'ai_rejected') {
       notificationTitle = '❌ Vérification échouée';
