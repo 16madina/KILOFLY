@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { loadStripe, Stripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import LegalConfirmationDialog from "@/components/LegalConfirmationDialog";
+import PaymentMethodSelector, { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
+import StripePaymentForm from "@/components/payment/StripePaymentForm";
+import MobileMoneyPlaceholder from "@/components/payment/MobileMoneyPlaceholder";
+import { formatPrice, Currency } from "@/lib/currency";
 
 // Initialize Stripe only if key is available
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -15,92 +18,22 @@ const stripePromise: Promise<Stripe | null> = stripePublishableKey
   ? loadStripe(stripePublishableKey) 
   : Promise.resolve(null);
 
-const PaymentForm = ({ clientSecret, reservationId }: { clientSecret: string; reservationId: string }) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [legalDialogOpen, setLegalDialogOpen] = useState(false);
-
-  const handlePayClick = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLegalDialogOpen(true);
+interface ReservationDetails {
+  id: string;
+  requested_kg: number;
+  total_price: number;
+  seller: {
+    full_name: string;
+    avatar_url: string;
   };
-
-  const handlePayConfirmed = async () => {
-    if (!stripe || !elements) {
-      return;
-    }
-
-    setLoading(true);
-    setLegalDialogOpen(false);
-
-    try {
-      const { error, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/payment-success?reservation=${reservationId}`,
-        },
-        redirect: 'if_required',
-      });
-
-      if (error) {
-        toast.error(error.message || "Erreur lors du paiement");
-      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        // Update transaction status
-        await supabase
-          .from('transactions')
-          .update({ payment_status: 'paid', status: 'completed' })
-          .eq('stripe_payment_intent_id', paymentIntent.id);
-
-        toast.success("Paiement réussi ! 🎉");
-        navigate('/my-reservations');
-      }
-    } catch (error) {
-      console.error('Payment error:', error);
-      toast.error("Erreur lors du traitement du paiement");
-    } finally {
-      setLoading(false);
-    }
+  listing: {
+    departure: string;
+    arrival: string;
+    departure_date: string;
+    arrival_date: string;
+    currency: Currency;
   };
-
-  return (
-    <>
-      <form onSubmit={handlePayClick} className="space-y-6">
-        <PaymentElement />
-        
-        <Button 
-          type="submit" 
-          className="w-full" 
-          size="lg"
-          disabled={!stripe || loading}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Traitement...
-            </>
-          ) : (
-            'Payer maintenant'
-          )}
-        </Button>
-
-        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <ShieldCheck className="h-4 w-4" />
-          Paiement sécurisé par Stripe
-        </div>
-      </form>
-
-      <LegalConfirmationDialog
-        open={legalDialogOpen}
-        onOpenChange={setLegalDialogOpen}
-        onConfirm={handlePayConfirmed}
-        type="sender"
-        loading={loading}
-      />
-    </>
-  );
-};
+}
 
 const Payment = () => {
   const navigate = useNavigate();
@@ -109,7 +42,8 @@ const Payment = () => {
   
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [reservationDetails, setReservationDetails] = useState<any>(null);
+  const [reservationDetails, setReservationDetails] = useState<ReservationDetails | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('card');
 
   useEffect(() => {
     if (!reservationId) {
@@ -129,14 +63,14 @@ const Payment = () => {
         .select(`
           *,
           seller:profiles!seller_id(full_name, avatar_url),
-          listing:listings!listing_id(departure, arrival, departure_date, arrival_date)
+          listing:listings!listing_id(departure, arrival, departure_date, arrival_date, currency)
         `)
         .eq('id', reservationId)
         .single();
 
       if (reservationError) throw reservationError;
 
-      setReservationDetails(reservation);
+      setReservationDetails(reservation as ReservationDetails);
 
       // Get transaction with client secret
       const { data: transaction, error: transactionError } = await supabase
@@ -171,6 +105,10 @@ const Payment = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getCurrency = (): Currency => {
+    return (reservationDetails?.listing?.currency as Currency) || 'EUR';
   };
 
   if (loading) {
@@ -213,7 +151,7 @@ const Payment = () => {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Vendeur</span>
+                <span className="text-muted-foreground">Voyageur</span>
                 <span className="font-medium">{reservationDetails.seller.full_name}</span>
               </div>
               <div className="flex justify-between">
@@ -222,41 +160,62 @@ const Payment = () => {
               </div>
               <div className="flex justify-between text-lg font-bold">
                 <span>Total</span>
-                <span className="text-primary">{reservationDetails.total_price.toFixed(2)}€</span>
+                <span className="text-primary">
+                  {formatPrice(reservationDetails.total_price, getCurrency())}
+                </span>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Payment Form */}
-        {!stripePublishableKey ? (
-          <Card className="border-destructive/50">
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center gap-3 text-center">
-                <AlertTriangle className="h-10 w-10 text-destructive" />
-                <p className="font-medium">Configuration Stripe manquante</p>
-                <p className="text-sm text-muted-foreground">
-                  La clé publique Stripe n'est pas configurée. Contactez l'administrateur.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : clientSecret ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Informations de paiement</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Elements stripe={stripePromise} options={{ clientSecret }}>
-                <PaymentForm clientSecret={clientSecret} reservationId={reservationId!} />
-              </Elements>
-            </CardContent>
-          </Card>
-        ) : null}
+        {/* Payment Method Selection */}
+        <PaymentMethodSelector
+          selectedMethod={selectedMethod}
+          onSelect={setSelectedMethod}
+          currency={getCurrency()}
+        />
+
+        {/* Payment Form based on selected method */}
+        {selectedMethod === 'card' && (
+          <>
+            {!stripePublishableKey ? (
+              <Card className="border-destructive/50">
+                <CardContent className="pt-6">
+                  <div className="flex flex-col items-center gap-3 text-center">
+                    <AlertTriangle className="h-10 w-10 text-destructive" />
+                    <p className="font-medium">Configuration Stripe manquante</p>
+                    <p className="text-sm text-muted-foreground">
+                      La clé publique Stripe n'est pas configurée. Contactez l'administrateur.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : clientSecret ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informations de paiement</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Elements stripe={stripePromise} options={{ clientSecret }}>
+                    <StripePaymentForm clientSecret={clientSecret} reservationId={reservationId!} />
+                  </Elements>
+                </CardContent>
+              </Card>
+            ) : null}
+          </>
+        )}
+
+        {selectedMethod === 'wave' && (
+          <MobileMoneyPlaceholder provider="wave" />
+        )}
+
+        {selectedMethod === 'orange_money' && (
+          <MobileMoneyPlaceholder provider="orange_money" />
+        )}
 
         <p className="text-xs text-center text-muted-foreground">
           Votre paiement est sécurisé. L'argent sera conservé jusqu'à la livraison confirmée, 
-          puis transféré au vendeur avec une commission de 5% pour la plateforme.
+          puis transféré au voyageur avec une commission de 5% pour la plateforme.
         </p>
       </div>
     </div>
