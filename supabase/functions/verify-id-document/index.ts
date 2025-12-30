@@ -197,32 +197,38 @@ serve(async (req) => {
       }
     }
 
-    // Build the AI analysis prompt
+    // Build the AI analysis prompt - now includes NAME VERIFICATION
+    const userFullName = existingProfile.full_name || '';
+    const nameParts = userFullName.trim().split(/\s+/);
+    
+    console.log('User registered name:', userFullName);
+    console.log('Name parts to verify:', nameParts);
+    
     const systemPrompt = `You are a STRICT identity document verification AI for KiloFly, a luggage-sharing marketplace. Your role is CRITICAL for fraud prevention.
 
 ## DOCUMENT ANALYSIS REQUIREMENTS
 
 Analyze the provided ID document image for ALL of the following:
 
-### 1. DOCUMENT AUTHENTICITY (25% weight)
+### 1. DOCUMENT AUTHENTICITY (20% weight)
 - Is this a real government-issued document (passport, national ID card, driver's license)?
 - Check for official watermarks, holograms, and security features
 - Look for signs of digital manipulation (Photoshop, AI-generated)
 - Verify document format matches known templates
 
-### 2. IMAGE QUALITY (15% weight)
+### 2. IMAGE QUALITY (10% weight)
 - Is the text clearly readable?
 - Is the photo visible and clear?
 - No excessive blur, glare, or shadows
 - Document fully visible without cropping
 
-### 3. DOCUMENT VALIDITY (20% weight)  
+### 3. DOCUMENT VALIDITY (15% weight)  
 - Check if document appears expired (look for expiration date)
 - Verify document number format is realistic
 - Check for valid issue dates
 - Ensure all required fields are present
 
-### 4. FRAUD INDICATORS (20% weight)
+### 4. FRAUD INDICATORS (15% weight)
 - Check for photo tampering or overlay
 - Look for text inconsistencies or different fonts
 - Detect signs of physical document alteration
@@ -230,13 +236,27 @@ Analyze the provided ID document image for ALL of the following:
 - Check for screenshot of another document
 - Detect if this is a photo of a screen
 
-### 5. FACE DETECTION ON ID (20% weight)
+### 5. FACE DETECTION ON ID (15% weight)
 - Is there a clear human face visible on the ID document?
 - Is the face photo of good quality?
 - Does the face appear natural (not AI-generated)?
 
+### 6. NAME VERIFICATION (25% weight - CRITICAL)
+The user registered with the name: "${userFullName}"
+- Extract the FULL NAME visible on the ID document
+- Check if AT LEAST the first name AND last name from the registered name appear on the document
+- Names can be in different order (e.g., "LASTNAME FIRSTNAME" vs "FIRSTNAME LASTNAME")
+- Be tolerant of:
+  - Accents/diacritics (é vs e, ç vs c, etc.)
+  - Case differences (JEAN vs Jean)
+  - Minor spelling variations (Jean-Pierre vs Jean Pierre)
+  - Middle names (document may have more names than registered)
+  - Hyphenated names
+- The key requirement: At least ONE first name and ONE last name from the registered name must match the document
+- If the registered name is "John Smith", the document must show "John" AND "Smith" somewhere
+
 ${avatarDataUrl ? `
-### 6. FACE COMPARISON (Important verification)
+### 7. FACE COMPARISON (Important verification)
 A second image (user's selfie/profile photo) is provided.
 - Compare the face on the ID document with the selfie
 - Check if it appears to be the SAME PERSON
@@ -265,7 +285,16 @@ Respond with ONLY a JSON object (no markdown):
     "document_number_visible": boolean,
     "photo_visible": boolean,
     "expiration_visible": boolean,
-    "appears_expired": boolean
+    "appears_expired": boolean,
+    "full_name_on_document": string (the complete name as shown on the ID),
+    "first_name_found": string or null,
+    "last_name_found": string or null
+  },
+  "name_verification": {
+    "name_matches": boolean,
+    "registered_name": "${userFullName}",
+    "document_name": string,
+    "match_details": string (explain what matched or didn't match)
   },
   "quality_score": number (0.0 to 1.0),
   "authenticity_score": number (0.0 to 1.0),
@@ -286,11 +315,13 @@ Respond with ONLY a JSON object (no markdown):
 
 ## DECISION CRITERIA
 
-- AUTO_APPROVE: confidence >= 0.85, fraud_risk = "low", no flags, all quality checks pass${avatarDataUrl ? ', face_comparison.same_person = true with match_score >= 0.60' : ''}
-- MANUAL_REVIEW: confidence 0.60-0.84 OR fraud_risk = "medium" OR minor flags${avatarDataUrl ? ' OR face match uncertain OR match_score between 0.40-0.59' : ''}
+- AUTO_APPROVE: confidence >= 0.85, fraud_risk = "low", no flags, name_verification.name_matches = true, all quality checks pass${avatarDataUrl ? ', face_comparison.same_person = true with match_score >= 0.60' : ''}
+- MANUAL_REVIEW: confidence 0.60-0.84 OR fraud_risk = "medium" OR minor flags OR name_verification.name_matches = false (uncertain)${avatarDataUrl ? ' OR face match uncertain OR match_score between 0.40-0.59' : ''}
 - REJECT: confidence < 0.35 OR fraud_risk = "critical" OR obvious fraud detected${avatarDataUrl ? ' OR face_comparison.same_person = false AND match_score < 0.30 (clearly different people)' : ''}
 
-Be REASONABLE. Real-world photos vary in quality. Only reject when there's CLEAR evidence of fraud or completely different faces.`;
+IMPORTANT: Even if AI approves, a human administrator will perform a final verification. Your role is to flag obvious issues and pre-screen documents.
+
+Be REASONABLE. Real-world photos vary in quality. Only reject when there's CLEAR evidence of fraud, completely different faces, or completely different names.`;
 
     // Build message content with images
     const messageContent: any[] = [
@@ -458,7 +489,21 @@ Be REASONABLE. Real-world photos vary in quality. Only reject when there's CLEAR
         
       console.log('HIGH RISK flagged for manual review:', userId);
     }
-    // Auto-approve only with very high confidence and matching face
+    // Check for name mismatch - flag for review
+    else if (analysisResult.name_verification && analysisResult.name_verification.name_matches === false) {
+      verificationMethod = 'ai_flagged';
+      idVerified = false;
+      verificationNotes = `⚠️ VÉRIFICATION DU NOM REQUISE\n` +
+        `Nom inscrit: ${analysisResult.name_verification.registered_name}\n` +
+        `Nom sur document: ${analysisResult.name_verification.document_name || 'Non détecté'}\n` +
+        `Détails: ${analysisResult.name_verification.match_details || 'Correspondance incertaine'}\n` +
+        `Type: ${document_type || 'unknown'}\n` +
+        `Score confiance: ${(confidence * 100).toFixed(0)}%\n` +
+        `Un administrateur vérifiera votre document.`;
+        
+      console.log('NAME MISMATCH flagged for manual review:', userId);
+    }
+    // AI pre-approved - BUT requires admin confirmation
     else if (
       approved && 
       confidence >= AUTO_APPROVE_CONFIDENCE_THRESHOLD && 
@@ -466,24 +511,31 @@ Be REASONABLE. Real-world photos vary in quality. Only reject when there's CLEAR
       (!flags || flags.length === 0) &&
       recommendation === 'auto_approve' &&
       face_detection?.face_found_on_id &&
-      (!face_comparison || (face_comparison.same_person && face_comparison.match_score >= FACE_MATCH_THRESHOLD))
+      (!face_comparison || (face_comparison.same_person && face_comparison.match_score >= FACE_MATCH_THRESHOLD)) &&
+      analysisResult.name_verification?.name_matches !== false
     ) {
-      verificationMethod = 'ai_approved';
-      idVerified = true;
+      // AI approved but still needs admin confirmation
+      verificationMethod = 'ai_pre_approved';
+      idVerified = false; // NOT verified until admin confirms
       
       let faceInfo = '';
       if (face_comparison) {
         faceInfo = `\n✅ Correspondance faciale: ${((face_comparison.match_score || 0) * 100).toFixed(0)}%`;
       }
       
-      verificationNotes = `✅ Document vérifié automatiquement par IA\n` +
+      let nameInfo = '';
+      if (analysisResult.name_verification) {
+        nameInfo = `\n✅ Nom vérifié: ${analysisResult.name_verification.document_name || 'Correspond'}`;
+      }
+      
+      verificationNotes = `✅ PRÉ-APPROUVÉ PAR IA - En attente de confirmation admin\n` +
         `Type: ${document_type || 'unknown'}\n` +
         `Score confiance: ${(confidence * 100).toFixed(0)}%\n` +
         `Qualité: ${((quality_score || 0) * 100).toFixed(0)}%\n` +
-        `Authenticité: ${((authenticity_score || 0) * 100).toFixed(0)}%${faceInfo}\n` +
+        `Authenticité: ${((authenticity_score || 0) * 100).toFixed(0)}%${faceInfo}${nameInfo}\n` +
         `Raisons: ${reasons?.join(', ') || 'Document valide'}`;
         
-      console.log('AUTO-APPROVED with face verification:', userId);
+      console.log('AI PRE-APPROVED, awaiting admin confirmation:', userId);
     }
     // Flag for manual review in all other cases
     else {
@@ -540,14 +592,16 @@ Be REASONABLE. Real-world photos vary in quality. Only reject when there's CLEAR
     let notificationMessage: string;
     let notificationType: string;
 
-    if (idVerified) {
-      notificationTitle = '✅ Vérification automatique réussie';
-      notificationMessage = 'Votre identité a été vérifiée automatiquement. Vous pouvez maintenant créer des annonces et effectuer des réservations !';
+    if (verificationMethod === 'ai_pre_approved') {
+      notificationTitle = '✅ Pré-approbation IA réussie';
+      notificationMessage = 'Votre document a passé la vérification automatique ! Un administrateur confirmera votre identité sous 24h.';
       notificationType = 'success';
     } else if (verificationMethod === 'ai_rejected') {
       notificationTitle = '❌ Vérification échouée';
       notificationMessage = face_comparison?.same_person === false 
         ? 'Le visage sur votre document ne correspond pas à votre photo de profil. Veuillez vérifier que vous soumettez votre propre document.'
+        : analysisResult.name_verification?.name_matches === false
+        ? 'Le nom sur votre document ne correspond pas à celui de votre compte. Veuillez vérifier vos informations.'
         : 'Votre document a été rejeté pour des raisons de sécurité. Veuillez soumettre un document valide et authentique.';
       notificationType = 'error';
     } else {
