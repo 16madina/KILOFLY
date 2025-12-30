@@ -23,6 +23,7 @@ interface PendingVerification {
   verification_method: string | null;
   verification_notes: string | null;
   ai_confidence_score: number | null;
+  id_verified: boolean;
 }
 
 const AdminVerification = () => {
@@ -63,15 +64,15 @@ const AdminVerification = () => {
   const fetchPendingVerifications = async () => {
     setLoading(true);
 
-    // Fetch profiles that need verification:
-    // 1. Has ID document AND not verified yet
-    // 2. Includes ai_pre_approved (AI approved, awaiting admin) AND ai_flagged (needs manual review)
+    // Fetch ALL profiles that have submitted ID documents for admin review:
+    // - ai_auto_approved: AI verified, admin can review/confirm
+    // - ai_flagged: Needs manual review  
+    // - pending: Awaiting processing
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
       .not('id_document_url', 'is', null)
-      .eq('id_verified', false)
-      .in('verification_method', ['ai_pre_approved', 'ai_flagged', 'pending'])
+      .in('verification_method', ['ai_auto_approved', 'ai_flagged', 'pending'])
       .order('id_submitted_at', { ascending: true });
 
     if (profilesError) {
@@ -233,7 +234,7 @@ const AdminVerification = () => {
                   {/* AI Verification Status */}
                   {verification.verification_method && (
                     <div className={`p-4 rounded-lg ${
-                      verification.verification_method === 'ai_pre_approved'
+                      verification.verification_method === 'ai_auto_approved'
                         ? 'bg-green-100 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
                         : verification.verification_method === 'ai_flagged' 
                         ? 'bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
@@ -241,17 +242,23 @@ const AdminVerification = () => {
                     }`}>
                       <div className="flex items-start gap-3">
                         <span className="text-2xl mt-0.5">
-                          {verification.verification_method === 'ai_pre_approved' ? '✅' : '🤖'}
+                          {verification.verification_method === 'ai_auto_approved' ? '✅' : 
+                           verification.verification_method === 'ai_flagged' ? '⚠️' : '🔄'}
                         </span>
                         <div className="flex-1">
-                          <p className="font-semibold text-sm mb-1">
-                            {verification.verification_method === 'ai_pre_approved' 
-                              ? '✅ Pré-approuvé par l\'IA - En attente de confirmation'
-                              : verification.verification_method === 'ai_flagged'
-                              ? '⚠️ Document signalé par l\'IA pour révision manuelle'
-                              : '🔄 En cours d\'analyse automatique'
-                            }
-                          </p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-sm">
+                              {verification.verification_method === 'ai_auto_approved' 
+                                ? '✅ Auto-approuvé par IA - Utilisateur vérifié'
+                                : verification.verification_method === 'ai_flagged'
+                                ? '⚠️ Signalé pour révision manuelle'
+                                : '🔄 En attente d\'analyse'
+                              }
+                            </p>
+                            {verification.id_verified && (
+                              <Badge className="bg-green-500 text-white text-xs">VÉRIFIÉ</Badge>
+                            )}
+                          </div>
                           {verification.ai_confidence_score !== null && (
                             <p className="text-sm mb-2">
                               Score de confiance IA: {(verification.ai_confidence_score * 100).toFixed(0)}%
@@ -276,24 +283,49 @@ const AdminVerification = () => {
                   </div>
                   
                   <div className="flex gap-3">
-                    <Button
-                      onClick={() => handleVerification(verification.id, true)}
-                      disabled={processing === verification.id}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      {processing === verification.id ? 'Traitement...' : 'Approuver'}
-                    </Button>
-                    
-                    <Button
-                      onClick={() => handleVerification(verification.id, false)}
-                      disabled={processing === verification.id}
-                      variant="destructive"
-                      className="flex-1"
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      {processing === verification.id ? 'Traitement...' : 'Rejeter'}
-                    </Button>
+                    {verification.id_verified ? (
+                      <>
+                        <Button
+                          onClick={() => handleVerification(verification.id, true)}
+                          disabled={processing === verification.id}
+                          className="flex-1 bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          {processing === verification.id ? 'Traitement...' : 'Confirmer (valider IA)'}
+                        </Button>
+                        
+                        <Button
+                          onClick={() => handleVerification(verification.id, false)}
+                          disabled={processing === verification.id}
+                          variant="destructive"
+                          className="flex-1"
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          {processing === verification.id ? 'Traitement...' : 'Révoquer vérification'}
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          onClick={() => handleVerification(verification.id, true)}
+                          disabled={processing === verification.id}
+                          className="flex-1 bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          {processing === verification.id ? 'Traitement...' : 'Approuver'}
+                        </Button>
+                        
+                        <Button
+                          onClick={() => handleVerification(verification.id, false)}
+                          disabled={processing === verification.id}
+                          variant="destructive"
+                          className="flex-1"
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          {processing === verification.id ? 'Traitement...' : 'Rejeter'}
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
