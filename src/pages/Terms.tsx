@@ -1,7 +1,7 @@
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, AlertTriangle, Shield, Scale } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Terms = () => {
@@ -22,170 +22,160 @@ const Terms = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl">Conditions d'Utilisation</CardTitle>
-            <p className="text-muted-foreground">Dernière mise à jour: {new Date().toLocaleDateString('fr-FR')}</p>
+            <p className="text-muted-foreground">Portée mondiale — Document juridique final</p>
           </CardHeader>
           
-          <CardContent className="prose prose-sm max-w-none dark:prose-invert">
-            <h2>1. Acceptation des Conditions</h2>
-            <p>
-              En utilisant KiloFly, vous acceptez d'être lié par ces conditions d'utilisation. 
-              Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser notre plateforme.
-            </p>
+          <CardContent className="prose prose-sm max-w-none dark:prose-invert space-y-6">
+            {/* CLAUSE CLÉ DE PROTECTION */}
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 not-prose">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-primary">Nature du Service (Clause clé)</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                KiloFly est une plateforme numérique de mise en relation entre utilisateurs. 
+                <strong> KiloFly n'est pas un transporteur</strong>, n'est pas un intermédiaire de transport, 
+                ne prend jamais possession des colis, ne les emballe pas, ne les stocke pas, 
+                ne les inspecte pas physiquement et n'intervient pas dans leur acheminement.
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Tous les transports, échanges et remises de colis sont effectués exclusivement sous la 
+                responsabilité des utilisateurs (expéditeur et voyageur). KiloFly fournit uniquement un 
+                outil technologique facilitant la mise en relation.
+              </p>
+            </div>
 
-            <h2>2. Description du Service</h2>
-            <p>
-              KiloFly est une plateforme de mise en relation entre :
-            </p>
-            <ul>
-              <li><strong>Voyageurs</strong> : personnes disposant d'espace bagages disponible lors de leurs voyages</li>
-              <li><strong>Expéditeurs</strong> : personnes souhaitant envoyer des colis via des voyageurs</li>
-            </ul>
-            <p>
-              KiloFly agit uniquement comme intermédiaire et n'est pas responsable des transactions 
-              entre utilisateurs.
-            </p>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">1. Responsabilité Exclusive des Utilisateurs</h2>
+              <ul className="list-disc pl-6 space-y-2">
+                <li><strong>L'expéditeur</strong> est seul responsable du contenu, de la légalité et de la conformité du colis.</li>
+                <li><strong>Le voyageur</strong> est seul responsable de ce qu'il accepte de transporter.</li>
+                <li><strong>Chaque utilisateur</strong> est responsable du respect des lois douanières, pénales et administratives des pays de départ, de transit et d'arrivée.</li>
+              </ul>
+            </section>
 
-            <h2>3. Conditions d'Inscription</h2>
-            <p>Pour utiliser KiloFly, vous devez :</p>
-            <ul>
-              <li>Avoir au moins 18 ans</li>
-              <li>Fournir des informations exactes et à jour</li>
-              <li>Soumettre une photo de profil récente</li>
-              <li>Vérifier votre identité avec une pièce d'identité valide</li>
-              <li>Accepter la politique de confidentialité</li>
-              <li>Maintenir la confidentialité de votre compte</li>
-            </ul>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2 flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                2. Objets Strictement Interdits
+              </h2>
+              <p className="text-destructive font-medium">Responsabilité pénale de l'utilisateur :</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li>Drogues, stupéfiants, substances illégales</li>
+                <li>Armes, munitions, explosifs, objets dangereux</li>
+                <li>Médicaments non autorisés ou soumis à prescription</li>
+                <li>Documents officiels (passeport, carte d'identité, titres de séjour)</li>
+                <li>Argent liquide, métaux précieux, bijoux de grande valeur</li>
+                <li>Produits contrefaits ou illégaux</li>
+                <li>Tout objet interdit par la loi ou les autorités douanières</li>
+              </ul>
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 mt-3">
+                <p className="text-sm font-medium text-destructive">
+                  ⚠️ Toute violation entraîne la suspension immédiate du compte, le blocage des fonds 
+                  et peut faire l'objet d'un signalement aux autorités compétentes.
+                </p>
+              </div>
+            </section>
 
-            <h2>4. Vérification d'Identité</h2>
-            <p>
-              <strong>OBLIGATOIRE</strong> : Tous les utilisateurs doivent soumettre un document d'identité 
-              valide (carte d'identité ou passeport) pour être vérifiés par notre équipe. 
-              Seuls les utilisateurs vérifiés peuvent publier des annonces et effectuer des transactions.
-            </p>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">3. Limitation Maximale de Responsabilité</h2>
+              <p>
+                KiloFly ne saurait être tenue responsable, directement ou indirectement, de tout dommage, 
+                perte, vol, saisie, retard, sanction, poursuite ou conséquence liée :
+              </p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li>Au contenu d'un colis</li>
+                <li>Au transport lui-même</li>
+                <li>Aux décisions des autorités douanières ou aéroportuaires</li>
+                <li>Aux transactions entre utilisateurs</li>
+                <li>Aux conflits entre utilisateurs</li>
+              </ul>
+            </section>
 
-            <h2>5. Responsabilités des Voyageurs</h2>
-            <p>En tant que voyageur, vous vous engagez à :</p>
-            <ul>
-              <li>Vérifier le contenu des colis que vous transportez</li>
-              <li>Refuser tout article illégal, dangereux ou interdit</li>
-              <li>Respecter les réglementations douanières et aéroportuaires</li>
-              <li>Assurer la sécurité et l'intégrité des colis transportés</li>
-              <li>Informer l'expéditeur en cas de retard ou problème</li>
-              <li>Ne transporter que des articles légaux et autorisés</li>
-            </ul>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">4. Conditions d'Inscription</h2>
+              <p>Pour utiliser KiloFly, vous devez :</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li>Avoir au moins 18 ans</li>
+                <li>Fournir des informations exactes et à jour</li>
+                <li>Soumettre une photo de profil récente</li>
+                <li>Vérifier votre identité avec une pièce d'identité valide</li>
+                <li>Accepter la politique de confidentialité</li>
+                <li>Maintenir la confidentialité de votre compte</li>
+              </ul>
+            </section>
 
-            <h2>6. Responsabilités des Expéditeurs</h2>
-            <p>En tant qu'expéditeur, vous vous engagez à :</p>
-            <ul>
-              <li>Déclarer honnêtement le contenu de vos colis</li>
-              <li>N'envoyer que des articles légaux et autorisés</li>
-              <li>Emballer correctement vos colis</li>
-              <li>Respecter les limites de poids convenues</li>
-              <li>Communiquer clairement avec le voyageur</li>
-              <li>Ne pas inclure d'articles dangereux ou interdits</li>
-            </ul>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">5. Suspension, Blocage et Suppression</h2>
+              <p>KiloFly se réserve le droit de :</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li>Suspendre ou supprimer un compte sans préavis</li>
+                <li>Bloquer ou geler un paiement</li>
+                <li>Refuser l'accès à la plateforme</li>
+              </ul>
+              <p className="mt-2">
+                Ces mesures peuvent être appliquées en cas de fraude, risque, non-respect des règles 
+                ou menace pour la sécurité de la plateforme.
+              </p>
+            </section>
 
-            <h2>7. Articles Interdits</h2>
-            <p><strong>Il est strictement interdit de transporter :</strong></p>
-            <ul>
-              <li>Drogues et substances illégales</li>
-              <li>Armes et munitions</li>
-              <li>Matières explosives ou inflammables</li>
-              <li>Produits dangereux ou toxiques</li>
-              <li>Argent liquide en grande quantité non déclaré</li>
-              <li>Articles contrefaits</li>
-              <li>Animaux vivants (sauf exceptions légales)</li>
-              <li>Tout article illégal ou soumis à restrictions</li>
-            </ul>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">6. Politique de Tolérance Zéro</h2>
+              <p>KiloFly applique une politique de tolérance zéro concernant :</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li>Le contenu inapproprié, offensant ou illégal</li>
+                <li>Les comportements abusifs envers d'autres utilisateurs</li>
+                <li>Toute violation des règles de la communauté</li>
+              </ul>
+              <p className="mt-2 font-medium">
+                Tout contenu signalé sera examiné et supprimé dans un délai de 24 heures maximum. 
+                L'utilisateur responsable sera immédiatement banni de la plateforme.
+              </p>
+            </section>
 
-            <h2>8. Sécurité et Fraude</h2>
-            <p>
-              Nous prenons la sécurité très au sérieux. Tout comportement frauduleux, 
-              tentative d'escroquerie ou violation des lois entraînera :
-            </p>
-            <ul>
-              <li>La suspension immédiate du compte</li>
-              <li>Le signalement aux autorités compétentes</li>
-              <li>D'éventuelles poursuites judiciaires</li>
-            </ul>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">7. Paiements et Commission</h2>
+              <p>
+                Les tarifs sont librement fixés entre voyageurs et expéditeurs. 
+                KiloFly prélève une commission de 5% sur toutes les transactions. 
+                Les paiements sont traités par des prestataires sécurisés.
+              </p>
+            </section>
 
-            <h3 className="text-xl font-semibold mt-6">8.1 Politique de tolérance zéro</h3>
-            <p>
-              KiloFly applique une politique de tolérance zéro concernant :
-            </p>
-            <ul>
-              <li>Le contenu inapproprié, offensant ou illégal</li>
-              <li>Les comportements abusifs envers d'autres utilisateurs</li>
-              <li>Toute violation des règles de la communauté</li>
-            </ul>
-            <p>
-              <strong>Tout contenu signalé sera examiné et supprimé dans un délai de 24 heures maximum.</strong> 
-              L'utilisateur responsable du contenu inapproprié sera immédiatement banni de la plateforme.
-            </p>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">8. Clause App Store / Google Play</h2>
+              <p>
+                KiloFly est une application indépendante. <strong>Apple Inc.</strong> et <strong>Google LLC</strong> ne 
+                sont ni éditeurs, ni sponsors, ni responsables du service. Toute réclamation relative à 
+                KiloFly doit être adressée exclusivement à l'éditeur de l'application.
+              </p>
+            </section>
 
-            <h2>9. Paiements et Tarifs</h2>
-            <p>
-              Les tarifs sont librement fixés entre voyageurs et expéditeurs. 
-              KiloFly prélève une commission de 5% sur toutes les transactions. 
-              Les utilisateurs sont responsables de leurs arrangements financiers.
-            </p>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2 flex items-center gap-2">
+                <Scale className="h-5 w-5" />
+                9. Droit Applicable et Juridiction
+              </h2>
+              <p>
+                Les présentes conditions sont régies par les principes généraux du droit international privé. 
+                En cas de litige, l'éditeur se réserve le droit de déterminer la juridiction compétente.
+              </p>
+            </section>
 
-            <h2>10. Limitation de Responsabilité</h2>
-            <p>
-              KiloFly n'est pas responsable de :
-            </p>
-            <ul>
-              <li>La perte, le vol ou les dommages des colis</li>
-              <li>Les retards ou annulations de voyage</li>
-              <li>Les conflits entre utilisateurs</li>
-              <li>Les violations douanières ou légales</li>
-              <li>Les transactions financières entre utilisateurs</li>
-            </ul>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">10. Contact Légal</h2>
+              <p>
+                Pour toute question concernant ces conditions d'utilisation, contactez-nous à : 
+                <strong> legal@kilofly.app</strong>
+              </p>
+            </section>
 
-            <h2>11. Propriété Intellectuelle</h2>
-            <p>
-              Le contenu de KiloFly (logo, design, textes) est protégé par les droits d'auteur. 
-              Toute reproduction sans autorisation est interdite.
-            </p>
-
-            <h2>12. Suspension et Résiliation</h2>
-            <p>
-              Nous nous réservons le droit de suspendre ou résilier votre compte en cas de :
-            </p>
-            <ul>
-              <li>Violation de ces conditions d'utilisation</li>
-              <li>Activité frauduleuse ou illégale</li>
-              <li>Fausses informations fournies</li>
-              <li>Comportement inapproprié envers d'autres utilisateurs</li>
-              <li>Non-respect des réglementations</li>
-            </ul>
-
-            <h2>13. Modifications des Conditions</h2>
-            <p>
-              Nous pouvons modifier ces conditions à tout moment. Les modifications importantes 
-              seront notifiées aux utilisateurs. L'utilisation continue du service après 
-              modification constitue une acceptation des nouvelles conditions.
-            </p>
-
-            <h2>14. Droit Applicable</h2>
-            <p>
-              Ces conditions sont régies par le droit français. Tout litige sera soumis 
-              aux tribunaux compétents de Paris, France.
-            </p>
-
-            <h2>15. Contact</h2>
-            <p>
-              Pour toute question concernant ces conditions d'utilisation, contactez-nous à : 
-              <strong>legal@kilofly.com</strong>
-            </p>
-
-            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mt-8">
-              <p className="font-semibold text-destructive mb-2">⚠️ Important</p>
-              <p className="text-sm">
-                En utilisant KiloFly, vous reconnaissez avoir lu, compris et accepté 
-                l'intégralité de ces conditions d'utilisation. Vous êtes responsable de 
-                vous assurer que votre utilisation de la plateforme est conforme aux lois 
-                de votre pays et du pays de destination.
+            <div className="bg-muted/50 border rounded-lg p-4 mt-8 not-prose">
+              <p className="font-semibold mb-2">📋 Rappel Important</p>
+              <p className="text-sm text-muted-foreground">
+                En utilisant KiloFly, vous reconnaissez avoir lu, compris et accepté l'intégralité de ces 
+                conditions d'utilisation. Vous êtes responsable de vous assurer que votre utilisation de 
+                la plateforme est conforme aux lois de votre pays, des pays de transit et du pays de destination.
               </p>
             </div>
           </CardContent>
