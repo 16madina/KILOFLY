@@ -19,15 +19,22 @@ const getTrustLevel = (score: number): TrustScoreLevel | null => {
   return trustLevels.find(level => score >= level.minScore) || null;
 };
 
+const NOTIFICATION_STORAGE_KEY = 'kilofly_trust_score_notified';
+
 export const useTrustScoreNotifications = (currentScore: number) => {
   const previousScore = useRef<number | null>(null);
   const previousLevel = useRef<string | null>(null);
+  const hasShownInitialToast = useRef(false);
 
   useEffect(() => {
+    // Check localStorage to see if we've already shown the initial notification
+    const alreadyNotified = localStorage.getItem(NOTIFICATION_STORAGE_KEY);
+    
     if (previousScore.current === null) {
       previousScore.current = currentScore;
       const level = getTrustLevel(currentScore);
       previousLevel.current = level?.level || null;
+      hasShownInitialToast.current = !!alreadyNotified;
       return;
     }
 
@@ -35,8 +42,16 @@ export const useTrustScoreNotifications = (currentScore: number) => {
     const currentLevel = getTrustLevel(currentScore);
     const oldLevel = previousLevel.current;
 
+    // Only show notifications for actual score changes (not initial load)
+    if (scoreDiff === 0) {
+      previousScore.current = currentScore;
+      previousLevel.current = currentLevel?.level || null;
+      return;
+    }
+
     // Notification de changement de niveau avec récompense
     if (currentLevel && oldLevel !== currentLevel.level && scoreDiff > 0) {
+      // Level changes are always important, show them
       toast.success(
         `${currentLevel.icon} Félicitations ! Niveau ${currentLevel.level} atteint !`,
         {
@@ -44,9 +59,11 @@ export const useTrustScoreNotifications = (currentScore: number) => {
           duration: 6000,
         }
       );
+      localStorage.setItem(NOTIFICATION_STORAGE_KEY, 'true');
     }
-    // Notification de gain de points (si pas de changement de niveau)
-    else if (scoreDiff > 0 && scoreDiff >= 2) {
+    // Only show point gain/loss notifications if there's a real change from user actions
+    else if (scoreDiff > 0 && scoreDiff >= 5) {
+      // Higher threshold to avoid spam
       toast.success(
         "✨ Points de confiance gagnés !",
         {
@@ -54,9 +71,9 @@ export const useTrustScoreNotifications = (currentScore: number) => {
           duration: 4000,
         }
       );
+      localStorage.setItem(NOTIFICATION_STORAGE_KEY, 'true');
     }
-    // Notification de perte de points
-    else if (scoreDiff < 0 && Math.abs(scoreDiff) >= 2) {
+    else if (scoreDiff < 0 && Math.abs(scoreDiff) >= 5) {
       toast.error(
         "Points de confiance perdus",
         {
