@@ -9,8 +9,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, Package, AlertTriangle, FileSignature, Download, Loader2 } from "lucide-react";
+import { ShieldAlert, Package, AlertTriangle, FileSignature, Download, Loader2, CheckCircle2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import SignaturePad from "./SignaturePad";
 import { format } from "date-fns";
@@ -302,41 +303,103 @@ const LegalConfirmationDialog = ({
                 </p>
               </div>
 
-              {signatureSaved && savedSignatureRecord && (
-                <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg space-y-3">
-                  <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                    <FileSignature className="h-5 w-5" />
-                    <p className="font-medium">Signature enregistrée avec succès</p>
-                  </div>
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <p>
-                      Horodatage: {format(new Date(savedSignatureRecord.signed_at), "PPPp", { locale: fr })}
-                    </p>
-                    {savedSignatureRecord.ip_address && (
-                      <p>Adresse IP: {savedSignatureRecord.ip_address}</p>
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={handleDownloadPDF}
-                    disabled={generatingPDF}
+              <AnimatePresence>
+                {signatureSaved && savedSignatureRecord && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ 
+                      type: "spring", 
+                      stiffness: 300, 
+                      damping: 20,
+                      duration: 0.5 
+                    }}
+                    className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg space-y-3 overflow-hidden"
                   >
-                    {generatingPDF ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Génération en cours...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="h-4 w-4 mr-2" />
-                        Télécharger le récapitulatif PDF
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ 
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 15,
+                        delay: 0.2
+                      }}
+                      className="flex justify-center"
+                    >
+                      <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
+                        <motion.div
+                          initial={{ scale: 0, rotate: -180 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          transition={{ 
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 15,
+                            delay: 0.4
+                          }}
+                        >
+                          <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
+                        </motion.div>
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                      className="text-center"
+                    >
+                      <p className="font-semibold text-green-700 dark:text-green-300 text-lg">
+                        Signature enregistrée !
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Votre confirmation a été validée avec succès
+                      </p>
+                    </motion.div>
+
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.6 }}
+                      className="text-xs text-muted-foreground space-y-1 bg-background/50 p-2 rounded"
+                    >
+                      <p className="flex items-center gap-1">
+                        <FileSignature className="h-3 w-3" />
+                        {format(new Date(savedSignatureRecord.signed_at), "PPPp", { locale: fr })}
+                      </p>
+                      {savedSignatureRecord.ip_address && (
+                        <p>IP: {savedSignatureRecord.ip_address}</p>
+                      )}
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7 }}
+                    >
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={handleDownloadPDF}
+                        disabled={generatingPDF}
+                      >
+                        {generatingPDF ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Génération en cours...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="h-4 w-4 mr-2" />
+                            Télécharger le récapitulatif PDF
+                          </>
+                        )}
+                      </Button>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
