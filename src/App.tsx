@@ -47,6 +47,7 @@ import CurrencySettings from "./pages/CurrencySettings";
 import MyTransportRequests from "./pages/MyTransportRequests";
 import Tracking from "./pages/Tracking";
 import EmailConfirmed from "./pages/EmailConfirmed";
+import MyRewards from "./pages/MyRewards";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -139,6 +140,7 @@ const AnimatedRoutes = () => {
                   <Route path="/privacy-settings" element={<PrivacySettings />} />
                   <Route path="/currency-settings" element={<CurrencySettings />} />
                   <Route path="/trust-score-info" element={<TrustScoreInfo />} />
+                  <Route path="/my-rewards" element={<MyRewards />} />
                   <Route path="/favorites" element={<Favorites />} />
                   <Route path="/route-alerts" element={<RouteAlerts />} />
           <Route path="/verify-identity" element={<VerifyIdentity />} />
