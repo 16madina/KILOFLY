@@ -19,6 +19,11 @@ interface GeneratePDFParams {
   };
 }
 
+export interface GeneratePDFResult {
+  base64: string;
+  fileName: string;
+}
+
 export const generateLegalPDF = async ({
   type,
   userName,
@@ -27,7 +32,7 @@ export const generateLegalPDF = async ({
   ipAddress,
   conditionsAccepted,
   reservationDetails,
-}: GeneratePDFParams): Promise<void> => {
+}: GeneratePDFParams): Promise<GeneratePDFResult> => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
@@ -186,7 +191,13 @@ export const generateLegalPDF = async ({
     yPos += 4;
   });
 
-  // Save the PDF
+  // Get PDF as base64 and save
   const fileName = `KiloFly_Confirmation_${type}_${format(new Date(), "yyyy-MM-dd_HHmmss")}.pdf`;
+  const pdfBase64 = doc.output("datauristring");
   doc.save(fileName);
+
+  return {
+    base64: pdfBase64,
+    fileName,
+  };
 };
