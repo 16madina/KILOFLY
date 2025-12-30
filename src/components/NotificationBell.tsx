@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell } from "lucide-react";
+import { Bell, BellRing } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 interface Notification {
   id: string;
@@ -30,6 +31,37 @@ const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
+  const { permission, requestPermission, showNotification, isSupported } = usePushNotifications();
+
+  // Request push notification permission on mount
+  useEffect(() => {
+    if (user && isSupported && permission === 'default') {
+      // Auto-request permission after a short delay
+      const timer = setTimeout(() => {
+        requestPermission();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [user, isSupported, permission, requestPermission]);
+
+  const handleNewNotification = useCallback((newNotification: Notification) => {
+    setNotifications(prev => [newNotification, ...prev]);
+    setUnreadCount(prev => prev + 1);
+    
+    // Show in-app toast notification
+    const toastType = newNotification.type === 'error' ? 'error' : 
+                     newNotification.type === 'warning' ? 'warning' : 'success';
+    toast[toastType](newNotification.title, {
+      description: newNotification.message,
+    });
+
+    // Show browser push notification
+    showNotification(newNotification.title, {
+      body: newNotification.message,
+      tag: `notification-${newNotification.id}`,
+      icon: '/favicon.ico',
+    });
+  }, [showNotification]);
 
   useEffect(() => {
     if (!user) return;
@@ -49,15 +81,7 @@ const NotificationBell = () => {
         },
         (payload) => {
           const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
-          setUnreadCount(prev => prev + 1);
-          
-          // Show toast notification
-          const toastType = newNotification.type === 'error' ? 'error' : 
-                           newNotification.type === 'warning' ? 'warning' : 'success';
-          toast[toastType](newNotification.title, {
-            description: newNotification.message,
-          });
+          handleNewNotification(newNotification);
         }
       )
       .subscribe();
@@ -65,7 +89,7 @@ const NotificationBell = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, handleNewNotification]);
 
   const fetchNotifications = async () => {
     if (!user) return;
