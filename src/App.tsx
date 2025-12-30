@@ -43,6 +43,7 @@ import FAQ from "./pages/FAQ";
 import ListingDetail from "./pages/ListingDetail";
 import PublicProfile from "./pages/PublicProfile";
 import Payment from "./pages/Payment";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import CurrencySettings from "./pages/CurrencySettings";
 import MyTransportRequests from "./pages/MyTransportRequests";
 import Tracking from "./pages/Tracking";
@@ -147,6 +148,7 @@ const AnimatedRoutes = () => {
           <Route path="/email-confirmed" element={<EmailConfirmed />} />
                   <Route path="/faq" element={<FAQ />} />
                   <Route path="/payment" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Payment /></motion.div>} />
+                  <Route path="/payment-success" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><PaymentSuccess /></motion.div>} />
                   <Route path="/listing/:id" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><ListingDetail /></motion.div>} />
                   <Route path="/user/:id" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><PublicProfile /></motion.div>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
