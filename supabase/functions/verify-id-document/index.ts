@@ -7,11 +7,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Security thresholds
-const AUTO_APPROVE_CONFIDENCE_THRESHOLD = 0.90;
-const FACE_MATCH_THRESHOLD = 0.75;
-const MANUAL_REVIEW_THRESHOLD = 0.70;
-const REJECT_THRESHOLD = 0.40;
+// Security thresholds - adjusted for real-world conditions
+const AUTO_APPROVE_CONFIDENCE_THRESHOLD = 0.85;
+const FACE_MATCH_THRESHOLD = 0.60; // Lowered for real-world selfie conditions
+const MANUAL_REVIEW_THRESHOLD = 0.60;
+const REJECT_THRESHOLD = 0.35;
 const MAX_FILE_SIZE_MB = 10;
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -236,13 +236,21 @@ Analyze the provided ID document image for ALL of the following:
 - Does the face appear natural (not AI-generated)?
 
 ${avatarDataUrl ? `
-### 6. FACE COMPARISON (CRITICAL - Additional verification)
+### 6. FACE COMPARISON (Important verification)
 A second image (user's selfie/profile photo) is provided.
 - Compare the face on the ID document with the selfie
 - Check if it appears to be the SAME PERSON
 - Look for similar facial features: eyes, nose, mouth shape, face shape
-- Account for differences in lighting, angle, age (reasonable time gap)
-- Be strict: if faces don't match, this is a CRITICAL fraud indicator
+- BE TOLERANT of:
+  - Different lighting conditions (natural vs artificial light)
+  - Different angles (selfies are often taken at slight angles)
+  - Different image quality (phone cameras vary)
+  - Age differences up to 5-10 years (ID photos may be older)
+  - Glasses/no glasses, facial hair differences
+  - Minor expressions differences (smile vs neutral)
+- Focus on CORE IDENTIFYING FEATURES: eye shape, nose structure, face shape
+- Only reject if faces are CLEARLY different people (different ethnicity, completely different bone structure)
+- If comparison is uncertain due to image quality, prefer manual_review over rejection
 ` : ''}
 
 ## RESPONSE FORMAT
@@ -278,11 +286,11 @@ Respond with ONLY a JSON object (no markdown):
 
 ## DECISION CRITERIA
 
-- AUTO_APPROVE: confidence >= 0.90, fraud_risk = "low", no flags, all quality checks pass${avatarDataUrl ? ', face_comparison.same_person = true with match_score >= 0.75' : ''}
-- MANUAL_REVIEW: confidence 0.70-0.89 OR fraud_risk = "medium" OR minor flags${avatarDataUrl ? ' OR face match uncertain' : ''}
-- REJECT: confidence < 0.40 OR fraud_risk = "high"/"critical" OR obvious fraud${avatarDataUrl ? ' OR face_comparison.same_person = false' : ''}
+- AUTO_APPROVE: confidence >= 0.85, fraud_risk = "low", no flags, all quality checks pass${avatarDataUrl ? ', face_comparison.same_person = true with match_score >= 0.60' : ''}
+- MANUAL_REVIEW: confidence 0.60-0.84 OR fraud_risk = "medium" OR minor flags${avatarDataUrl ? ' OR face match uncertain OR match_score between 0.40-0.59' : ''}
+- REJECT: confidence < 0.35 OR fraud_risk = "critical" OR obvious fraud detected${avatarDataUrl ? ' OR face_comparison.same_person = false AND match_score < 0.30 (clearly different people)' : ''}
 
-BE STRICT. When in doubt, flag for manual review. Never auto-approve suspicious documents.`;
+Be REASONABLE. Real-world photos vary in quality. Only reject when there's CLEAR evidence of fraud or completely different faces.`;
 
     // Build message content with images
     const messageContent: any[] = [
@@ -398,8 +406,8 @@ BE STRICT. When in doubt, flag for manual review. Never auto-approve suspicious 
     let idVerified: boolean;
     let verificationNotes: string;
 
-    // CRITICAL: Check for face mismatch first (if comparison was done)
-    if (face_comparison && face_comparison.same_person === false) {
+    // CRITICAL: Only reject face mismatch if match score is very low (clearly different people)
+    if (face_comparison && face_comparison.same_person === false && (face_comparison.match_score || 0) < 0.30) {
       verificationMethod = 'ai_rejected';
       idVerified = false;
       verificationNotes = `🚨 VISAGE NON CORRESPONDANT\n` +
@@ -409,20 +417,46 @@ BE STRICT. When in doubt, flag for manual review. Never auto-approve suspicious 
         `Type: ${document_type || 'unknown'}\n` +
         `Risque: CRITIQUE - Possible usurpation d'identité`;
         
-      console.warn('FACE MISMATCH detected for user:', userId);
+      console.warn('CLEAR FACE MISMATCH detected for user:', userId);
     }
-    // Check for high-risk fraud indicators
-    else if (fraud_risk === 'critical' || fraud_risk === 'high') {
+    // Uncertain face match - flag for manual review
+    else if (face_comparison && face_comparison.same_person === false && (face_comparison.match_score || 0) >= 0.30) {
+      verificationMethod = 'ai_flagged';
+      idVerified = false;
+      verificationNotes = `⚠️ VÉRIFICATION MANUELLE REQUISE\n` +
+        `Correspondance faciale incertaine.\n` +
+        `Score de correspondance: ${((face_comparison.match_score || 0) * 100).toFixed(0)}%\n` +
+        `Notes: ${face_comparison.comparison_notes || 'Comparaison difficile - qualité image ou angle'}\n` +
+        `Type: ${document_type || 'unknown'}\n` +
+        `Un administrateur vérifiera votre document.`;
+        
+      console.log('Uncertain face match, flagging for manual review:', userId);
+    }
+    // Check for critical fraud indicators only
+    else if (fraud_risk === 'critical') {
       verificationMethod = 'ai_rejected';
       idVerified = false;
-      verificationNotes = `🚨 RISQUE ÉLEVÉ DE FRAUDE DÉTECTÉ\n` +
+      verificationNotes = `🚨 RISQUE DE FRAUDE CRITIQUE DÉTECTÉ\n` +
         `Type: ${document_type || 'unknown'}\n` +
         `Score confiance: ${(confidence * 100).toFixed(0)}%\n` +
         `Niveau risque: ${fraud_risk.toUpperCase()}\n` +
         `Problèmes: ${flags?.join(', ') || 'N/A'}\n` +
         `Raisons: ${reasons?.join(', ') || 'N/A'}`;
         
-      console.warn('HIGH FRAUD RISK detected for user:', userId);
+      console.warn('CRITICAL FRAUD RISK detected for user:', userId);
+    }
+    // High risk - flag for manual review instead of auto-reject
+    else if (fraud_risk === 'high') {
+      verificationMethod = 'ai_flagged';
+      idVerified = false;
+      verificationNotes = `⚠️ VÉRIFICATION MANUELLE REQUISE\n` +
+        `Risque élevé détecté - révision manuelle nécessaire.\n` +
+        `Type: ${document_type || 'unknown'}\n` +
+        `Score confiance: ${(confidence * 100).toFixed(0)}%\n` +
+        `Niveau risque: ${fraud_risk.toUpperCase()}\n` +
+        `Problèmes: ${flags?.join(', ') || 'N/A'}`;
+        
+      console.log('HIGH RISK flagged for manual review:', userId);
     }
     // Auto-approve only with very high confidence and matching face
     else if (
