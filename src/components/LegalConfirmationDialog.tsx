@@ -10,14 +10,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ShieldAlert, Package, AlertTriangle } from "lucide-react";
+import { ShieldAlert, Package, AlertTriangle, FileSignature } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import SignaturePad from "./SignaturePad";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface LegalConfirmationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
+  onConfirm: (signatureData?: { signature: string; timestamp: string }) => void;
   type: "sender" | "transporter";
   loading?: boolean;
 }
@@ -30,20 +33,36 @@ const LegalConfirmationDialog = ({
   loading = false,
 }: LegalConfirmationDialogProps) => {
   const [accepted, setAccepted] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
+  const [signatureData, setSignatureData] = useState<string | null>(null);
+
+  const handleSignatureChange = (hasSig: boolean, data: string | null) => {
+    setHasSignature(hasSig);
+    setSignatureData(data);
+  };
 
   const handleConfirm = () => {
-    if (accepted) {
-      onConfirm();
-      setAccepted(false);
+    if (accepted && hasSignature && signatureData) {
+      const timestamp = format(new Date(), "PPPp", { locale: fr });
+      onConfirm({ signature: signatureData, timestamp });
+      resetState();
     }
+  };
+
+  const resetState = () => {
+    setAccepted(false);
+    setHasSignature(false);
+    setSignatureData(null);
   };
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      setAccepted(false);
+      resetState();
     }
     onOpenChange(newOpen);
   };
+
+  const canConfirm = accepted && hasSignature;
 
   const senderContent = {
     title: "Confirmation de responsabilité - Expéditeur",
@@ -80,7 +99,7 @@ const LegalConfirmationDialog = ({
 
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
-      <AlertDialogContent className="max-w-md">
+      <AlertDialogContent className="max-w-md max-h-[90vh] flex flex-col">
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-3">
             {content.icon}
@@ -91,7 +110,7 @@ const LegalConfirmationDialog = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <ScrollArea className="max-h-[300px] pr-4">
+        <ScrollArea className="flex-1 min-h-0 pr-4">
           <div className="space-y-3">
             {content.points.map((point, index) => (
               <div key={index} className="flex gap-3 text-sm">
@@ -114,28 +133,43 @@ const LegalConfirmationDialog = ({
               .
             </p>
           </div>
+
+          <div className="mt-4 space-y-4">
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="legal-accept"
+                checked={accepted}
+                onCheckedChange={(checked) => setAccepted(checked === true)}
+                className="mt-0.5"
+              />
+              <label
+                htmlFor="legal-accept"
+                className="text-sm font-medium leading-snug cursor-pointer"
+              >
+                {content.checkboxLabel}
+              </label>
+            </div>
+
+            <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+              <div className="flex items-center gap-2 mb-3">
+                <FileSignature className="h-4 w-4 text-primary" />
+                <p className="text-sm font-medium text-foreground">
+                  Signature requise
+                </p>
+              </div>
+              <SignaturePad onSignatureChange={handleSignatureChange} />
+              <p className="text-xs text-muted-foreground mt-2">
+                Votre signature électronique sera horodatée et enregistrée comme preuve de votre acceptation.
+              </p>
+            </div>
+          </div>
         </ScrollArea>
 
-        <div className="flex items-start gap-3 pt-4 border-t">
-          <Checkbox
-            id="legal-accept"
-            checked={accepted}
-            onCheckedChange={(checked) => setAccepted(checked === true)}
-            className="mt-0.5"
-          />
-          <label
-            htmlFor="legal-accept"
-            className="text-sm font-medium leading-snug cursor-pointer"
-          >
-            {content.checkboxLabel}
-          </label>
-        </div>
-
-        <AlertDialogFooter className="gap-2 sm:gap-0">
+        <AlertDialogFooter className="gap-2 sm:gap-0 pt-4 border-t mt-4">
           <AlertDialogCancel disabled={loading}>Annuler</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
-            disabled={!accepted || loading}
+            disabled={!canConfirm || loading}
             className="bg-primary hover:bg-primary/90"
           >
             {loading ? "Chargement..." : content.confirmButton}
