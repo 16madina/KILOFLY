@@ -121,7 +121,7 @@ const SignaturePad = ({ onSignatureChange, className, disabled = false }: Signat
         )}
       </div>
       
-      <div className="relative rounded-lg border-2 border-dashed border-muted-foreground/30 overflow-hidden bg-muted">
+      <div className="relative rounded-lg border-2 border-primary/40 overflow-hidden bg-[#fafafa] shadow-inner">
         <canvas
           ref={canvasRef}
           className="w-full h-24 cursor-crosshair touch-none"
