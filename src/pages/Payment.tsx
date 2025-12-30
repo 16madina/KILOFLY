@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import LegalConfirmationDialog from "@/components/LegalConfirmationDialog";
 
 // Initialize Stripe only if key is available
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -19,15 +20,20 @@ const PaymentForm = ({ clientSecret, reservationId }: { clientSecret: string; re
   const elements = useElements();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [legalDialogOpen, setLegalDialogOpen] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePayClick = (e: React.FormEvent) => {
     e.preventDefault();
+    setLegalDialogOpen(true);
+  };
 
+  const handlePayConfirmed = async () => {
     if (!stripe || !elements) {
       return;
     }
 
     setLoading(true);
+    setLegalDialogOpen(false);
 
     try {
       const { error, paymentIntent } = await stripe.confirmPayment({
@@ -59,30 +65,40 @@ const PaymentForm = ({ clientSecret, reservationId }: { clientSecret: string; re
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement />
-      
-      <Button 
-        type="submit" 
-        className="w-full" 
-        size="lg"
-        disabled={!stripe || loading}
-      >
-        {loading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Traitement...
-          </>
-        ) : (
-          'Payer maintenant'
-        )}
-      </Button>
+    <>
+      <form onSubmit={handlePayClick} className="space-y-6">
+        <PaymentElement />
+        
+        <Button 
+          type="submit" 
+          className="w-full" 
+          size="lg"
+          disabled={!stripe || loading}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Traitement...
+            </>
+          ) : (
+            'Payer maintenant'
+          )}
+        </Button>
 
-      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-        <ShieldCheck className="h-4 w-4" />
-        Paiement sécurisé par Stripe
-      </div>
-    </form>
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <ShieldCheck className="h-4 w-4" />
+          Paiement sécurisé par Stripe
+        </div>
+      </form>
+
+      <LegalConfirmationDialog
+        open={legalDialogOpen}
+        onOpenChange={setLegalDialogOpen}
+        onConfirm={handlePayConfirmed}
+        type="sender"
+        loading={loading}
+      />
+    </>
   );
 };
 

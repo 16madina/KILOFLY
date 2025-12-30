@@ -11,6 +11,7 @@ import ReservationTimeline from "@/components/ReservationTimeline";
 import ReservationChat from "@/components/ReservationChat";
 import { PackageTracker } from "@/components/tracking/PackageTracker";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import LegalConfirmationDialog from "@/components/LegalConfirmationDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -50,6 +51,9 @@ const MyReservations = () => {
   const [activeTab, setActiveTab] = useState<"received" | "sent">("received");
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const [legalDialogOpen, setLegalDialogOpen] = useState(false);
+  const [pendingApprovalId, setPendingApprovalId] = useState<string | null>(null);
+  const [approving, setApproving] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -117,13 +121,21 @@ const MyReservations = () => {
     }
   };
 
-  const handleApprove = async (reservationId: string) => {
+  const handleApproveClick = (reservationId: string) => {
+    setPendingApprovalId(reservationId);
+    setLegalDialogOpen(true);
+  };
+
+  const handleApproveConfirmed = async () => {
+    if (!pendingApprovalId) return;
+    
+    setApproving(true);
     try {
       // First approve the reservation
       const { error } = await supabase
         .from("reservations")
         .update({ status: "approved" })
-        .eq("id", reservationId);
+        .eq("id", pendingApprovalId);
 
       if (error) throw error;
 
@@ -133,7 +145,7 @@ const MyReservations = () => {
 
       // Call the payment processing edge function
       const { error: paymentError } = await supabase.functions.invoke('process-stripe-payment', {
-        body: { reservationId },
+        body: { reservationId: pendingApprovalId },
       });
 
       if (paymentError) {
@@ -147,6 +159,10 @@ const MyReservations = () => {
     } catch (error) {
       console.error("Error approving reservation:", error);
       toast.error("Erreur lors de l'approbation");
+    } finally {
+      setApproving(false);
+      setLegalDialogOpen(false);
+      setPendingApprovalId(null);
     }
   };
 
@@ -387,7 +403,7 @@ const MyReservations = () => {
                 <div className="flex gap-2 pt-2">
                   <Button
                     className="flex-1 bg-green-600 hover:bg-green-700"
-                    onClick={() => handleApprove(reservation.id)}
+                    onClick={() => handleApproveClick(reservation.id)}
                   >
                     <Check className="h-4 w-4 mr-2" />
                     Approuver
@@ -540,6 +556,15 @@ const MyReservations = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Legal Confirmation Dialog for Transporter */}
+      <LegalConfirmationDialog
+        open={legalDialogOpen}
+        onOpenChange={setLegalDialogOpen}
+        onConfirm={handleApproveConfirmed}
+        type="transporter"
+        loading={approving}
+      />
     </div>
   );
 };
