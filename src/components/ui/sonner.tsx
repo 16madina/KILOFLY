@@ -12,7 +12,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       position={isIOS() ? "top-center" : "bottom-center"}
-      duration={2000}
+      duration={3000}
+      closeButton
+      richColors
       toastOptions={{
         classNames: {
           toast:
@@ -22,6 +24,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground group-[.toast]:rounded-xl",
           success: "group-[.toaster]:border-success/30 group-[.toaster]:bg-success/10",
           error: "group-[.toaster]:border-destructive/30 group-[.toaster]:bg-destructive/10",
+          closeButton: "group-[.toast]:bg-background group-[.toast]:border-border",
         },
       }}
       offset={isIOS() ? "env(safe-area-inset-top)" : 16}
