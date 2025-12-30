@@ -174,6 +174,7 @@ const LegalConfirmationDialog = ({
         timestamp: format(new Date(savedSignatureRecord.signed_at), "PPPp", { locale: fr }),
         ipAddress: savedSignatureRecord.ip_address,
         conditionsAccepted: conditions,
+        download: true,
         reservationDetails,
       });
       toast.success("PDF téléchargé avec succès");

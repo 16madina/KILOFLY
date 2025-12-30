@@ -9,6 +9,7 @@ interface GeneratePDFParams {
   timestamp: string;
   ipAddress?: string;
   conditionsAccepted: string[];
+  download?: boolean;
   reservationDetails?: {
     id: string;
     departure: string;
@@ -31,6 +32,7 @@ export const generateLegalPDF = async ({
   timestamp,
   ipAddress,
   conditionsAccepted,
+  download = false,
   reservationDetails,
 }: GeneratePDFParams): Promise<GeneratePDFResult> => {
   const doc = new jsPDF();
@@ -191,10 +193,14 @@ export const generateLegalPDF = async ({
     yPos += 4;
   });
 
-  // Get PDF as base64 and save
+  // Get PDF as base64 and optionally save
   const fileName = `KiloFly_Confirmation_${type}_${format(new Date(), "yyyy-MM-dd_HHmmss")}.pdf`;
   const pdfBase64 = doc.output("datauristring");
-  doc.save(fileName);
+  
+  // Only trigger download if explicitly requested
+  if (download) {
+    doc.save(fileName);
+  }
 
   return {
     base64: pdfBase64,
