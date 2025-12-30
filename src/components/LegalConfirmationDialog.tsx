@@ -225,8 +225,8 @@ const LegalConfirmationDialog = ({
 
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
-      <AlertDialogContent className="max-w-md max-h-[90vh] flex flex-col">
-        <AlertDialogHeader>
+      <AlertDialogContent className="max-w-md max-h-[85vh] flex flex-col overflow-hidden">
+        <AlertDialogHeader className="shrink-0">
           <AlertDialogTitle className="flex items-center gap-3">
             {content.icon}
             <span className="text-lg">{content.title}</span>
@@ -236,105 +236,107 @@ const LegalConfirmationDialog = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0 pr-4">
-          <div className="space-y-3">
-            {conditions.map((point, index) => (
-              <div key={index} className="flex gap-3 text-sm">
-                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                <p className="text-foreground/80">{point}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 p-3 bg-muted rounded-lg">
-            <p className="text-xs text-muted-foreground">
-              Pour plus d'informations sur les objets interdits, consultez notre{" "}
-              <Link to="/prohibited-items" className="text-primary underline">
-                page des réglementations
-              </Link>{" "}
-              et nos{" "}
-              <Link to="/terms" className="text-primary underline">
-                conditions d'utilisation
-              </Link>
-              .
-            </p>
-          </div>
-
-          <div className="mt-4 space-y-4">
-            <div className="flex items-start gap-3">
-              <Checkbox
-                id="legal-accept"
-                checked={accepted}
-                onCheckedChange={(checked) => setAccepted(checked === true)}
-                className="mt-0.5"
-                disabled={signatureSaved}
-              />
-              <label
-                htmlFor="legal-accept"
-                className="text-sm font-medium leading-snug cursor-pointer"
-              >
-                {content.checkboxLabel}
-              </label>
+        <ScrollArea className="flex-1 min-h-0 pr-4 -mr-4">
+          <div className="pr-4">
+            <div className="space-y-3">
+              {conditions.map((point, index) => (
+                <div key={index} className="flex gap-3 text-sm">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-foreground/80">{point}</p>
+                </div>
+              ))}
             </div>
 
-            <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
-              <div className="flex items-center gap-2 mb-3">
-                <FileSignature className="h-4 w-4 text-primary" />
-                <p className="text-sm font-medium text-foreground">
-                  Signature requise
-                </p>
-              </div>
-              <SignaturePad 
-                onSignatureChange={handleSignatureChange} 
-                disabled={signatureSaved}
-              />
-              <p className="text-xs text-muted-foreground mt-2">
-                Votre signature électronique sera horodatée et enregistrée avec votre adresse IP comme preuve légale.
+            <div className="mt-4 p-3 bg-muted rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                Pour plus d'informations sur les objets interdits, consultez notre{" "}
+                <Link to="/prohibited-items" className="text-primary underline">
+                  page des réglementations
+                </Link>{" "}
+                et nos{" "}
+                <Link to="/terms" className="text-primary underline">
+                  conditions d'utilisation
+                </Link>
+                .
               </p>
             </div>
 
-            {signatureSaved && savedSignatureRecord && (
-              <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg space-y-3">
-                <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                  <FileSignature className="h-5 w-5" />
-                  <p className="font-medium">Signature enregistrée avec succès</p>
-                </div>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>Horodatage: {format(new Date(savedSignatureRecord.signed_at), "PPPp", { locale: fr })}</p>
-                  {savedSignatureRecord.ip_address && (
-                    <p>Adresse IP: {savedSignatureRecord.ip_address}</p>
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={handleDownloadPDF}
-                  disabled={generatingPDF}
+            <div className="mt-4 space-y-4 pb-2">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="legal-accept"
+                  checked={accepted}
+                  onCheckedChange={(checked) => setAccepted(checked === true)}
+                  className="mt-0.5"
+                  disabled={signatureSaved}
+                />
+                <label
+                  htmlFor="legal-accept"
+                  className="text-sm font-medium leading-snug cursor-pointer"
                 >
-                  {generatingPDF ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Génération en cours...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4 mr-2" />
-                      Télécharger le récapitulatif PDF
-                    </>
-                  )}
-                </Button>
+                  {content.checkboxLabel}
+                </label>
               </div>
-            )}
+
+              <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <FileSignature className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-medium text-foreground">
+                    Signature requise
+                  </p>
+                </div>
+                <SignaturePad 
+                  onSignatureChange={handleSignatureChange} 
+                  disabled={signatureSaved}
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Votre signature électronique sera horodatée et enregistrée avec votre adresse IP comme preuve légale.
+                </p>
+              </div>
+
+              {signatureSaved && savedSignatureRecord && (
+                <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg space-y-3">
+                  <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                    <FileSignature className="h-5 w-5" />
+                    <p className="font-medium">Signature enregistrée avec succès</p>
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>Horodatage: {format(new Date(savedSignatureRecord.signed_at), "PPPp", { locale: fr })}</p>
+                    {savedSignatureRecord.ip_address && (
+                      <p>Adresse IP: {savedSignatureRecord.ip_address}</p>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={handleDownloadPDF}
+                    disabled={generatingPDF}
+                  >
+                    {generatingPDF ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Génération en cours...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        Télécharger le récapitulatif PDF
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </ScrollArea>
 
-        <AlertDialogFooter className="gap-2 sm:gap-0 pt-4 border-t mt-4">
+        <AlertDialogFooter className="shrink-0 gap-2 sm:gap-0 pt-4 border-t mt-2 relative z-50 bg-background">
           <AlertDialogCancel disabled={isProcessing}>
             {signatureSaved ? "Fermer" : "Annuler"}
           </AlertDialogCancel>
           {!signatureSaved && (
-            <AlertDialogAction
+            <Button
               onClick={handleConfirm}
               disabled={!canConfirm || isProcessing}
               className="bg-primary hover:bg-primary/90"
@@ -347,7 +349,7 @@ const LegalConfirmationDialog = ({
               ) : (
                 content.confirmButton
               )}
-            </AlertDialogAction>
+            </Button>
           )}
         </AlertDialogFooter>
       </AlertDialogContent>
