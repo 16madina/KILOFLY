@@ -53,7 +53,7 @@ const getEmailTemplate = (type: string, message: string, subject: string) => {
                           </td>
                           <td style="color: #475569;">|</td>
                           <td style="padding: 0 10px;">
-                            <a href="mailto:support@kiloflyapp.com" style="color: #60a5fa; text-decoration: none; font-size: 12px;">Support</a>
+                            <a href="mailto:kiloflyapp@hotmail.com" style="color: #60a5fa; text-decoration: none; font-size: 12px;">Support</a>
                           </td>
                         </tr>
                       </table>

@@ -103,7 +103,7 @@ const Privacy = () => {
               <h2 className="text-xl font-semibold border-b pb-2">8. Contact</h2>
               <p>
                 Pour toute question concernant cette politique de confidentialité ou vos données personnelles, 
-                contactez-nous à : <strong>legal@kilofly.app</strong>
+                contactez-nous à : <strong>kiloflyapp@hotmail.com</strong>
               </p>
             </section>
           </CardContent>

@@ -166,7 +166,7 @@ const Terms = () => {
               <h2 className="text-xl font-semibold border-b pb-2">10. Contact Légal</h2>
               <p>
                 Pour toute question concernant ces conditions d'utilisation, contactez-nous à : 
-                <strong> legal@kilofly.app</strong>
+                <strong> kiloflyapp@hotmail.com</strong>
               </p>
             </section>
 

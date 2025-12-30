@@ -141,7 +141,7 @@ const handler = async (req: Request): Promise<Response> => {
                     </div>
 
                     <p style="color: #718096; font-size: 13px; line-height: 1.6; margin: 20px 0 0 0;">
-                      Si vous n'avez pas effectué cette action ou si vous avez des questions, contactez-nous immédiatement à <a href="mailto:support@kilofly.com" style="color: #2563eb;">support@kilofly.com</a>.
+                      Si vous n'avez pas effectué cette action ou si vous avez des questions, contactez-nous immédiatement à <a href="mailto:kiloflyapp@hotmail.com" style="color: #2563eb;">kiloflyapp@hotmail.com</a>.
                     </p>
                   </td>
                 </tr>
