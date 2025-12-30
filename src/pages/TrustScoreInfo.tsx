@@ -1,4 +1,4 @@
-import { ChevronLeft, Shield, Star, CheckCircle, Phone, Plane, Clock, TrendingUp } from "lucide-react";
+import { ChevronLeft, Shield, Star, CheckCircle, Phone, Plane, UserPlus, Mail, Gift, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,42 +8,42 @@ const TrustScoreInfo = () => {
   const navigate = useNavigate();
 
   const badges = [
-    { level: "Bronze", color: "from-orange-400 to-orange-600", range: "10-39", icon: "🥉" },
-    { level: "Argent", color: "from-gray-300 to-gray-400", range: "40-59", icon: "🥈" },
-    { level: "Or", color: "from-yellow-400 to-yellow-600", range: "60-79", icon: "⭐" },
-    { level: "Platine", color: "from-purple-500 to-pink-500", range: "80-100", icon: "🏆" },
+    { level: "Bronze", color: "from-orange-400 to-orange-600", range: "15-49", icon: "🥉", reward: "Mise en avant de votre profil" },
+    { level: "Argent", color: "from-gray-300 to-gray-400", range: "50-69", icon: "🥈", reward: "Badge visible sur toutes vos annonces" },
+    { level: "Or", color: "from-yellow-400 to-yellow-600", range: "70-89", icon: "⭐", reward: "Réduction de 5% sur les frais de service" },
+    { level: "Platine", color: "from-purple-500 to-pink-500", range: "90+", icon: "🏆", reward: "Accès prioritaire + Badge exclusif" },
   ];
 
   const criteria = [
     {
+      icon: UserPlus,
+      title: "Inscription",
+      points: "+5 points",
+      description: "Créez votre compte sur KiloFly"
+    },
+    {
+      icon: Mail,
+      title: "Email vérifié",
+      points: "+5 points",
+      description: "Confirmez votre adresse email"
+    },
+    {
       icon: CheckCircle,
-      title: "Vérification d'identité",
-      points: "+30 points",
-      description: "Faites vérifier votre pièce d'identité par notre équipe"
+      title: "Identité vérifiée",
+      points: "+5 points",
+      description: "Faites vérifier votre pièce d'identité"
     },
     {
       icon: Phone,
-      title: "Vérification téléphone",
-      points: "+20 points",
-      description: "Confirmez votre numéro de téléphone avec un code SMS"
+      title: "Téléphone vérifié",
+      points: "+5 points",
+      description: "Confirmez votre numéro de téléphone"
     },
     {
       icon: Plane,
       title: "Voyages complétés",
       points: "+2 points/voyage",
-      description: "Chaque voyage complété augmente votre score de confiance"
-    },
-    {
-      icon: Star,
-      title: "Notes moyennes",
-      points: "Jusqu'à +30 points",
-      description: "Maintenez une excellente note moyenne (5/5 = +30 points)"
-    },
-    {
-      icon: Clock,
-      title: "Taux de réponse",
-      points: "Jusqu'à +20 points",
-      description: "Répondez rapidement aux messages (100% = +20 points)"
+      description: "Chaque voyage complété (voyageur ou expéditeur)"
     }
   ];
 
@@ -76,23 +76,29 @@ const TrustScoreInfo = () => {
 
       {/* Content */}
       <div className="px-4 py-6 space-y-6">
-        {/* Badges Section */}
+        {/* Badges Section with Rewards */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              Niveaux de badges
+              Niveaux de badges & Récompenses
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {badges.map((badge) => (
-              <div key={badge.level} className="flex items-center gap-4">
-                <div className={`bg-gradient-to-r ${badge.color} text-white px-4 py-2 rounded-full flex items-center gap-2 min-w-[140px]`}>
-                  <span className="text-xl">{badge.icon}</span>
-                  <span className="font-semibold">{badge.level}</span>
+              <div key={badge.level} className="space-y-2">
+                <div className="flex items-center gap-4">
+                  <div className={`bg-gradient-to-r ${badge.color} text-white px-4 py-2 rounded-full flex items-center gap-2 min-w-[140px]`}>
+                    <span className="text-xl">{badge.icon}</span>
+                    <span className="font-semibold">{badge.level}</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{badge.range} points</p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{badge.range} points</p>
+                <div className="ml-4 flex items-center gap-2 text-sm text-muted-foreground">
+                  <Gift className="h-4 w-4 text-primary" />
+                  <span>{badge.reward}</span>
                 </div>
               </div>
             ))}
@@ -142,31 +148,45 @@ const TrustScoreInfo = () => {
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between mb-2 text-sm">
-                  <span>Nouveau membre</span>
-                  <span className="font-semibold">0 pts - Pas de badge</span>
+                  <span>Inscription seule</span>
+                  <span className="font-semibold">5 pts - Pas de badge</span>
                 </div>
-                <Progress value={0} className="h-2" />
+                <Progress value={5} className="h-2" />
               </div>
               <div>
                 <div className="flex justify-between mb-2 text-sm">
-                  <span>Première vérification complétée</span>
+                  <span>+ Email vérifié</span>
+                  <span className="font-semibold">10 pts - Pas de badge</span>
+                </div>
+                <Progress value={10} className="h-2" />
+              </div>
+              <div>
+                <div className="flex justify-between mb-2 text-sm">
+                  <span>+ Identité vérifiée</span>
+                  <span className="font-semibold">15 pts - Bronze 🥉</span>
+                </div>
+                <Progress value={15} className="h-2" />
+              </div>
+              <div>
+                <div className="flex justify-between mb-2 text-sm">
+                  <span>+ Téléphone vérifié</span>
                   <span className="font-semibold">20 pts - Bronze 🥉</span>
                 </div>
                 <Progress value={20} className="h-2" />
               </div>
               <div>
                 <div className="flex justify-between mb-2 text-sm">
-                  <span>Identité + Téléphone vérifiés</span>
+                  <span>+ 15 voyages complétés</span>
                   <span className="font-semibold">50 pts - Argent 🥈</span>
                 </div>
                 <Progress value={50} className="h-2" />
               </div>
               <div>
                 <div className="flex justify-between mb-2 text-sm">
-                  <span>+ 5 voyages avec notes parfaites</span>
-                  <span className="font-semibold">80 pts - Platine 🏆</span>
+                  <span>+ 25 voyages de plus</span>
+                  <span className="font-semibold">100 pts - Platine 🏆</span>
                 </div>
-                <Progress value={80} className="h-2" />
+                <Progress value={100} className="h-2" />
               </div>
             </div>
           </CardContent>
@@ -175,10 +195,10 @@ const TrustScoreInfo = () => {
         {/* Call to Action */}
         <Card className="bg-gradient-sky text-primary-foreground">
           <CardContent className="p-6 text-center">
-            <Shield className="h-12 w-12 mx-auto mb-3 opacity-90" />
-            <h3 className="font-bold text-lg mb-2">Augmentez votre score !</h3>
+            <Gift className="h-12 w-12 mx-auto mb-3 opacity-90" />
+            <h3 className="font-bold text-lg mb-2">Débloquez des récompenses !</h3>
             <p className="text-sm opacity-90 mb-4">
-              Un score élevé inspire confiance et augmente vos chances de conclure des transactions
+              Chaque niveau atteint vous offre des avantages exclusifs
             </p>
             <Button 
               variant="secondary" 
