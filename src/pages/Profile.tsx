@@ -305,78 +305,83 @@ const Profile = () => {
           </Card>
         )}
 
-        {/* Profile Avatar with Badge and Edit Option */}
-        <div className="flex justify-center mb-4">
-          <div className="relative">
-            <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
-              <AvatarImage src={profile.avatar_url} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-4xl">
-                {profile.full_name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            {profile.id_verified ? (
-              <>
-                <div className="absolute bottom-0 right-0 bg-green-500 rounded-full p-2 border-4 border-background">
-                  <CheckCircle2 className="h-5 w-5 text-white" />
-                </div>
-                {/* Camera button for verified users */}
-                <label className="absolute bottom-0 left-0 bg-primary rounded-full p-2 border-4 border-background cursor-pointer hover:bg-primary/90 transition-colors">
-                  <Camera className="h-5 w-5 text-primary-foreground" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                    disabled={uploadingAvatar}
+        {/* Profile Header - Large Square Photo on Left */}
+        <div className="flex gap-5">
+          {/* Large Square Avatar */}
+          <div className="flex flex-col items-center">
+            <div className="relative">
+              <div className="w-28 h-28 rounded-xl overflow-hidden border-2 border-border shadow-lg">
+                {profile.avatar_url ? (
+                  <img 
+                    src={profile.avatar_url} 
+                    alt={profile.full_name}
+                    className="w-full h-full object-cover"
                   />
-                </label>
-              </>
+                ) : (
+                  <div className="w-full h-full bg-primary flex items-center justify-center">
+                    <span className="text-primary-foreground text-3xl font-bold">
+                      {profile.full_name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {profile.id_verified && (
+                <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1.5 border-2 border-background">
+                  <CheckCircle2 className="h-4 w-4 text-white" />
+                </div>
+              )}
+              {uploadingAvatar && (
+                <div className="absolute inset-0 bg-background/80 rounded-xl flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              )}
+            </div>
+            
+            {/* Modifier profil button */}
+            {profile.id_verified ? (
+              <label className="mt-3 flex items-center gap-1.5 text-sm text-primary font-medium cursor-pointer hover:underline">
+                <Camera className="h-4 w-4" />
+                <span>Modifier profil</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                  disabled={uploadingAvatar}
+                />
+              </label>
             ) : (
-              <div className="absolute bottom-0 right-0 bg-muted rounded-full p-2 border-4 border-background">
-                <Camera className="h-5 w-5 text-muted-foreground" />
-              </div>
-            )}
-            {uploadingAvatar && (
-              <div className="absolute inset-0 bg-background/80 rounded-full flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
+              <p className="mt-3 text-xs text-muted-foreground text-center max-w-[112px]">
+                📷 Photo modifiable après vérification
+              </p>
             )}
           </div>
-        </div>
-        
-        {/* Photo change info for non-verified users */}
-        {!profile.id_verified && (
-          <p className="text-center text-xs text-muted-foreground mb-2">
-            📷 Changez votre photo après vérification d'identité
-          </p>
-        )}
 
-        {/* User Info */}
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold">{profile.full_name}</h1>
-          <p className="text-sm text-muted-foreground">{user?.email}</p>
-          
-          {/* Trust Score Badge */}
-          <div className="flex justify-center py-2">
-            <button onClick={() => navigate('/trust-score-info')} className="transition-transform hover:scale-105">
+          {/* User Info on Right */}
+          <div className="flex-1 flex flex-col justify-center space-y-2">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold">{profile.full_name}</h1>
+              {profile.id_verified && <VerifiedBadge verified={true} size="sm" />}
+            </div>
+            
+            <p className="text-sm text-muted-foreground">{user?.email}</p>
+            
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="h-4 w-4 flex-shrink-0" />
+              <span>{profile.city}, {profile.country}</span>
+            </div>
+            
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4 flex-shrink-0" />
+              <span>Membre depuis {formatDistanceToNow(new Date(profile.created_at), { addSuffix: false, locale: fr })}</span>
+            </div>
+
+            {/* Trust Score */}
+            <button onClick={() => navigate('/trust-score-info')} className="w-fit transition-transform hover:scale-105 mt-1">
               <TrustScore score={trustScore} />
             </button>
           </div>
-          
-          <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4" />
-            <span>{profile.city}, {profile.country}</span>
-          </div>
-          <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>Membre depuis {formatDistanceToNow(new Date(profile.created_at), { addSuffix: false, locale: fr })}</span>
-          </div>
         </div>
-
-        {/* Current Location Card */}
-        <Card className="p-4 text-center bg-muted/50">
-          <p className="text-sm text-muted-foreground italic">{profile.city}, {profile.country}</p>
-        </Card>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-4 gap-2">
