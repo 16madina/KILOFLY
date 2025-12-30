@@ -19,18 +19,43 @@ interface PaymentMethodSelectorProps {
   currency?: string;
 }
 
-// Wave icon - stylized W
-const WaveIcon = () => (
-  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor">
-    <path d="M3 8l3 8 3-6 3 6 3-8 3 8 3-8" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+// Wave logo - blue wave pattern
+const WaveLogo = () => (
+  <svg viewBox="0 0 40 40" className="h-7 w-7">
+    <circle cx="20" cy="20" r="18" fill="#1DC8F2"/>
+    <path 
+      d="M8 20 Q14 14, 20 20 T32 20" 
+      stroke="white" 
+      strokeWidth="3" 
+      fill="none"
+      strokeLinecap="round"
+    />
+    <path 
+      d="M8 26 Q14 20, 20 26 T32 26" 
+      stroke="white" 
+      strokeWidth="2.5" 
+      fill="none"
+      strokeLinecap="round"
+      opacity="0.7"
+    />
   </svg>
 );
 
-// Orange icon - stylized O
-const OrangeIcon = () => (
-  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor">
-    <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2" fill="none"/>
-    <circle cx="12" cy="12" r="3" fill="currentColor"/>
+// Orange Money logo - orange square with OM
+const OrangeMoneyLogo = () => (
+  <svg viewBox="0 0 40 40" className="h-7 w-7">
+    <rect x="2" y="2" width="36" height="36" rx="8" fill="#FF6600"/>
+    <text 
+      x="20" 
+      y="26" 
+      textAnchor="middle" 
+      fill="white" 
+      fontSize="14" 
+      fontWeight="bold"
+      fontFamily="Arial, sans-serif"
+    >
+      OM
+    </text>
   </svg>
 );
 
@@ -39,22 +64,22 @@ const paymentMethods: PaymentMethodOption[] = [
     id: 'card',
     name: 'Carte bancaire',
     description: 'Visa, Mastercard, Amex',
-    icon: <CreditCard className="h-6 w-6" />,
-    iconBg: 'bg-blue-500/10 text-blue-500',
+    icon: <CreditCard className="h-7 w-7 text-blue-500" />,
+    iconBg: 'bg-blue-500/10',
   },
   {
     id: 'wave_visa',
     name: 'Visa Wave',
     description: 'Carte prépayée Wave',
-    icon: <WaveIcon />,
-    iconBg: 'bg-cyan-500/10 text-cyan-500',
+    icon: <WaveLogo />,
+    iconBg: 'bg-cyan-500/5',
   },
   {
     id: 'orange_visa',
     name: 'Visa Orange',
     description: 'Carte prépayée Orange Money',
-    icon: <OrangeIcon />,
-    iconBg: 'bg-orange-500/10 text-orange-500',
+    icon: <OrangeMoneyLogo />,
+    iconBg: 'bg-orange-500/5',
   },
 ];
 
