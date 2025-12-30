@@ -392,7 +392,7 @@ const Profile = () => {
               </div>
 
               {/* Trust Score */}
-              <button onClick={() => navigate('/trust-score-info')} className="w-fit transition-transform hover:scale-105 mt-1">
+              <button onClick={() => navigate('/my-rewards')} className="w-fit transition-transform hover:scale-105 mt-1">
                 <TrustScore score={trustScore} />
               </button>
             </div>
