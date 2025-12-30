@@ -2,13 +2,15 @@ import { motion } from "framer-motion";
 import { Plane, Package, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import Navbar from "@/components/Navbar";
+import { useHaptics } from "@/hooks/useHaptics";
 
 const PostChoice = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { impact, ImpactStyle } = useHaptics();
 
   const handleChoice = (type: "travel" | "request") => {
+    impact(ImpactStyle.Light);
     if (!user) {
       navigate("/auth");
       return;
@@ -22,104 +24,106 @@ const PostChoice = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      <Navbar />
+    <div className="min-h-screen bg-background pb-24 flex flex-col">
+      {/* Header */}
+      <div className="sticky top-0 z-50 glass-nav">
+        <div className="flex items-center justify-center p-4">
+          <h1 className="text-lg font-semibold">Publier</h1>
+        </div>
+      </div>
       
-      <div className="container mx-auto px-4 pt-24 pb-32">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-12"
+          transition={{ duration: 0.3 }}
+          className="text-center mb-8"
         >
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <h2 className="text-2xl font-bold text-foreground mb-2">
             Que souhaitez-vous faire ?
-          </h1>
-          <p className="text-muted-foreground text-lg max-w-md mx-auto">
-            Choisissez votre rôle pour commencer
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            Choisissez votre rôle
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        {/* Two Cards Side by Side */}
+        <div className="grid grid-cols-2 gap-3 w-full max-w-lg">
           {/* Je voyage - Traveler option */}
           <motion.button
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            whileHover={{ scale: 1.02, y: -4 }}
-            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            whileTap={{ scale: 0.96 }}
             onClick={() => handleChoice("travel")}
-            className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/90 to-primary p-8 text-left shadow-xl hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300"
+            className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-5 text-left shadow-lg active:shadow-md transition-all duration-200 aspect-[3/4]"
           >
             {/* Background decoration */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full blur-2xl transform -translate-x-10 translate-y-10" />
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl transform translate-x-6 -translate-y-6" />
+            <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full blur-xl transform -translate-x-6 translate-y-6" />
             
-            <div className="relative z-10">
-              <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Plane className="w-8 h-8 text-white" />
+            <div className="relative z-10 h-full flex flex-col">
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4">
+                <Plane className="w-6 h-6 text-white" />
               </div>
               
-              <h2 className="text-2xl font-bold text-white mb-3">
+              <h3 className="text-lg font-bold text-white mb-2">
                 Je voyage
-              </h2>
-              <p className="text-white/80 mb-6 leading-relaxed">
-                J'ai de la place dans mes bagages et je souhaite proposer mes kilos disponibles aux expéditeurs.
+              </h3>
+              <p className="text-white/70 text-xs leading-relaxed flex-1">
+                J'ai de la place dans mes bagages
               </p>
               
-              <div className="flex items-center gap-2 text-white font-medium">
-                <span>Publier une annonce</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
+              <div className="flex items-center gap-1.5 text-white text-sm font-medium mt-3">
+                <span>Publier</span>
+                <ArrowRight className="w-4 h-4" />
               </div>
             </div>
           </motion.button>
 
           {/* Je recherche - Sender option */}
           <motion.button
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            whileHover={{ scale: 1.02, y: -4 }}
-            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, delay: 0.15 }}
+            whileTap={{ scale: 0.96 }}
             onClick={() => handleChoice("request")}
-            className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-secondary/90 to-secondary border border-border/50 p-8 text-left shadow-xl hover:shadow-2xl transition-all duration-300"
+            className="group relative overflow-hidden rounded-2xl glass-card border border-border/50 p-5 text-left shadow-lg active:shadow-md transition-all duration-200 aspect-[3/4]"
           >
             {/* Background decoration */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl transform -translate-x-10 translate-y-10" />
+            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl transform translate-x-6 -translate-y-6" />
+            <div className="absolute bottom-0 left-0 w-20 h-20 bg-accent/10 rounded-full blur-xl transform -translate-x-6 translate-y-6" />
             
-            <div className="relative z-10">
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 backdrop-blur-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Package className="w-8 h-8 text-primary" />
+            <div className="relative z-10 h-full flex flex-col">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 backdrop-blur-sm flex items-center justify-center mb-4">
+                <Package className="w-6 h-6 text-primary" />
               </div>
               
-              <h2 className="text-2xl font-bold text-foreground mb-3">
+              <h3 className="text-lg font-bold text-foreground mb-2">
                 Je recherche
-              </h2>
-              <p className="text-muted-foreground mb-6 leading-relaxed">
-                J'ai un colis à envoyer et je cherche un voyageur pour le transporter vers ma destination.
+              </h3>
+              <p className="text-muted-foreground text-xs leading-relaxed flex-1">
+                J'ai un colis à envoyer
               </p>
               
-              <div className="flex items-center gap-2 text-primary font-medium">
-                <span>Poster une demande</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
+              <div className="flex items-center gap-1.5 text-primary text-sm font-medium mt-3">
+                <span>Demander</span>
+                <ArrowRight className="w-4 h-4" />
               </div>
             </div>
           </motion.button>
         </div>
 
         {/* Info section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-12 text-center"
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+          className="mt-8 text-xs text-muted-foreground text-center max-w-xs px-4"
         >
-          <p className="text-sm text-muted-foreground max-w-lg mx-auto">
-            Vos annonces seront visibles sur la page d'accueil dans l'onglet correspondant.
-            Les voyageurs peuvent répondre aux demandes et vice-versa.
-          </p>
-        </motion.div>
+          Vos publications apparaîtront dans l'onglet correspondant sur la page d'accueil
+        </motion.p>
       </div>
     </div>
   );
