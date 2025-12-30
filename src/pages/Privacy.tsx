@@ -22,96 +22,90 @@ const Privacy = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl">Politique de Confidentialité</CardTitle>
-            <p className="text-muted-foreground">Dernière mise à jour: {new Date().toLocaleDateString('fr-FR')}</p>
+            <p className="text-muted-foreground">Conformité internationale — RGPD, LPRPDE et lois locales applicables</p>
           </CardHeader>
           
-          <CardContent className="prose prose-sm max-w-none dark:prose-invert">
-            <h2>1. Introduction</h2>
-            <p>
-              Chez KiloFly, nous nous engageons à protéger votre vie privée et vos données personnelles. 
-              Cette politique de confidentialité explique comment nous collectons, utilisons et protégeons 
-              vos informations lorsque vous utilisez notre plateforme de partage de capacité de bagages.
-            </p>
+          <CardContent className="prose prose-sm max-w-none dark:prose-invert space-y-6">
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">1. Données Collectées</h2>
+              <p>KiloFly collecte les données suivantes dans le cadre de la fourniture du service :</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li><strong>Données d'identification</strong> : nom, email, numéro de téléphone</li>
+                <li><strong>Données de compte et d'utilisation</strong> : informations de profil, historique d'activité</li>
+                <li><strong>Données de paiement</strong> : traitées par des prestataires sécurisés (Stripe)</li>
+                <li><strong>Données de vérification</strong> : document d'identité, selfie (si vérification activée)</li>
+                <li><strong>Données techniques et de sécurité</strong> : adresse IP, données de connexion</li>
+              </ul>
+            </section>
 
-            <h2>2. Données Collectées</h2>
-            <p>Nous collectons les informations suivantes :</p>
-            <ul>
-              <li><strong>Informations d'identification</strong> : nom complet, adresse e-mail, numéro de téléphone</li>
-              <li><strong>Localisation</strong> : pays et ville de résidence</li>
-              <li><strong>Photo de profil</strong> : pour identifier les utilisateurs</li>
-              <li><strong>Document d'identité</strong> : pour vérifier votre identité (carte d'identité ou passeport)</li>
-              <li><strong>Informations de voyage</strong> : dates, destinations, capacité disponible</li>
-              <li><strong>Messages</strong> : communications entre utilisateurs sur la plateforme</li>
-            </ul>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">2. Finalités du Traitement</h2>
+              <p>Vos données sont utilisées pour :</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li>Fourniture du service de mise en relation</li>
+                <li>Sécurité et prévention de la fraude</li>
+                <li>Gestion des transactions et paiements</li>
+                <li>Amélioration continue de la plateforme</li>
+                <li>Respect des obligations légales</li>
+              </ul>
+            </section>
 
-            <h2>3. Utilisation des Données</h2>
-            <p>Nous utilisons vos données pour :</p>
-            <ul>
-              <li>Créer et gérer votre compte utilisateur</li>
-              <li>Vérifier votre identité pour la sécurité de tous</li>
-              <li>Faciliter les transactions entre voyageurs et expéditeurs</li>
-              <li>Communiquer avec vous concernant votre compte et les services</li>
-              <li>Améliorer nos services et l'expérience utilisateur</li>
-              <li>Prévenir la fraude et assurer la sécurité de la plateforme</li>
-            </ul>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">3. Conformité Internationale</h2>
+              <p>
+                KiloFly applique des standards élevés de protection des données inspirés des principes du 
+                <strong> RGPD européen</strong>, de la <strong>LPRPDE canadienne</strong> et des lois locales 
+                applicables, quel que soit le pays de résidence de l'utilisateur.
+              </p>
+            </section>
 
-            <h2>4. Partage des Données</h2>
-            <p>
-              Vos données personnelles ne sont <strong>jamais vendues</strong> à des tiers. 
-              Nous partageons uniquement les informations nécessaires :
-            </p>
-            <ul>
-              <li>Avec les autres utilisateurs : nom, photo de profil, ville pour les annonces</li>
-              <li>Avec nos administrateurs : pour la vérification d'identité uniquement</li>
-              <li>Si requis par la loi : en réponse à des demandes légales valides</li>
-            </ul>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">4. Vos Droits (Monde Entier)</h2>
+              <p>Vous disposez des droits suivants concernant vos données personnelles :</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li><strong>Droit d'accès</strong> : consulter vos données personnelles</li>
+                <li><strong>Droit de rectification</strong> : corriger vos informations</li>
+                <li><strong>Droit à l'effacement</strong> : supprimer votre compte et vos données</li>
+                <li><strong>Droit d'opposition</strong> : vous opposer au traitement de vos données</li>
+                <li><strong>Droit à la portabilité</strong> : récupérer vos données dans un format structuré</li>
+              </ul>
+            </section>
 
-            <h2>5. Sécurité des Données</h2>
-            <p>
-              Nous mettons en œuvre des mesures de sécurité rigoureuses pour protéger vos données :
-            </p>
-            <ul>
-              <li>Chiffrement des données sensibles</li>
-              <li>Stockage sécurisé des documents d'identité</li>
-              <li>Accès limité aux données personnelles</li>
-              <li>Surveillance et audits de sécurité réguliers</li>
-              <li>Authentification sécurisée des comptes</li>
-            </ul>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">5. Sécurité et Conservation</h2>
+              <ul className="list-disc pl-6 space-y-1">
+                <li>Mesures techniques et organisationnelles raisonnables</li>
+                <li>Accès restreint aux données (personnel autorisé uniquement)</li>
+                <li>Conservation limitée au strict nécessaire</li>
+                <li>Chiffrement des données sensibles</li>
+                <li>Stockage sécurisé des documents d'identité</li>
+              </ul>
+            </section>
 
-            <h2>6. Vos Droits</h2>
-            <p>Conformément au RGPD, vous disposez des droits suivants :</p>
-            <ul>
-              <li><strong>Droit d'accès</strong> : consulter vos données personnelles</li>
-              <li><strong>Droit de rectification</strong> : corriger vos informations</li>
-              <li><strong>Droit à l'effacement</strong> : supprimer votre compte et vos données</li>
-              <li><strong>Droit d'opposition</strong> : vous opposer au traitement de vos données</li>
-              <li><strong>Droit à la portabilité</strong> : récupérer vos données dans un format structuré</li>
-            </ul>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">6. Coopération avec les Autorités</h2>
+              <p>
+                KiloFly peut divulguer certaines données si la loi l'exige ou pour protéger 
+                la plateforme, les utilisateurs ou le public.
+              </p>
+            </section>
 
-            <h2>7. Conservation des Données</h2>
-            <p>
-              Nous conservons vos données aussi longtemps que votre compte est actif. 
-              Après la suppression de votre compte, vos données sont supprimées dans un délai de 30 jours, 
-              sauf obligation légale de conservation.
-            </p>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">7. Cookies</h2>
+              <p>
+                Notre application utilise des cookies essentiels pour le fonctionnement de la plateforme 
+                (authentification, préférences). Aucun cookie de suivi publicitaire n'est utilisé sans 
+                votre consentement explicite.
+              </p>
+            </section>
 
-            <h2>8. Cookies</h2>
-            <p>
-              Notre site utilise des cookies essentiels pour le fonctionnement de la plateforme 
-              (authentification, préférences). Aucun cookie de suivi publicitaire n'est utilisé.
-            </p>
-
-            <h2>9. Modifications de la Politique</h2>
-            <p>
-              Nous pouvons modifier cette politique de confidentialité. Les modifications importantes 
-              vous seront notifiées par e-mail ou via la plateforme.
-            </p>
-
-            <h2>10. Contact</h2>
-            <p>
-              Pour toute question concernant cette politique de confidentialité ou vos données personnelles, 
-              contactez-nous à : <strong>privacy@kilofly.com</strong>
-            </p>
+            <section>
+              <h2 className="text-xl font-semibold border-b pb-2">8. Contact</h2>
+              <p>
+                Pour toute question concernant cette politique de confidentialité ou vos données personnelles, 
+                contactez-nous à : <strong>legal@kilofly.app</strong>
+              </p>
+            </section>
           </CardContent>
         </Card>
       </div>
