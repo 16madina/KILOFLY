@@ -33,7 +33,8 @@ import {
   Lock,
   Globe,
   Palette,
-  LogOut
+  LogOut,
+  Info
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -137,14 +138,14 @@ const Profile = () => {
       followers: 0
     });
 
-    // Calculate trust score
+    // Calculate trust score with new system
     let calculatedScore = 0;
-    if (data.id_verified) calculatedScore += 30;
-    if (data.phone_verified) calculatedScore += 20;
-    calculatedScore += (data.completed_trips || 0) * 2;
-    calculatedScore += (avgRating / 5) * 30;
-    calculatedScore += ((data.response_rate || 0) / 100) * 20;
-    setTrustScore(Math.min(100, Math.round(calculatedScore)));
+    calculatedScore += 5; // Inscription (signup)
+    if (user?.email_confirmed_at) calculatedScore += 5; // Email verified
+    if (data.id_verified) calculatedScore += 5; // ID verified
+    if (data.phone_verified) calculatedScore += 5; // Phone verified
+    calculatedScore += (data.completed_trips || 0) * 2; // 2pts per completed trip
+    setTrustScore(calculatedScore);
 
     setLoading(false);
   };
@@ -367,7 +368,16 @@ const Profile = () => {
 
             {/* User Info on Right */}
             <div className="flex-1 flex flex-col justify-center space-y-2">
-              <h1 className="text-xl font-bold">{profile.full_name}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold">{profile.full_name}</h1>
+                <button 
+                  onClick={() => navigate('/trust-score-info')}
+                  className="p-1 rounded-full hover:bg-muted transition-colors"
+                  title="Comprendre le score de confiance"
+                >
+                  <Info className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                </button>
+              </div>
               
               <p className="text-sm text-muted-foreground">{user?.email}</p>
               

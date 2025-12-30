@@ -5,17 +5,18 @@ interface TrustScoreLevel {
   level: string;
   minScore: number;
   icon: string;
+  reward: string;
 }
 
 const trustLevels: TrustScoreLevel[] = [
-  { level: "Platine", minScore: 80, icon: "🏆" },
-  { level: "Or", minScore: 60, icon: "⭐" },
-  { level: "Argent", minScore: 40, icon: "🥈" },
-  { level: "Bronze", minScore: 0, icon: "🥉" },
+  { level: "Platine", minScore: 90, icon: "🏆", reward: "Accès prioritaire aux nouvelles fonctionnalités + Badge exclusif" },
+  { level: "Or", minScore: 70, icon: "⭐", reward: "Réduction de 5% sur les frais de service" },
+  { level: "Argent", minScore: 50, icon: "🥈", reward: "Badge visible sur toutes vos annonces" },
+  { level: "Bronze", minScore: 15, icon: "🥉", reward: "Mise en avant de votre profil" },
 ];
 
-const getTrustLevel = (score: number): TrustScoreLevel => {
-  return trustLevels.find(level => score >= level.minScore) || trustLevels[trustLevels.length - 1];
+const getTrustLevel = (score: number): TrustScoreLevel | null => {
+  return trustLevels.find(level => score >= level.minScore) || null;
 };
 
 export const useTrustScoreNotifications = (currentScore: number) => {
@@ -25,7 +26,8 @@ export const useTrustScoreNotifications = (currentScore: number) => {
   useEffect(() => {
     if (previousScore.current === null) {
       previousScore.current = currentScore;
-      previousLevel.current = getTrustLevel(currentScore).level;
+      const level = getTrustLevel(currentScore);
+      previousLevel.current = level?.level || null;
       return;
     }
 
@@ -33,18 +35,18 @@ export const useTrustScoreNotifications = (currentScore: number) => {
     const currentLevel = getTrustLevel(currentScore);
     const oldLevel = previousLevel.current;
 
-    // Notification de changement de niveau
-    if (oldLevel !== currentLevel.level && scoreDiff > 0) {
+    // Notification de changement de niveau avec récompense
+    if (currentLevel && oldLevel !== currentLevel.level && scoreDiff > 0) {
       toast.success(
-        `${currentLevel.icon} Nouveau niveau atteint !`,
+        `${currentLevel.icon} Félicitations ! Niveau ${currentLevel.level} atteint !`,
         {
-          description: `Vous êtes maintenant au niveau ${currentLevel.level} avec ${currentScore} points de confiance.`,
-          duration: 5000,
+          description: `🎁 Récompense débloquée : ${currentLevel.reward}`,
+          duration: 6000,
         }
       );
     }
     // Notification de gain de points (si pas de changement de niveau)
-    else if (scoreDiff > 0 && scoreDiff >= 5) {
+    else if (scoreDiff > 0 && scoreDiff >= 2) {
       toast.success(
         "✨ Points de confiance gagnés !",
         {
@@ -54,7 +56,7 @@ export const useTrustScoreNotifications = (currentScore: number) => {
       );
     }
     // Notification de perte de points
-    else if (scoreDiff < 0 && Math.abs(scoreDiff) >= 5) {
+    else if (scoreDiff < 0 && Math.abs(scoreDiff) >= 2) {
       toast.error(
         "Points de confiance perdus",
         {
@@ -65,6 +67,6 @@ export const useTrustScoreNotifications = (currentScore: number) => {
     }
 
     previousScore.current = currentScore;
-    previousLevel.current = currentLevel.level;
+    previousLevel.current = currentLevel?.level || null;
   }, [currentScore]);
 };

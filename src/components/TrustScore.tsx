@@ -1,5 +1,4 @@
 import { Shield } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
 interface TrustScoreProps {
   score: number;
@@ -8,10 +7,10 @@ interface TrustScoreProps {
 
 export const TrustScore = ({ score, className }: TrustScoreProps) => {
   const getTrustLevel = (score: number) => {
-    if (score >= 80) return { level: "Platine", color: "bg-gradient-to-r from-purple-500 to-pink-500", icon: "🏆" };
-    if (score >= 60) return { level: "Or", color: "bg-gradient-to-r from-yellow-400 to-yellow-600", icon: "⭐" };
-    if (score >= 40) return { level: "Argent", color: "bg-gradient-to-r from-gray-300 to-gray-400", icon: "🥈" };
-    if (score >= 10) return { level: "Bronze", color: "bg-gradient-to-r from-orange-400 to-orange-600", icon: "🥉" };
+    if (score >= 90) return { level: "Platine", color: "bg-gradient-to-r from-purple-500 to-pink-500", icon: "🏆" };
+    if (score >= 70) return { level: "Or", color: "bg-gradient-to-r from-yellow-400 to-yellow-600", icon: "⭐" };
+    if (score >= 50) return { level: "Argent", color: "bg-gradient-to-r from-gray-300 to-gray-400", icon: "🥈" };
+    if (score >= 15) return { level: "Bronze", color: "bg-gradient-to-r from-orange-400 to-orange-600", icon: "🥉" };
     return null;
   };
 
