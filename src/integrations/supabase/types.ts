@@ -266,6 +266,60 @@ export type Database = {
           },
         ]
       }
+      legal_signatures: {
+        Row: {
+          conditions_accepted: Json
+          created_at: string
+          id: string
+          ip_address: string | null
+          reservation_id: string | null
+          signature_data: string
+          signature_type: string
+          signed_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          conditions_accepted?: Json
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          reservation_id?: string | null
+          signature_data: string
+          signature_type: string
+          signed_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          conditions_accepted?: Json
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          reservation_id?: string | null
+          signature_data?: string
+          signature_type?: string
+          signed_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_signatures_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_signatures_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
           allowed_items: string[] | null

@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils";
 interface SignaturePadProps {
   onSignatureChange: (hasSignature: boolean, signatureData: string | null) => void;
   className?: string;
+  disabled?: boolean;
 }
 
-const SignaturePad = ({ onSignatureChange, className }: SignaturePadProps) => {
+const SignaturePad = ({ onSignatureChange, className, disabled = false }: SignaturePadProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
@@ -36,11 +37,12 @@ const SignaturePad = ({ onSignatureChange, className }: SignaturePadProps) => {
   }, []);
 
   const startDrawing = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    if (disabled) return;
     e.preventDefault();
     const coords = getCoordinates(e);
     lastPointRef.current = coords;
     setIsDrawing(true);
-  }, [getCoordinates]);
+  }, [getCoordinates, disabled]);
 
   const draw = useCallback((e: React.TouchEvent | React.MouseEvent) => {
     if (!isDrawing) return;
