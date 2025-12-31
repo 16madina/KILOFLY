@@ -41,54 +41,49 @@ const ReservationChat = ({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (reservationId) {
-      fetchMessages();
-      setupRealtimeSubscription();
-    }
-  }, [reservationId]);
+    if (!reservationId) return;
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    let cancelled = false;
 
-  const scrollToBottom = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  };
+    const load = async () => {
+      setLoading(true);
+      setMessages([]);
 
-  const fetchMessages = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("reservation_messages")
-        .select(`
-          *,
-          sender:profiles!sender_id(full_name, avatar_url)
-        `)
-        .eq("reservation_id", reservationId)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-      setMessages((data as any) || []);
-
-      // Mark unread messages as read
-      if (user) {
-        await supabase
+      try {
+        const { data, error } = await supabase
           .from("reservation_messages")
-          .update({ read: true })
+          .select(
+            `
+            *,
+            sender:profiles!sender_id(full_name, avatar_url)
+          `
+          )
           .eq("reservation_id", reservationId)
-          .eq("read", false)
-          .neq("sender_id", user.id);
-      }
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-      toast.error("Erreur lors du chargement des messages");
-    } finally {
-      setLoading(false);
-    }
-  };
+          .order("created_at", { ascending: true });
 
-  const setupRealtimeSubscription = () => {
+        if (error) throw error;
+        if (!cancelled) setMessages((data as any) || []);
+
+        // Mark unread messages as read
+        if (user) {
+          await supabase
+            .from("reservation_messages")
+            .update({ read: true })
+            .eq("reservation_id", reservationId)
+            .eq("read", false)
+            .neq("sender_id", user.id);
+        }
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+        toast.error("Erreur lors du chargement des messages");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void load();
+
+    // IMPORTANT: clean up the realtime subscription when switching reservationId
     const channel = supabase
       .channel(`reservation-chat-${reservationId}`)
       .on(
@@ -100,17 +95,18 @@ const ReservationChat = ({
           filter: `reservation_id=eq.${reservationId}`,
         },
         async (payload) => {
-          // Fetch the full message with sender info
           const { data } = await supabase
             .from("reservation_messages")
-            .select(`
+            .select(
+              `
               *,
               sender:profiles!sender_id(full_name, avatar_url)
-            `)
+            `
+            )
             .eq("id", payload.new.id)
             .single();
 
-          if (data) {
+          if (!cancelled && data) {
             setMessages((prev) => [...prev, data as any]);
           }
         }
@@ -118,9 +114,20 @@ const ReservationChat = ({
       .subscribe();
 
     return () => {
+      cancelled = true;
       supabase.removeChannel(channel);
     };
+  }, [reservationId, user?.id]);
+
+  const scrollToBottom = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
   };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
