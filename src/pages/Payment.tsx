@@ -48,7 +48,7 @@ const Payment = () => {
   useEffect(() => {
     if (!reservationId) {
       toast.error("Réservation introuvable");
-      navigate('/my-reservations');
+      navigate('/profile?tab=rdv');
       return;
     }
 
@@ -86,7 +86,7 @@ const Payment = () => {
 
       if (!transaction?.stripe_payment_intent_id) {
         toast.error("Paiement introuvable");
-        navigate('/my-reservations');
+        navigate('/profile?tab=rdv');
         return;
       }
 
@@ -101,7 +101,7 @@ const Payment = () => {
     } catch (error) {
       console.error('Error fetching payment details:', error);
       toast.error("Erreur lors du chargement du paiement");
-      navigate('/my-reservations');
+      navigate('/profile?tab=rdv');
     } finally {
       setLoading(false);
     }

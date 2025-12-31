@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, MapPin, Calendar, Eye } from "lucide-react";
+import { Package, MapPin, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -145,29 +145,11 @@ export function MyReservationsEmbed() {
             
             <div className="flex flex-col items-end gap-2">
               {getStatusBadge(res.status)}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`/my-reservations`)}
-                className="h-8 text-xs"
-              >
-                <Eye className="h-3 w-3 mr-1" />
-                Détails
-              </Button>
             </div>
           </div>
         </Card>
       ))}
       
-      {reservations.length >= 10 && (
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => navigate('/my-reservations?type=buyer')}
-        >
-          Voir toutes mes réservations
-        </Button>
-      )}
     </div>
   );
 }

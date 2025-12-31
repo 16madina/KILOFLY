@@ -277,7 +277,7 @@ const PaymentSuccess = () => {
           <Button
             className="w-full"
             size="lg"
-            onClick={() => navigate("/my-reservations")}
+            onClick={() => navigate("/profile?tab=rdv")}
           >
             Voir mes réservations
           </Button>

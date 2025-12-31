@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plane, MapPin, Calendar, Eye, User } from "lucide-react";
+import { Plane, MapPin, Calendar, User } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -152,29 +152,11 @@ export function MyTripsReservationsEmbed() {
             
             <div className="flex flex-col items-end gap-2">
               {getStatusBadge(res.status)}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`/my-reservations`)}
-                className="h-8 text-xs"
-              >
-                <Eye className="h-3 w-3 mr-1" />
-                Gérer
-              </Button>
             </div>
           </div>
         </Card>
       ))}
       
-      {reservations.length >= 10 && (
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => navigate('/my-reservations?type=seller')}
-        >
-          Voir toutes les demandes
-        </Button>
-      )}
     </div>
   );
 }

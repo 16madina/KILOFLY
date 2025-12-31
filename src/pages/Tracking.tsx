@@ -319,7 +319,7 @@ const Tracking = () => {
                             </p>
                           )}
                           <button
-                            onClick={() => navigate("/my-reservations")}
+                            onClick={() => navigate("/profile?tab=rdv")}
                             className="flex items-center gap-1 text-xs text-primary hover:underline ml-auto"
                           >
                             Voir détails
