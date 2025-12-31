@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronLeft, MapPin, Calendar, Package, Trash2, Edit, Archive, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { ChevronLeft, MapPin, Calendar, Package, Trash2, Edit, Archive, CheckCircle, Clock, AlertCircle, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { format, addDays, isPast, isAfter } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -351,13 +351,24 @@ const MyListings = () => {
                           <span className="text-lg font-bold text-muted-foreground">
                             {listing.price_per_kg}€/kg
                           </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => deleteListing(listing.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => navigate(`/post-listing?edit=${listing.id}&reactivate=true`)}
+                              className="gap-1"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                              Réactiver
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => deleteListing(listing.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
