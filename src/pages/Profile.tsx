@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plane, Search } from "lucide-react";
+import { Plane, Search, Bookmark } from "lucide-react";
 import { MyListingsEmbed } from "@/components/profile/MyListingsEmbed";
 import { MyTransportRequestsEmbed } from "@/components/profile/MyTransportRequestsEmbed";
+import { MyReservationsEmbed } from "@/components/profile/MyReservationsEmbed";
+import { MyTripsReservationsEmbed } from "@/components/profile/MyTripsReservationsEmbed";
+import { MyTransactionsEmbed } from "@/components/profile/MyTransactionsEmbed";
 import { TrustScore } from "@/components/TrustScore";
 import { 
   ChevronLeft,
@@ -515,131 +518,43 @@ const Profile = () => {
 
           {/* Tab: Mes rendez-vous / réservations */}
           <TabsContent value="reservations" className="mt-4">
-            <Tabs defaultValue="voyages-rdv" className="w-full">
+            <Tabs defaultValue="mes-reservations" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-4 h-10">
-                <TabsTrigger value="voyages-rdv" className="text-xs gap-1.5">
-                  <Plane className="h-3.5 w-3.5" />
-                  Mes voyages
+                <TabsTrigger value="mes-reservations" className="text-xs gap-1.5">
+                  <Bookmark className="h-3.5 w-3.5" />
+                  Mes réservations
                 </TabsTrigger>
-                <TabsTrigger value="recherches-rdv" className="text-xs gap-1.5">
-                  <Search className="h-3.5 w-3.5" />
-                  Mes recherches
+                <TabsTrigger value="mes-trajets" className="text-xs gap-1.5">
+                  <Plane className="h-3.5 w-3.5" />
+                  Mes trajets
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="voyages-rdv" className="space-y-2">
-                <Link to="/my-reservations?type=seller">
-                  <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center">
-                        <CalendarCheck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                      </div>
-                      <div>
-                        <span className="font-medium">RDV sur mes voyages</span>
-                        <p className="text-xs text-muted-foreground">Demandes reçues pour vos trajets</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </Card>
-                </Link>
-                
-                <Link to="/route-alerts">
-                  <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
-                        <Bell className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <div>
-                        <span className="font-medium">Alertes de trajet</span>
-                        <p className="text-xs text-muted-foreground">Notifications sur vos routes favorites</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </Card>
-                </Link>
+              <TabsContent value="mes-reservations">
+                <MyReservationsEmbed />
               </TabsContent>
               
-              <TabsContent value="recherches-rdv" className="space-y-2">
-                <Link to="/my-reservations?type=buyer">
-                  <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
-                        <CalendarCheck className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <div>
-                        <span className="font-medium">RDV sur mes recherches</span>
-                        <p className="text-xs text-muted-foreground">Vos réservations chez les voyageurs</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </Card>
-                </Link>
+              <TabsContent value="mes-trajets">
+                <MyTripsReservationsEmbed />
               </TabsContent>
             </Tabs>
           </TabsContent>
 
           {/* Tab: Mes transactions */}
-          <TabsContent value="transactions" className="mt-4">
-            <Tabs defaultValue="voyages-trans" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4 h-10">
-                <TabsTrigger value="voyages-trans" className="text-xs gap-1.5">
-                  <Plane className="h-3.5 w-3.5" />
-                  Mes voyages
-                </TabsTrigger>
-                <TabsTrigger value="recherches-trans" className="text-xs gap-1.5">
-                  <Search className="h-3.5 w-3.5" />
-                  Mes recherches
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="voyages-trans" className="space-y-2">
-                <Link to="/user-transactions?type=seller">
-                  <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                        <Receipt className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      </div>
-                      <div>
-                        <span className="font-medium">Revenus (voyageur)</span>
-                        <p className="text-xs text-muted-foreground">Paiements reçus pour vos transports</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </Card>
-                </Link>
-              </TabsContent>
-              
-              <TabsContent value="recherches-trans" className="space-y-2">
-                <Link to="/user-transactions?type=buyer">
-                  <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
-                        <Receipt className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <div>
-                        <span className="font-medium">Dépenses (expéditeur)</span>
-                        <p className="text-xs text-muted-foreground">Paiements effectués pour vos colis</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </Card>
-                </Link>
-              </TabsContent>
-            </Tabs>
+          <TabsContent value="transactions" className="mt-4 space-y-4">
+            <MyTransactionsEmbed />
             
-            <div className="mt-4">
-              <Link to="/currency-settings">
-                <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center">
-                      <Wallet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <span className="font-medium">Devise préférée</span>
+            <Link to="/currency-settings">
+              <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center">
+                    <Wallet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </Card>
-              </Link>
-            </div>
+                  <span className="font-medium">Devise préférée</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </Card>
+            </Link>
           </TabsContent>
 
           {/* Tab: Paramètres */}
