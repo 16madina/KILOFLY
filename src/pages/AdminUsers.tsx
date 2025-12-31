@@ -427,95 +427,99 @@ const AdminUsers = () => {
             )}
 
             {/* Users List */}
-            <div className="grid gap-4">
+            <div className="grid gap-3">
               {filteredUsers.map((userProfile) => (
-                <Card key={userProfile.id}>
-                  <CardContent className="py-6">
-                    <div className="flex items-center gap-4">
+                <Card key={userProfile.id} className="overflow-hidden">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-3">
                       <Checkbox
                         checked={selectedUsers.has(userProfile.id)}
                         onCheckedChange={() => toggleUserSelection(userProfile.id)}
+                        className="shrink-0"
                       />
-                      <Avatar className="h-16 w-16">
+                      <Avatar className="h-10 w-10 shrink-0">
                         <AvatarImage src={userProfile.avatar_url} />
-                        <AvatarFallback className="bg-gradient-sky text-primary-foreground">
+                        <AvatarFallback className="bg-gradient-sky text-primary-foreground text-sm">
                           {userProfile.full_name.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-lg">{userProfile.full_name}</h3>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <h3 className="font-medium text-sm truncate">{userProfile.full_name}</h3>
                           {userProfile.id_verified && (
-                            <CheckCircle className="h-5 w-5 text-green-500" />
+                            <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
                           )}
                         </div>
-                        <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                        <div className="flex flex-col gap-0.5 text-xs text-muted-foreground mt-0.5">
+                          {userProfile.email && (
+                            <div className="flex items-center gap-1 truncate">
+                              <Mail className="h-3 w-3 shrink-0" />
+                              <span className="truncate">{userProfile.email}</span>
+                            </div>
+                          )}
                           <div className="flex items-center gap-1">
-                            <MapPin className="h-4 w-4" />
-                            {userProfile.city}, {userProfile.country}
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{userProfile.city}, {userProfile.country}</span>
                           </div>
                           <div className="flex items-center gap-1">
-                            <Phone className="h-4 w-4" />
+                            <Phone className="h-3 w-3 shrink-0" />
                             {userProfile.phone}
                           </div>
                         </div>
-                        <div className="flex gap-2 mt-2">
-                          {userProfile.id_verified && (
-                            <Badge variant="outline" className="text-green-600 border-green-600">
-                              Identité vérifiée
-                            </Badge>
-                          )}
-                          {userProfile.phone_verified && (
-                            <Badge variant="outline" className="text-blue-600 border-blue-600">
-                              Téléphone vérifié
-                            </Badge>
-                          )}
-                        </div>
+                        {userProfile.id_verified && (
+                          <Badge variant="outline" className="text-green-600 border-green-600 text-[10px] px-1.5 py-0 mt-1">
+                            Identité vérifiée
+                          </Badge>
+                        )}
                       </div>
 
-                      <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-1.5 shrink-0">
                         <Button
                           size="sm"
                           variant="outline"
+                          className="h-7 text-xs px-2"
                           onClick={() => {
                             setSelectedUser(userProfile);
                             setMessageType('email');
                             setMessageDialog(true);
                           }}
                         >
-                          <Mail className="h-4 w-4 mr-2" />
+                          <Mail className="h-3 w-3 mr-1" />
                           Email
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
+                          className="h-7 text-xs px-2"
                           onClick={() => {
                             setSelectedUser(userProfile);
                             setMessageType('sms');
                             setMessageDialog(true);
                           }}
                         >
-                          <MessageSquare className="h-4 w-4 mr-2" />
+                          <MessageSquare className="h-3 w-3 mr-1" />
                           SMS
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
+                          className="h-7 text-xs px-2"
                           onClick={() => handleWarnUser(userProfile.id)}
                         >
-                          <AlertTriangle className="h-4 w-4 mr-2" />
+                          <AlertTriangle className="h-3 w-3 mr-1" />
                           Avertir
                         </Button>
                         <Button
                           size="sm"
                           variant="destructive"
+                          className="h-7 text-xs px-2"
                           onClick={() => {
                             setSelectedUser(userProfile);
                             setBanDialog(true);
                           }}
                         >
-                          <Ban className="h-4 w-4 mr-2" />
+                          <Ban className="h-3 w-3 mr-1" />
                           Bannir
                         </Button>
                       </div>
