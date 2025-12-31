@@ -75,17 +75,35 @@ export function MyReservationsEmbed() {
     
     setProcessingId(selectedReservation.id);
     
-    const { error } = await supabase
-      .from('reservations')
-      .update({ status: 'approved' })
-      .eq('id', selectedReservation.id);
-    
-    if (error) {
+    try {
+      // 1. Update reservation status to approved
+      const { error: updateError } = await supabase
+        .from('reservations')
+        .update({ status: 'approved' })
+        .eq('id', selectedReservation.id);
+      
+      if (updateError) {
+        throw updateError;
+      }
+
+      // 2. Call process-stripe-payment to create Payment Intent and transaction
+      const { data, error: paymentError } = await supabase.functions.invoke('process-stripe-payment', {
+        body: { reservationId: selectedReservation.id },
+      });
+
+      if (paymentError) {
+        console.error('Error creating payment intent:', paymentError);
+        // Don't fail the approval, just notify
+        toast.warning("Réservation approuvée, mais erreur lors de la préparation du paiement");
+      } else {
+        console.log('Payment intent created:', data);
+        toast.success("Réservation approuvée ! L'acheteur peut maintenant payer.");
+      }
+
+      fetchReservations();
+    } catch (error) {
       toast.error("Erreur lors de l'approbation");
       console.error(error);
-    } else {
-      toast.success("Réservation approuvée !");
-      fetchReservations();
     }
     
     setProcessingId(null);

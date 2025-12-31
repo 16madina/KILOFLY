@@ -73,7 +73,7 @@ const Payment = () => {
 
       setReservationDetails(reservation as ReservationDetails);
 
-      // Get transaction with client secret
+      // Get transaction with client secret - use maybeSingle to avoid error if not found
       const { data: transaction, error: transactionError } = await supabase
         .from('transactions')
         .select('stripe_payment_intent_id')
@@ -81,19 +81,35 @@ const Payment = () => {
         .eq('buyer_id', reservation.buyer_id)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (transactionError) throw transactionError;
 
-      if (!transaction?.stripe_payment_intent_id) {
-        toast.error("Paiement introuvable");
-        navigate('/profile?tab=rdv');
+      let paymentIntentId = transaction?.stripe_payment_intent_id;
+
+      // If no transaction exists, create one by calling process-stripe-payment
+      if (!paymentIntentId) {
+        console.log('No transaction found, creating payment intent...');
+        const { data: paymentData, error: paymentError } = await supabase.functions.invoke('process-stripe-payment', {
+          body: { reservationId },
+        });
+
+        if (paymentError) {
+          console.error('Error creating payment intent:', paymentError);
+          toast.error("Erreur lors de la création du paiement");
+          navigate('/profile?tab=rdv');
+          return;
+        }
+
+        // Use the client secret directly from the response
+        setClientSecret(paymentData.clientSecret);
+        setLoading(false);
         return;
       }
 
       // Get payment intent details from edge function
       const { data, error } = await supabase.functions.invoke('get-payment-intent', {
-        body: { paymentIntentId: transaction.stripe_payment_intent_id },
+        body: { paymentIntentId },
       });
 
       if (error) throw error;
