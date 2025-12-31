@@ -1,10 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
-
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-  apiVersion: '2023-10-16',
-  httpClient: Stripe.createFetchHttpClient(),
-});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,8 +12,32 @@ serve(async (req) => {
 
   try {
     const { paymentIntentId } = await req.json();
+    
+    console.log('Retrieving payment intent:', paymentIntentId);
 
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeSecretKey) {
+      throw new Error('STRIPE_SECRET_KEY is not configured');
+    }
+
+    // Use fetch API directly instead of Stripe SDK to avoid Deno compatibility issues
+    const response = await fetch(`https://api.stripe.com/v1/payment_intents/${paymentIntentId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${stripeSecretKey}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Stripe API error:', errorData);
+      throw new Error(errorData.error?.message || 'Failed to retrieve payment intent');
+    }
+
+    const paymentIntent = await response.json();
+    
+    console.log('Payment intent retrieved - status:', paymentIntent.status, 'has_client_secret:', !!paymentIntent.client_secret);
 
     return new Response(
       JSON.stringify({

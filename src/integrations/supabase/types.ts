@@ -900,6 +900,7 @@ export type Database = {
           listing_id: string
           payment_status: string | null
           platform_commission: number
+          reservation_id: string | null
           seller_amount: number
           seller_id: string
           status: string
@@ -915,6 +916,7 @@ export type Database = {
           listing_id: string
           payment_status?: string | null
           platform_commission: number
+          reservation_id?: string | null
           seller_amount: number
           seller_id: string
           status?: string
@@ -930,6 +932,7 @@ export type Database = {
           listing_id?: string
           payment_status?: string | null
           platform_commission?: number
+          reservation_id?: string | null
           seller_amount?: number
           seller_id?: string
           status?: string
@@ -950,6 +953,13 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
             referencedColumns: ["id"]
           },
           {

@@ -85,13 +85,14 @@ serve(async (req) => {
 
     console.log('Payment intent created:', paymentIntent.id);
 
-    // Create transaction record
+    // Create transaction record with reservation_id
     const { error: transactionError } = await supabase
       .from('transactions')
       .insert({
         listing_id: reservation.listing_id,
         buyer_id: reservation.buyer_id,
         seller_id: reservation.seller_id,
+        reservation_id: reservationId,
         amount: totalAmountWithFee, // Amount including buyer fee
         platform_commission: platformCommission, // Total platform revenue (buyer fee + seller fee)
         seller_amount: sellerAmount, // What seller receives after seller fee
