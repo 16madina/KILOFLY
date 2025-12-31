@@ -46,6 +46,7 @@ import Payment from "./pages/Payment";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import CurrencySettings from "./pages/CurrencySettings";
 import MyTransportRequests from "./pages/MyTransportRequests";
+import TransportRequestDetail from "./pages/TransportRequestDetail";
 import Tracking from "./pages/Tracking";
 import EmailConfirmed from "./pages/EmailConfirmed";
 import MyRewards from "./pages/MyRewards";
@@ -150,6 +151,7 @@ const AnimatedRoutes = () => {
                   <Route path="/payment" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Payment /></motion.div>} />
                   <Route path="/payment-success" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><PaymentSuccess /></motion.div>} />
                   <Route path="/listing/:id" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><ListingDetail /></motion.div>} />
+                  <Route path="/request/:id" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><TransportRequestDetail /></motion.div>} />
                   <Route path="/user/:id" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><PublicProfile /></motion.div>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><NotFound /></motion.div>} />
