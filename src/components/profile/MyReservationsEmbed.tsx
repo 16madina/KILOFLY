@@ -216,7 +216,7 @@ export function MyReservationsEmbed() {
                   size="sm"
                   variant="outline"
                   className="w-full"
-                  onClick={() => navigate(`/conversation/${res.id}?type=reservation`)}
+                  onClick={() => navigate(`/reservation-chat/${res.id}`)}
                 >
                   <MessageCircle className="h-4 w-4 mr-1" />
                   Envoyer un message

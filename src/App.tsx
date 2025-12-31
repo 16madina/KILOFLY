@@ -50,6 +50,7 @@ import TransportRequestDetail from "./pages/TransportRequestDetail";
 import Tracking from "./pages/Tracking";
 import EmailConfirmed from "./pages/EmailConfirmed";
 import MyRewards from "./pages/MyRewards";
+import ReservationChatPage from "./pages/ReservationChatPage";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -119,6 +120,7 @@ const AnimatedRoutes = () => {
         <Route path="/post-request" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><PostRequest /></motion.div>} />
         <Route path="/messages" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Messages /></motion.div>} />
         <Route path="/conversation/:id" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Conversation /></motion.div>} />
+        <Route path="/reservation-chat/:id" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><ReservationChatPage /></motion.div>} />
         <Route path="/profile" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Profile /></motion.div>} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/onboarding" element={<Onboarding />} />
