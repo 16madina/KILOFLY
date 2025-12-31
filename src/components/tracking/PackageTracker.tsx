@@ -110,7 +110,7 @@ export function PackageTracker({
   }, [reservationId, listingId]);
 
   const handlePayNow = () => {
-    navigate(`/payment?reservationId=${reservationId}`);
+    navigate(`/payment?reservation=${reservationId}`);
   };
 
   useEffect(() => {
