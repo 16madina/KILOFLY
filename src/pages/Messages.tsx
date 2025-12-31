@@ -48,6 +48,7 @@ const Messages = () => {
   const [conversations, setConversations] = useState<ConversationData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [reservationTab, setReservationTab] = useState<"received" | "sent">("received");
 
   useEffect(() => {
     if (!user) {
@@ -110,6 +111,25 @@ const Messages = () => {
       supabase.removeChannel(channel);
     };
   }, [user, navigate]);
+
+  useEffect(() => {
+    // SEO: title + meta description + canonical for this page
+    document.title = "Messages & réservations | KiloFly";
+
+    const description =
+      "Consultez vos messages et vos réservations KiloFly : demandes reçues et envoyées, suivi et échanges en temps réel.";
+
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) metaDescription.setAttribute("content", description);
+
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute("href", `${window.location.origin}/messages`);
+  }, []);
 
   const fetchConversations = async () => {
     if (!user) return;
@@ -225,10 +245,22 @@ const Messages = () => {
     }
   };
 
-  const filteredConversations = conversations.filter(conv => {
-    const otherUser = getOtherUser(conv);
+  const reservationItems = conversations.filter((c) => c.type === 'reservation');
+  const receivedReservations = reservationItems.filter((r) => r.seller_id === user?.id);
+  const sentReservations = reservationItems.filter((r) => r.buyer_id === user?.id);
+  const displayedReservations = reservationTab === 'received' ? receivedReservations : sentReservations;
+
+  const filteredReservations = displayedReservations.filter((res) => {
+    const otherUser = getOtherUser(res);
     return otherUser.full_name.toLowerCase().includes(searchQuery.toLowerCase());
   });
+
+  const filteredChats = conversations
+    .filter((c) => c.type === 'conversation')
+    .filter((conv) => {
+      const otherUser = getOtherUser(conv);
+      return otherUser.full_name.toLowerCase().includes(searchQuery.toLowerCase());
+    });
 
   return (
     <div className="min-h-screen bg-background pb-32">
@@ -255,120 +287,212 @@ const Messages = () => {
         </div>
       </div>
 
-      {/* Conversations List */}
-      <div className="container px-4 sm:px-6 space-y-2">
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      {/* Reservations + Conversations */}
+      <main className="container px-4 sm:px-6 space-y-6" aria-label="Messages et réservations">
+        {/* Réservations */}
+        <section aria-label="Réservations">
+          <div className="flex items-center justify-between px-1 mb-2">
+            <h2 className="text-sm font-semibold text-foreground">Réservations</h2>
+            <span className="text-xs text-muted-foreground">
+              {receivedReservations.length + sentReservations.length}
+            </span>
           </div>
-        ) : filteredConversations.length === 0 ? (
-          <div className="text-center py-12 animate-fade-in">
-            <MessageCircle className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">
-              {searchQuery ? "Aucune conversation trouvée" : "Aucun message"}
-            </h3>
-            <p className="text-muted-foreground">
-              {searchQuery ? "Essayez une autre recherche" : "Vos conversations apparaîtront ici"}
-            </p>
-          </div>
-        ) : (
-          filteredConversations.map((conversation) => {
-            const otherUser = getOtherUser(conversation);
-            const lastMessage = getLastMessage(conversation);
-            const unreadCount = getUnreadCount(conversation);
-            
-            return (
-              <SwipeableCard
-                key={conversation.id}
-                onSwipeLeft={conversation.type === 'conversation' ? () => deleteConversation(conversation.id) : undefined}
-                leftAction={conversation.type === 'conversation' ? (
-                  <div className="flex items-center justify-center w-16 h-16 bg-destructive rounded-full">
-                    <Trash2 className="h-5 w-5 text-destructive-foreground" />
-                  </div>
-                ) : undefined}
-              >
-                <button
-                  onClick={() => {
-                    if (conversation.type === 'conversation') {
-                      navigate(`/conversation/${conversation.id}`);
-                    } else {
-                      navigate('/my-reservations');
-                    }
-                  }}
-                  className="w-full flex items-center gap-3 p-4 bg-card hover:bg-muted/50 rounded-xl transition-all duration-200 hover:scale-[1.01] hover:shadow-md text-left animate-fade-in relative"
-                >
-                  {conversation.type === 'reservation' && (
-                    <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                      <span className="text-[10px] text-muted-foreground font-mono">
-                        #{conversation.id.slice(0, 6).toUpperCase()}
-                      </span>
-                      <Badge 
-                        variant="secondary" 
-                        className={`text-[10px] px-1.5 py-0.5 ${
-                          conversation.reservation?.status === 'pending' 
-                            ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' 
-                            : conversation.reservation?.status === 'approved' 
-                            ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                            : conversation.reservation?.status === 'in_progress'
-                            ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20'
-                            : conversation.reservation?.status === 'delivered'
-                            ? 'bg-primary/10 text-primary border border-primary/20'
-                            : 'bg-muted text-muted-foreground'
-                        }`}
-                      >
-                        {conversation.reservation?.status === 'pending' && 'En attente'}
-                        {conversation.reservation?.status === 'approved' && 'Approuvée'}
-                        {conversation.reservation?.status === 'in_progress' && 'En cours'}
-                        {conversation.reservation?.status === 'delivered' && 'Livrée'}
-                        {!['pending', 'approved', 'in_progress', 'delivered'].includes(conversation.reservation?.status || '') && conversation.reservation?.status}
-                      </Badge>
-                    </div>
-                  )}
-                  
-                  <Avatar className="h-12 w-12 border-2 border-primary/20 transition-all duration-200 hover:scale-110">
-                    <AvatarImage src={otherUser.avatar_url || ''} />
-                    <AvatarFallback className="bg-gradient-sky text-primary-foreground">
-                      {otherUser.full_name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
 
-                  <div className="flex-1 min-w-0 pr-24">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold truncate flex-shrink min-w-0">{otherUser.full_name}</h3>
-                      <VerifiedBadge verified={otherUser.id_verified || false} size="sm" />
-                      <span className="text-xs text-muted-foreground whitespace-nowrap ml-auto flex-shrink-0">
-                        {new Date(conversation.updated_at).toLocaleDateString('fr-FR', {
-                          day: 'numeric',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                    {conversation.type === 'reservation' && conversation.reservation?.listing && (
-                      <div className="flex items-center gap-2 mb-1">
-                        <Package className="h-3 w-3 text-primary flex-shrink-0" />
-                        <p className="text-xs text-primary truncate">
-                          {conversation.reservation.listing.departure} → {conversation.reservation.listing.arrival} • {conversation.reservation.requested_kg} kg
-                        </p>
+          <div className="flex bg-card rounded-xl border border-border/50 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setReservationTab("received")}
+              className={`flex-1 py-3 text-sm font-medium transition-colors ${
+                reservationTab === "received" ? "text-primary bg-primary/5" : "text-muted-foreground"
+              }`}
+            >
+              Reçues ({receivedReservations.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setReservationTab("sent")}
+              className={`flex-1 py-3 text-sm font-medium transition-colors ${
+                reservationTab === "sent" ? "text-primary bg-primary/5" : "text-muted-foreground"
+              }`}
+            >
+              Envoyées ({sentReservations.length})
+            </button>
+          </div>
+
+          <div className="mt-3 space-y-2">
+            {loading ? (
+              <div className="flex justify-center py-10">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
+              </div>
+            ) : filteredReservations.length === 0 ? (
+              <div className="text-center py-10 animate-fade-in">
+                <Package className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+                <h3 className="text-base font-semibold mb-1">Aucune réservation</h3>
+                <p className="text-sm text-muted-foreground">
+                  {searchQuery ? "Aucun résultat pour cette recherche" : "Vos réservations apparaîtront ici"}
+                </p>
+              </div>
+            ) : (
+              filteredReservations.map((conversation) => {
+                const otherUser = getOtherUser(conversation);
+                const lastMessage = getLastMessage(conversation);
+                const unreadCount = getUnreadCount(conversation);
+
+                return (
+                  <SwipeableCard key={conversation.id}>
+                    <button
+                      onClick={() => navigate('/my-reservations')}
+                      className="w-full flex items-center gap-3 p-4 bg-card hover:bg-muted/50 rounded-xl transition-all duration-200 hover:scale-[1.01] hover:shadow-md text-left animate-fade-in relative"
+                    >
+                      <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          #{conversation.id.slice(0, 6).toUpperCase()}
+                        </span>
+                        <Badge
+                          variant="secondary"
+                          className={`text-[10px] px-1.5 py-0.5 border ${
+                            conversation.reservation?.status === 'pending'
+                              ? 'bg-warning/10 text-warning border-warning/20'
+                              : conversation.reservation?.status === 'approved'
+                              ? 'bg-success/10 text-success border-success/20'
+                              : conversation.reservation?.status === 'in_progress'
+                              ? 'bg-accent/10 text-accent border-accent/20'
+                              : conversation.reservation?.status === 'delivered'
+                              ? 'bg-success/10 text-success border-success/20'
+                              : 'bg-secondary text-secondary-foreground border-border/50'
+                          }`}
+                        >
+                          {conversation.reservation?.status === 'pending' && 'En attente'}
+                          {conversation.reservation?.status === 'approved' && 'Approuvée'}
+                          {conversation.reservation?.status === 'in_progress' && 'En cours'}
+                          {conversation.reservation?.status === 'delivered' && 'Livrée'}
+                          {!['pending', 'approved', 'in_progress', 'delivered'].includes(
+                            conversation.reservation?.status || ''
+                          ) && conversation.reservation?.status}
+                        </Badge>
                       </div>
-                    )}
-                    <p className="text-sm text-muted-foreground truncate">
-                      {lastMessage}
-                    </p>
-                  </div>
 
-                  {unreadCount > 0 && (
-                    <Badge className="bg-primary text-primary-foreground animate-scale-in absolute bottom-3 right-3">
-                      {unreadCount}
-                    </Badge>
-                  )}
-                </button>
-              </SwipeableCard>
-            );
-          })
-        )}
-      </div>
+                      <Avatar className="h-12 w-12 border-2 border-primary/20 transition-all duration-200 hover:scale-110">
+                        <AvatarImage src={otherUser.avatar_url || ''} />
+                        <AvatarFallback className="bg-gradient-sky text-primary-foreground">
+                          {otherUser.full_name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="flex-1 min-w-0 pr-24">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold truncate flex-shrink min-w-0">{otherUser.full_name}</h3>
+                          <VerifiedBadge verified={otherUser.id_verified || false} size="sm" />
+                          <span className="text-xs text-muted-foreground whitespace-nowrap ml-auto flex-shrink-0">
+                            {new Date(conversation.updated_at).toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+
+                        {conversation.reservation?.listing && (
+                          <div className="flex items-center gap-2 mb-1">
+                            <Package className="h-3 w-3 text-primary flex-shrink-0" />
+                            <p className="text-xs text-primary truncate">
+                              {conversation.reservation.listing.departure} → {conversation.reservation.listing.arrival} •{' '}
+                              {conversation.reservation.requested_kg} kg
+                            </p>
+                          </div>
+                        )}
+
+                        <p className="text-sm text-muted-foreground truncate">{lastMessage}</p>
+                      </div>
+
+                      {unreadCount > 0 && (
+                        <Badge className="bg-primary text-primary-foreground animate-scale-in absolute bottom-3 right-3">
+                          {unreadCount}
+                        </Badge>
+                      )}
+                    </button>
+                  </SwipeableCard>
+                );
+              })
+            )}
+          </div>
+        </section>
+
+        {/* Conversations */}
+        <section aria-label="Conversations">
+          <div className="flex items-center justify-between px-1 mb-2">
+            <h2 className="text-sm font-semibold text-foreground">Conversations</h2>
+            <span className="text-xs text-muted-foreground">{filteredChats.length}</span>
+          </div>
+
+          <div className="space-y-2">
+            {loading ? (
+              <div className="flex justify-center py-10">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
+              </div>
+            ) : filteredChats.length === 0 ? (
+              <div className="text-center py-10 animate-fade-in">
+                <MessageCircle className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+                <h3 className="text-base font-semibold mb-1">Aucun message</h3>
+                <p className="text-sm text-muted-foreground">
+                  {searchQuery ? "Aucun résultat pour cette recherche" : "Vos conversations apparaîtront ici"}
+                </p>
+              </div>
+            ) : (
+              filteredChats.map((conversation) => {
+                const otherUser = getOtherUser(conversation);
+                const lastMessage = getLastMessage(conversation);
+                const unreadCount = getUnreadCount(conversation);
+
+                return (
+                  <SwipeableCard
+                    key={conversation.id}
+                    onSwipeLeft={() => deleteConversation(conversation.id)}
+                    leftAction={
+                      <div className="flex items-center justify-center w-16 h-16 bg-destructive rounded-full">
+                        <Trash2 className="h-5 w-5 text-destructive-foreground" />
+                      </div>
+                    }
+                  >
+                    <button
+                      onClick={() => navigate(`/conversation/${conversation.id}`)}
+                      className="w-full flex items-center gap-3 p-4 bg-card hover:bg-muted/50 rounded-xl transition-all duration-200 hover:scale-[1.01] hover:shadow-md text-left animate-fade-in relative"
+                    >
+                      <Avatar className="h-12 w-12 border-2 border-primary/20 transition-all duration-200 hover:scale-110">
+                        <AvatarImage src={otherUser.avatar_url || ''} />
+                        <AvatarFallback className="bg-gradient-sky text-primary-foreground">
+                          {otherUser.full_name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold truncate flex-shrink min-w-0">{otherUser.full_name}</h3>
+                          <VerifiedBadge verified={otherUser.id_verified || false} size="sm" />
+                          <span className="text-xs text-muted-foreground whitespace-nowrap ml-auto flex-shrink-0">
+                            {new Date(conversation.updated_at).toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'short'
+                            })}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">{lastMessage}</p>
+                      </div>
+
+                      {unreadCount > 0 && (
+                        <Badge className="bg-primary text-primary-foreground animate-scale-in">
+                          {unreadCount}
+                        </Badge>
+                      )}
+                    </button>
+                  </SwipeableCard>
+                );
+              })
+            )}
+          </div>
+        </section>
+      </main>
     </div>
   );
 };
