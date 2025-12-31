@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plane, Search } from "lucide-react";
+import { MyListingsEmbed } from "@/components/profile/MyListingsEmbed";
+import { MyTransportRequestsEmbed } from "@/components/profile/MyTransportRequestsEmbed";
 import { TrustScore } from "@/components/TrustScore";
 import { 
   ChevronLeft,
@@ -501,38 +503,12 @@ const Profile = () => {
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="voyages" className="space-y-2">
-                <Link to="/my-listings">
-                  <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
-                        <Package className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                      </div>
-                      <div>
-                        <span className="font-medium">Mes annonces de voyage</span>
-                        <p className="text-xs text-muted-foreground">Gérer vos offres de transport</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </Card>
-                </Link>
+              <TabsContent value="voyages">
+                <MyListingsEmbed />
               </TabsContent>
               
-              <TabsContent value="recherches" className="space-y-2">
-                <Link to="/my-transport-requests">
-                  <Card className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
-                        <Search className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                      </div>
-                      <div>
-                        <span className="font-medium">Mes demandes de transport</span>
-                        <p className="text-xs text-muted-foreground">Vos recherches de transporteurs</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </Card>
-                </Link>
+              <TabsContent value="recherches">
+                <MyTransportRequestsEmbed />
               </TabsContent>
             </Tabs>
           </TabsContent>
