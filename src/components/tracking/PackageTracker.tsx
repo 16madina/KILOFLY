@@ -39,6 +39,8 @@ export function PackageTracker({
   const [isPaid, setIsPaid] = useState(false);
   const [checkingPayment, setCheckingPayment] = useState(true);
   const [listingId, setListingId] = useState<string | null>(null);
+  const [totalPrice, setTotalPrice] = useState<number | null>(null);
+  const [currency, setCurrency] = useState<string>('EUR');
   
   const isSeller = user?.id === sellerId;
   const isBuyer = user?.id === buyerId;
@@ -48,15 +50,19 @@ export function PackageTracker({
     const checkPaymentStatus = async () => {
       setCheckingPayment(true);
       try {
-        // First get the listing_id from the reservation
+        // First get the listing_id and total_price from the reservation
         const { data: reservationData } = await supabase
           .from('reservations')
-          .select('listing_id')
+          .select('listing_id, total_price, listing:listings(currency)')
           .eq('id', reservationId)
           .single();
 
         if (reservationData) {
           setListingId(reservationData.listing_id);
+          setTotalPrice(reservationData.total_price);
+          if (reservationData.listing && typeof reservationData.listing === 'object' && 'currency' in reservationData.listing) {
+            setCurrency((reservationData.listing as any).currency || 'EUR');
+          }
           
           const { data: txByListing } = await supabase
             .from('transactions')
@@ -254,9 +260,14 @@ export function PackageTracker({
             <Alert className="bg-primary/10 border-primary/20">
               <CreditCard className="h-4 w-4 text-primary" />
               <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <span className="text-foreground">
-                  Le voyageur a accepté votre réservation. Effectuez le paiement pour qu'il puisse récupérer votre colis.
-                </span>
+                <div className="text-foreground">
+                  <p>Le voyageur a accepté votre réservation.</p>
+                  {totalPrice && (
+                    <p className="font-semibold text-lg mt-1">
+                      Montant à payer : {totalPrice.toFixed(2)} {currency}
+                    </p>
+                  )}
+                </div>
                 <Button 
                   onClick={handlePayNow}
                   className="whitespace-nowrap"
