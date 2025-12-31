@@ -12,7 +12,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       position={isIOS() ? "top-center" : "bottom-center"}
-      duration={3000}
+      duration={2000}
       closeButton
       richColors
       toastOptions={{

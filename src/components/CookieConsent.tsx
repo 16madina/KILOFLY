@@ -30,23 +30,19 @@ const CookieConsent = () => {
   }, [user]);
 
   const checkCookieConsent = async () => {
+    // Ne plus afficher automatiquement le popup cookies au démarrage
+    // L'utilisateur peut accéder aux paramètres de cookies via les paramètres de confidentialité
     const hasConsent = localStorage.getItem("cookieConsent");
     
-    if (!hasConsent && !user) {
-      setShowBanner(true);
-      return;
-    }
-
-    if (user) {
-      const { data, error } = await supabase
+    // Si l'utilisateur a déjà donné son consentement, charger ses préférences
+    if (hasConsent && user) {
+      const { data } = await supabase
         .from("privacy_settings")
         .select("cookie_essential, cookie_analytics, cookie_marketing")
         .eq("user_id", user.id)
         .single();
 
-      if (error || !data) {
-        setShowBanner(true);
-      } else {
+      if (data) {
         setPreferences({
           essential: data.cookie_essential,
           analytics: data.cookie_analytics,
@@ -54,6 +50,9 @@ const CookieConsent = () => {
         });
       }
     }
+    
+    // Ne jamais afficher automatiquement le banner
+    setShowBanner(false);
   };
 
   const handleAcceptAll = async () => {
