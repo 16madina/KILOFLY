@@ -525,6 +525,7 @@ export type Database = {
           completed_trips: number | null
           country: string
           created_at: string
+          email: string | null
           full_name: string
           id: string
           id_document_url: string | null
@@ -551,6 +552,7 @@ export type Database = {
           completed_trips?: number | null
           country: string
           created_at?: string
+          email?: string | null
           full_name: string
           id: string
           id_document_url?: string | null
@@ -577,6 +579,7 @@ export type Database = {
           completed_trips?: number | null
           country?: string
           created_at?: string
+          email?: string | null
           full_name?: string
           id?: string
           id_document_url?: string | null
