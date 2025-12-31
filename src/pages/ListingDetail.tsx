@@ -226,7 +226,7 @@ const ListingDetail = () => {
       toast.success("Demande de réservation envoyée avec succès");
       toast.info("Le vendeur recevra une notification et pourra approuver votre demande");
       
-      navigate('/my-reservations');
+      navigate('/profile?tab=rdv');
     } catch (error) {
       console.error('Error creating reservation:', error);
       toast.error("Erreur lors de l'envoi de la demande");

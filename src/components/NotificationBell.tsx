@@ -167,7 +167,7 @@ const NotificationBell = () => {
       navigate('/my-transport-requests');
     } else if (notification.title.includes('réservation') || notification.title.includes('Réservation')) {
       setOpen(false);
-      navigate('/my-reservations');
+      navigate('/profile?tab=rdv');
     } else if (notification.title.includes('message') || notification.title.includes('Message')) {
       setOpen(false);
       navigate('/messages');
