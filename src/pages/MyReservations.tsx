@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Package, Calendar, MapPin, User, Check, X, Clock, Truck, CheckCircle2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,6 +44,7 @@ interface Reservation {
 
 const MyReservations = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [receivedReservations, setReceivedReservations] = useState<Reservation[]>([]);
   const [sentReservations, setSentReservations] = useState<Reservation[]>([]);
@@ -54,6 +55,8 @@ const MyReservations = () => {
   const [legalDialogOpen, setLegalDialogOpen] = useState(false);
   const [pendingApprovalId, setPendingApprovalId] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
+  const highlightedId = searchParams.get("id");
+  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
     if (user) {
@@ -82,6 +85,29 @@ const MyReservations = () => {
       };
     }
   }, [user]);
+
+  // When URL has ?id=xxx, switch to the correct tab and scroll to that reservation
+  useEffect(() => {
+    if (!highlightedId || loading) return;
+
+    // Check which tab contains this reservation
+    const isInReceived = receivedReservations.some(r => r.id === highlightedId);
+    const isInSent = sentReservations.some(r => r.id === highlightedId);
+
+    if (isInReceived) {
+      setActiveTab("received");
+    } else if (isInSent) {
+      setActiveTab("sent");
+    }
+
+    // Scroll to the card after a small delay to allow tab switch
+    setTimeout(() => {
+      const cardElement = cardRefs.current.get(highlightedId);
+      if (cardElement) {
+        cardElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 100);
+  }, [highlightedId, loading, receivedReservations, sentReservations]);
 
   const fetchReservations = async () => {
     try {
@@ -279,6 +305,7 @@ const MyReservations = () => {
   const renderReservationCard = (reservation: Reservation, isReceived: boolean) => {
     const otherUser = isReceived ? reservation.buyer : reservation.seller;
     const listing = reservation.listing;
+    const isHighlighted = highlightedId === reservation.id;
     const UnreadBadge = () => {
       const unreadCount = useUnreadMessages(reservation.id);
       if (unreadCount === 0) return null;
@@ -290,7 +317,13 @@ const MyReservations = () => {
     };
 
     return (
-      <Card key={reservation.id} className="overflow-hidden">
+      <div
+        key={reservation.id}
+        ref={(el) => {
+          if (el) cardRefs.current.set(reservation.id, el);
+        }}
+      >
+        <Card className={`overflow-hidden transition-all duration-500 ${isHighlighted ? "ring-2 ring-primary shadow-lg" : ""}`}>
         <CardContent className="p-4 space-y-4">
           {/* Header */}
           <div className="flex items-start justify-between">
@@ -455,6 +488,7 @@ const MyReservations = () => {
           )}
         </CardContent>
       </Card>
+      </div>
     );
   };
 
