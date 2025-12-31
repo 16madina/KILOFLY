@@ -133,13 +133,6 @@ export const TransportRequestCard = ({
             )}
           </div>
 
-          {/* Description */}
-          {description && (
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {description}
-            </p>
-          )}
-
           {/* Actions */}
           <div className="flex items-center justify-between pt-2 border-t border-border/50">
             {isOwnRequest ? (
@@ -150,17 +143,16 @@ export const TransportRequestCard = ({
             ) : (
               <div />
             )}
-            {!isOwnRequest && onOfferTransport && (
+            {!isOwnRequest && onClick && (
               <Button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  onOfferTransport();
+                  onClick();
                 }}
                 className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
                 size="sm"
               >
-                <Plane className="h-4 w-4 mr-2" />
-                Je peux transporter
+                Voir l'annonce
               </Button>
             )}
             {onClick && (
