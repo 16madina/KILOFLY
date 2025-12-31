@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { loadStripe, Stripe } from "@stripe/stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import type { Stripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,14 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PaymentMethodSelector, { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 import StripePaymentForm from "@/components/payment/StripePaymentForm";
-import MobileMoneyPlaceholder from "@/components/payment/MobileMoneyPlaceholder";
 import { formatPrice, Currency } from "@/lib/currency";
-
-// Initialize Stripe only if key is available
-const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-const stripePromise: Promise<Stripe | null> = stripePublishableKey 
-  ? loadStripe(stripePublishableKey) 
-  : Promise.resolve(null);
 
 interface ReservationDetails {
   id: string;
@@ -45,6 +39,28 @@ const Payment = () => {
   const [loading, setLoading] = useState(true);
   const [reservationDetails, setReservationDetails] = useState<ReservationDetails | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('card');
+  const [stripeKey, setStripeKey] = useState<string | null>(() => import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || null);
+
+  const stripePromise: Promise<Stripe | null> = useMemo(
+    () => (stripeKey ? loadStripe(stripeKey) : Promise.resolve(null)),
+    [stripeKey]
+  );
+
+  useEffect(() => {
+    if (stripeKey) return;
+
+    (async () => {
+      const { data, error } = await supabase.functions.invoke('get-stripe-publishable-key');
+      if (error) {
+        console.error('Error fetching Stripe publishable key:', error);
+        return;
+      }
+
+      const key = (data as any)?.publishableKey as string | undefined;
+      if (key) setStripeKey(key);
+    })();
+  }, [stripeKey]);
+
 
   useEffect(() => {
     if (!reservationId) {
@@ -193,7 +209,7 @@ const Payment = () => {
         />
 
         {/* Payment Form - all methods use Stripe (Wave/Orange prepaid cards are Stripe compatible) */}
-        {!stripePublishableKey ? (
+        {!stripeKey ? (
           <Card className="border-destructive/50">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center gap-3 text-center">
