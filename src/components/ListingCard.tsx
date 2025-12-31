@@ -262,13 +262,14 @@ const ListingCard = ({
           transition={{ delay: index * 0.08 + 0.45 }}
         >
           <div>
-            <p className="text-2xl font-bold text-gradient">
+          <div className="flex flex-col">
               <PriceDisplay 
                 amount={pricePerKg} 
                 currency={currency as Currency}
-                showOriginal={false}
+                className="text-2xl font-bold text-gradient"
+                conversionClassName="text-[10px] text-muted-foreground/70"
               />
-            </p>
+            </div>
             <p className="text-xs text-muted-foreground -mt-0.5">par kilo</p>
           </div>
           <Button 
