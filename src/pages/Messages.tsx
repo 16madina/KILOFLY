@@ -76,7 +76,7 @@ const Messages = () => {
           onTabChange={setReservationTab}
           loading={loading}
           searchQuery={searchQuery}
-          onReservationClick={(id) => navigate(`/profile?tab=rdv`)}
+          onReservationClick={(id) => navigate(`/reservation-chat/${id}`)}
         />
 
         {/* Conversations */}
