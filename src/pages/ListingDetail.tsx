@@ -9,6 +9,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   MapPin, 
   Calendar, 
@@ -26,7 +37,8 @@ import {
   Plane,
   ChevronRight,
   Send,
-  Edit
+  Edit,
+  Trash2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -76,6 +88,7 @@ const ListingDetail = () => {
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
   const [contactLoading, setContactLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [trustScore, setTrustScore] = useState(0);
   const [requestedKg, setRequestedKg] = useState<number>(1);
   const [itemDescription, setItemDescription] = useState<string>("");
@@ -222,6 +235,29 @@ const ListingDetail = () => {
     }
   };
 
+  const handleDeleteListing = async () => {
+    if (!listing || !user) return;
+
+    setDeleteLoading(true);
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .delete()
+        .eq('id', listing.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast.success("Annonce supprimée avec succès");
+      navigate('/my-listings');
+    } catch (error) {
+      console.error('Error deleting listing:', error);
+      toast.error("Erreur lors de la suppression de l'annonce");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -282,12 +318,12 @@ const ListingDetail = () => {
           </Button>
         </motion.div>
 
-        {/* Edit Button - Floating (only for owner) */}
+        {/* Edit & Delete Buttons - Floating (only for owner) */}
         {user && listing && user.id === listing.user_id && (
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="absolute top-4 right-4 z-50 pt-safe"
+            className="absolute top-4 right-4 z-50 pt-safe flex gap-2"
           >
             <Button
               variant="secondary"
@@ -297,6 +333,36 @@ const ListingDetail = () => {
             >
               <Edit className="h-5 w-5" />
             </Button>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="h-10 w-10 rounded-full bg-background/80 backdrop-blur-md shadow-lg hover:bg-destructive hover:text-destructive-foreground border-0"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Supprimer cette annonce ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action est irréversible. L'annonce pour le trajet {listing.departure} → {listing.arrival} sera définitivement supprimée.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteListing}
+                    disabled={deleteLoading}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {deleteLoading ? "Suppression..." : "Supprimer"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </motion.div>
         )}
 
