@@ -19,39 +19,33 @@ const getTrustLevel = (score: number): TrustScoreLevel | null => {
   return trustLevels.find(level => score >= level.minScore) || null;
 };
 
-const NOTIFICATION_STORAGE_KEY = 'kilofly_trust_score_notified';
+const LAST_NOTIFIED_SCORE_KEY = 'kilofly_last_notified_score';
 
 export const useTrustScoreNotifications = (currentScore: number) => {
-  const previousScore = useRef<number | null>(null);
-  const previousLevel = useRef<string | null>(null);
-  const hasShownInitialToast = useRef(false);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
-    // Check localStorage to see if we've already shown the initial notification
-    const alreadyNotified = localStorage.getItem(NOTIFICATION_STORAGE_KEY);
+    // Skip first render to avoid showing notification on page load
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      // Store current score as baseline
+      localStorage.setItem(LAST_NOTIFIED_SCORE_KEY, currentScore.toString());
+      return;
+    }
+
+    const lastNotifiedScore = parseInt(localStorage.getItem(LAST_NOTIFIED_SCORE_KEY) || '0', 10);
     
-    if (previousScore.current === null) {
-      previousScore.current = currentScore;
-      const level = getTrustLevel(currentScore);
-      previousLevel.current = level?.level || null;
-      hasShownInitialToast.current = !!alreadyNotified;
+    // Only show notification if score actually increased since last notification
+    if (currentScore <= lastNotifiedScore) {
       return;
     }
 
-    const scoreDiff = currentScore - previousScore.current;
+    const scoreDiff = currentScore - lastNotifiedScore;
     const currentLevel = getTrustLevel(currentScore);
-    const oldLevel = previousLevel.current;
+    const previousLevel = getTrustLevel(lastNotifiedScore);
 
-    // Only show notifications for actual score changes (not initial load)
-    if (scoreDiff === 0) {
-      previousScore.current = currentScore;
-      previousLevel.current = currentLevel?.level || null;
-      return;
-    }
-
-    // Notification de changement de niveau avec récompense
-    if (currentLevel && oldLevel !== currentLevel.level && scoreDiff > 0) {
-      // Level changes are always important, show them
+    // Check if user reached a new level
+    if (currentLevel && (!previousLevel || currentLevel.level !== previousLevel.level)) {
       toast.success(
         `${currentLevel.icon} Félicitations ! Niveau ${currentLevel.level} atteint !`,
         {
@@ -59,11 +53,10 @@ export const useTrustScoreNotifications = (currentScore: number) => {
           duration: 6000,
         }
       );
-      localStorage.setItem(NOTIFICATION_STORAGE_KEY, 'true');
+      localStorage.setItem(LAST_NOTIFIED_SCORE_KEY, currentScore.toString());
     }
-    // Only show point gain/loss notifications if there's a real change from user actions
-    else if (scoreDiff > 0 && scoreDiff >= 5) {
-      // Higher threshold to avoid spam
+    // Only notify for significant point gains (5+ points) without level change
+    else if (scoreDiff >= 5) {
       toast.success(
         "✨ Points de confiance gagnés !",
         {
@@ -71,19 +64,7 @@ export const useTrustScoreNotifications = (currentScore: number) => {
           duration: 4000,
         }
       );
-      localStorage.setItem(NOTIFICATION_STORAGE_KEY, 'true');
+      localStorage.setItem(LAST_NOTIFIED_SCORE_KEY, currentScore.toString());
     }
-    else if (scoreDiff < 0 && Math.abs(scoreDiff) >= 5) {
-      toast.error(
-        "Points de confiance perdus",
-        {
-          description: `${scoreDiff} points. Vous avez maintenant ${currentScore} points.`,
-          duration: 4000,
-        }
-      );
-    }
-
-    previousScore.current = currentScore;
-    previousLevel.current = currentLevel?.level || null;
   }, [currentScore]);
 };
