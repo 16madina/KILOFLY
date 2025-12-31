@@ -167,7 +167,7 @@ const MyListings = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/post?edit=${listing.id}`)}
+                        onClick={() => navigate(`/post-listing?edit=${listing.id}`)}
                       >
                         <Edit className="w-4 h-4" />
                       </Button>

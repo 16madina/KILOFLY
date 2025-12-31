@@ -1,13 +1,23 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Plane, Package, ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHaptics } from "@/hooks/useHaptics";
 
 const PostChoice = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { impact, ImpactStyle } = useHaptics();
+
+  // Redirect old /post?edit=... URLs to /post-listing?edit=...
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (editId) {
+      navigate(`/post-listing?edit=${editId}`, { replace: true });
+    }
+  }, [searchParams, navigate]);
 
   const handleChoice = (type: "travel" | "request") => {
     impact(ImpactStyle.Light);
