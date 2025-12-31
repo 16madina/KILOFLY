@@ -110,9 +110,10 @@ export const useMessages = (userId: string | undefined) => {
         })
       );
 
-      // Transform reservations
-      const transformedReservations: ReservationData[] = (reservationsData || []).map(
-        (res: any) => ({
+      // Transform reservations - ONLY include those with messages
+      const transformedReservations: ReservationData[] = (reservationsData || [])
+        .filter((res: any) => res.reservation_messages && res.reservation_messages.length > 0)
+        .map((res: any) => ({
           id: res.id,
           buyer_id: res.buyer_id,
           seller_id: res.seller_id,
@@ -125,8 +126,7 @@ export const useMessages = (userId: string | undefined) => {
             status: res.status,
             listing: res.listing,
           },
-        })
-      );
+        }));
 
       setConversations(transformedConversations);
       setReservations(transformedReservations);
