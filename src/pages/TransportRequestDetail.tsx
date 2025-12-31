@@ -84,6 +84,8 @@ const TransportRequestDetail = () => {
   // Form state for offer
   const [proposedPrice, setProposedPrice] = useState<string>("");
   const [message, setMessage] = useState<string>("");
+  const [departureDate, setDepartureDate] = useState<string>("");
+  const [arrivalDate, setArrivalDate] = useState<string>("");
 
   useEffect(() => {
     if (id) {
@@ -376,16 +378,19 @@ const TransportRequestDetail = () => {
               )}
             </div>
             
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3">
               <Badge variant="secondary" className="text-base px-4 py-2">
                 <Package className="h-4 w-4 mr-2" />
                 {request.requested_kg} kg
               </Badge>
               <Badge variant="outline" className="text-base px-4 py-2">
                 <Calendar className="h-4 w-4 mr-2" />
-                {format(new Date(request.departure_date_start), 'dd MMM', { locale: fr })}
-                {request.departure_date_end && ` - ${format(new Date(request.departure_date_end), 'dd MMM', { locale: fr })}`}
+                {request.departure_date_end 
+                  ? `Entre le ${format(new Date(request.departure_date_start), 'dd MMMM', { locale: fr })} et le ${format(new Date(request.departure_date_end), 'dd MMMM', { locale: fr })}`
+                  : `Vers le ${format(new Date(request.departure_date_start), 'dd MMMM', { locale: fr })}`
+                }
               </Badge>
+              <span className="text-xs text-muted-foreground italic">(dates approximatives)</span>
             </div>
           </motion.div>
 
@@ -501,18 +506,71 @@ const TransportRequestDetail = () => {
                   </p>
                 </div>
 
+                {/* Dates du voyageur */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="departureDate" className="text-sm font-medium">
+                      Date de départ
+                    </Label>
+                    <div className="relative mt-1.5">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="departureDate"
+                        type="date"
+                        value={departureDate}
+                        onChange={(e) => setDepartureDate(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="arrivalDate" className="text-sm font-medium">
+                      Date d'arrivée
+                    </Label>
+                    <div className="relative mt-1.5">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="arrivalDate"
+                        type="date"
+                        value={arrivalDate}
+                        onChange={(e) => setArrivalDate(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <Label htmlFor="message" className="text-sm font-medium">
                     Message à l'expéditeur *
                   </Label>
                   <Textarea
                     id="message"
-                    placeholder="Présentez-vous, indiquez vos dates de voyage, comment vous pouvez aider..."
+                    placeholder="Présentez-vous, comment vous pouvez aider..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    className="mt-1.5 min-h-[120px]"
+                    className="mt-1.5 min-h-[100px]"
                   />
                 </div>
+
+                {/* Bouton d'envoi inline */}
+                <Button
+                  onClick={handleSubmitOffer}
+                  disabled={submitLoading || !message.trim()}
+                  className="w-full h-12 text-base font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg"
+                >
+                  {submitLoading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      Envoi en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-5 w-5 mr-2" />
+                      Envoyer ma proposition
+                    </>
+                  )}
+                </Button>
               </div>
             </motion.div>
           )}
@@ -543,35 +601,6 @@ const TransportRequestDetail = () => {
         </div>
       </div>
 
-      {/* Fixed Bottom Action (for non-owners) */}
-      {!isOwner && (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="fixed bottom-0 left-0 right-0 p-4 pb-safe bg-background/95 backdrop-blur-lg border-t shadow-2xl z-40"
-        >
-          <div className="container max-w-2xl mx-auto">
-            <Button
-              onClick={handleSubmitOffer}
-              disabled={submitLoading || !message.trim()}
-              className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg"
-            >
-              {submitLoading ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Envoi en cours...
-                </>
-              ) : (
-                <>
-                  <Plane className="h-5 w-5 mr-2" />
-                  Je peux transporter ce colis
-                </>
-              )}
-            </Button>
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 };
