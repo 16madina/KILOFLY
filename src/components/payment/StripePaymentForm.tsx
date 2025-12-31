@@ -20,6 +20,8 @@ const StripePaymentForm = ({ clientSecret, reservationId }: StripePaymentFormPro
   const [loading, setLoading] = useState(false);
   const [legalDialogOpen, setLegalDialogOpen] = useState(false);
   const [paymentElementReady, setPaymentElementReady] = useState(false);
+  const [paymentElementOverlayVisible, setPaymentElementOverlayVisible] = useState(true);
+  const [paymentElementError, setPaymentElementError] = useState<string | null>(null);
   const [stripeInitTimedOut, setStripeInitTimedOut] = useState(false);
 
   // Fallback: in some environments PaymentElement's onReady may not fire reliably.
@@ -27,22 +29,38 @@ const StripePaymentForm = ({ clientSecret, reservationId }: StripePaymentFormPro
   useEffect(() => {
     if (!elements || paymentElementReady) return;
 
+    setPaymentElementOverlayVisible(true);
+
     const interval = window.setInterval(() => {
       // react-stripe-js expects the Element *type* here (not a string)
       const paymentEl = elements.getElement(PaymentElement);
       if (paymentEl) {
         setPaymentElementReady(true);
+        setPaymentElementOverlayVisible(false);
+        setPaymentElementError(null);
         window.clearInterval(interval);
       }
     }, 250);
 
-    const timeout = window.setTimeout(() => {
+    // Avoid blocking the UI forever: remove the overlay after a short time.
+    const hideOverlayTimeout = window.setTimeout(() => {
+      setPaymentElementOverlayVisible(false);
+    }, 2500);
+
+    // If Stripe Element still isn't mounted after a while, show a clear retry UI.
+    const failTimeout = window.setTimeout(() => {
+      const paymentEl = elements.getElement(PaymentElement);
+      if (!paymentEl) {
+        setPaymentElementError("Le chargement prend trop de temps. Cliquez sur Recharger.");
+      }
+      setPaymentElementOverlayVisible(false);
       window.clearInterval(interval);
-    }, 6000);
+    }, 12000);
 
     return () => {
       window.clearInterval(interval);
-      window.clearTimeout(timeout);
+      window.clearTimeout(hideOverlayTimeout);
+      window.clearTimeout(failTimeout);
     };
   }, [elements, paymentElementReady]);
 
@@ -65,8 +83,8 @@ const StripePaymentForm = ({ clientSecret, reservationId }: StripePaymentFormPro
       return;
     }
 
-    if (!paymentElementReady) {
-      toast.message("Chargement du formulaire de paiement…");
+    if (paymentElementError) {
+      toast.error("Le formulaire de paiement ne se charge pas. Recharger la page puis réessayer.");
       return;
     }
 
@@ -79,8 +97,8 @@ const StripePaymentForm = ({ clientSecret, reservationId }: StripePaymentFormPro
       return;
     }
 
-    if (!paymentElementReady) {
-      toast.message("Chargement du formulaire de paiement…");
+    if (paymentElementError) {
+      toast.error("Le formulaire de paiement ne se charge pas. Recharger la page puis réessayer.");
       return;
     }
 
@@ -126,7 +144,7 @@ const StripePaymentForm = ({ clientSecret, reservationId }: StripePaymentFormPro
 
       <form onSubmit={handlePayClick} className="space-y-6">
         <div className="relative min-h-[120px]">
-          {!paymentElementReady && (
+          {paymentElementOverlayVisible && !paymentElementError && (
             <div className="absolute inset-0 z-10 grid place-items-center rounded-lg border border-border/50 bg-card/60 backdrop-blur-sm">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -134,24 +152,48 @@ const StripePaymentForm = ({ clientSecret, reservationId }: StripePaymentFormPro
               </div>
             </div>
           )}
-          <PaymentElement onReady={() => setPaymentElementReady(true)} />
+
+          {paymentElementError && (
+            <div className="absolute inset-0 z-10 grid place-items-center rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
+              <div className="w-full text-center">
+                <p className="font-medium">Le formulaire Stripe ne se charge pas</p>
+                <p className="mt-1 text-muted-foreground">{paymentElementError}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full mt-3"
+                  onClick={() => window.location.reload()}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Recharger
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <PaymentElement
+            onReady={() => {
+              setPaymentElementReady(true);
+              setPaymentElementOverlayVisible(false);
+              setPaymentElementError(null);
+            }}
+            onLoadError={(e) => {
+              console.error("Stripe PaymentElement load error:", e);
+              setPaymentElementError("Impossible de charger le formulaire. Vérifiez votre connexion.");
+              setPaymentElementOverlayVisible(false);
+              toast.error("Impossible de charger le formulaire Stripe");
+            }}
+          />
         </div>
 
-        <Button
-          type="submit"
-          className="w-full"
-          size="lg"
-          disabled={!stripe || loading || !paymentElementReady}
-        >
+        <Button type="submit" className="w-full" size="lg" disabled={!stripe || loading || !!paymentElementError}>
           Payer maintenant
         </Button>
 
         {stripeInitTimedOut && !stripe && (
           <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
             <p className="font-medium">Stripe ne se charge pas</p>
-            <p className="text-muted-foreground mt-1">
-              Vérifiez votre connexion puis réessayez.
-            </p>
+            <p className="text-muted-foreground mt-1">Vérifiez votre connexion puis réessayez.</p>
             <Button
               type="button"
               variant="outline"
