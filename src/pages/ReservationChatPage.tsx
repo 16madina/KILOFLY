@@ -103,9 +103,9 @@ const ReservationChatPage = () => {
   const otherUser = reservation?.buyer_id === user.id ? reservation?.seller : reservation?.buyer;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col pb-20">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe">
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe flex-shrink-0">
         <div className="container px-4 sm:px-6 py-4">
           <div className="flex items-center gap-3">
             <Button
@@ -122,53 +122,43 @@ const ReservationChatPage = () => {
       </header>
 
       {loading ? (
-        <div className="container px-4 sm:px-6 py-4 space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-96 w-full" />
+        <div className="container px-4 sm:px-6 py-4 space-y-4 flex-1">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-64 w-full" />
         </div>
       ) : reservation ? (
-        <div className="container px-4 sm:px-6 py-4 flex-1 flex flex-col space-y-4 pb-safe">
-          {/* Reservation Context */}
-          <Card className="p-4 bg-muted/50">
-            <div className="flex items-start justify-between mb-3">
-              <p className="text-xs font-medium text-muted-foreground">Réservation concernée</p>
-              {getStatusBadge(reservation.status)}
-            </div>
-            
-            {reservation.listing && (
-              <div className="space-y-2">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Reservation Context - compact */}
+          <div className="container px-4 sm:px-6 py-3 flex-shrink-0">
+            <Card className="p-3 bg-muted/50">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  <span className="font-medium">{reservation.listing.departure}</span>
+                  <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span className="font-medium">{reservation.listing?.departure}</span>
                   <ArrowRight className="h-3 w-3" />
-                  <span className="font-medium">{reservation.listing.arrival}</span>
+                  <span className="font-medium">{reservation.listing?.arrival}</span>
                 </div>
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>{new Date(reservation.listing.departure_date).toLocaleDateString('fr-FR')}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Package className="h-3 w-3" />
-                    <span>{reservation.requested_kg} kg</span>
-                  </div>
-                  <span className="font-semibold text-primary">
-                    {reservation.total_price} {reservation.listing.currency}
-                  </span>
-                </div>
+                {getStatusBadge(reservation.status)}
               </div>
-            )}
-            
-            {reservation.item_description && (
-              <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border/50">
-                {reservation.item_description}
-              </p>
-            )}
-          </Card>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  <span>{reservation.listing ? new Date(reservation.listing.departure_date).toLocaleDateString('fr-FR') : ''}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Package className="h-3 w-3" />
+                  <span>{reservation.requested_kg} kg</span>
+                </div>
+                <span className="font-semibold text-primary">
+                  {reservation.total_price} {reservation.listing?.currency}
+                </span>
+              </div>
+            </Card>
+          </div>
 
-          {/* Chat */}
+          {/* Chat - takes remaining space */}
           {otherUser && (
-            <div className="flex-1">
+            <div className="flex-1 overflow-hidden px-4 sm:px-6 pb-4">
               <ReservationChat
                 key={reservation.id}
                 reservationId={reservation.id}
