@@ -192,35 +192,40 @@ const Payment = () => {
           currency={getCurrency()}
         />
 
-        {/* Payment Form based on selected method */}
-        {selectedMethod === 'card' && (
-          <>
-            {!stripePublishableKey ? (
-              <Card className="border-destructive/50">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col items-center gap-3 text-center">
-                    <AlertTriangle className="h-10 w-10 text-destructive" />
-                    <p className="font-medium">Configuration Stripe manquante</p>
-                    <p className="text-sm text-muted-foreground">
-                      La clé publique Stripe n'est pas configurée. Contactez l'administrateur.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : clientSecret ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Informations de paiement</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Elements stripe={stripePromise} options={{ clientSecret }}>
-                    <StripePaymentForm clientSecret={clientSecret} reservationId={reservationId!} />
-                  </Elements>
-                </CardContent>
-              </Card>
-            ) : null}
-          </>
-        )}
+        {/* Payment Form - all methods use Stripe (Wave/Orange prepaid cards are Stripe compatible) */}
+        {!stripePublishableKey ? (
+          <Card className="border-destructive/50">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <AlertTriangle className="h-10 w-10 text-destructive" />
+                <p className="font-medium">Configuration Stripe manquante</p>
+                <p className="text-sm text-muted-foreground">
+                  La clé publique Stripe n'est pas configurée. Contactez l'administrateur.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : clientSecret ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {selectedMethod === 'card' && 'Informations de paiement'}
+                {selectedMethod === 'wave_visa' && 'Paiement avec carte Wave'}
+                {selectedMethod === 'orange_visa' && 'Paiement avec carte Orange Money'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <StripePaymentForm clientSecret={clientSecret} reservationId={reservationId!} />
+              </Elements>
+              {(selectedMethod === 'wave_visa' || selectedMethod === 'orange_visa') && (
+                <p className="text-xs text-muted-foreground mt-3">
+                  💡 Utilisez les informations de votre carte Visa prépayée {selectedMethod === 'wave_visa' ? 'Wave' : 'Orange Money'}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
 
 
         <p className="text-xs text-center text-muted-foreground">
