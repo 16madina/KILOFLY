@@ -159,8 +159,21 @@ const Messages = () => {
         type: 'conversation' as const,
       }));
 
-      // Transform reservations
-      const transformedReservations = (reservationsData || []).map((res: any) => ({
+      // Transform and GROUP reservations by user pair (keep only most recent per user pair)
+      const reservationsByUserPair: Record<string, any> = {};
+      (reservationsData || []).forEach((res: any) => {
+        // Create a unique key for the user pair (sorted to ensure consistency)
+        const userPairKey = [res.buyer_id, res.seller_id].sort().join('-');
+        
+        // Keep only the most recent reservation per user pair
+        if (!reservationsByUserPair[userPairKey] || 
+            new Date(res.updated_at) > new Date(reservationsByUserPair[userPairKey].updated_at)) {
+          reservationsByUserPair[userPairKey] = res;
+        }
+      });
+
+      // Transform grouped reservations
+      const transformedReservations = Object.values(reservationsByUserPair).map((res: any) => ({
         id: res.id,
         type: 'reservation' as const,
         buyer_id: res.buyer_id,
