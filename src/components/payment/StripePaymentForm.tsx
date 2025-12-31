@@ -11,9 +11,10 @@ import PaymentLoader from "./PaymentLoader";
 interface StripePaymentFormProps {
   clientSecret: string;
   reservationId: string;
+  skipLegalDialog?: boolean;
 }
 
-const StripePaymentForm = ({ clientSecret, reservationId }: StripePaymentFormProps) => {
+const StripePaymentForm = ({ clientSecret, reservationId, skipLegalDialog = false }: StripePaymentFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
@@ -24,13 +25,18 @@ const StripePaymentForm = ({ clientSecret, reservationId }: StripePaymentFormPro
   const handlePayClick = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Vérifier que Stripe est prêt avant d'ouvrir le dialogue
+    // Vérifier que Stripe est prêt avant de procéder
     if (!stripe || !elements || !stripeReady) {
       toast.error("Le formulaire de paiement n'est pas encore prêt. Veuillez patienter.");
       return;
     }
     
-    setLegalDialogOpen(true);
+    // If legal dialog was already handled externally, skip it
+    if (skipLegalDialog) {
+      handlePayConfirmed();
+    } else {
+      setLegalDialogOpen(true);
+    }
   };
 
   const handlePayConfirmed = async () => {

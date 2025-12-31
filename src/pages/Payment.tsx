@@ -5,12 +5,14 @@ import type { Stripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Loader2, AlertTriangle, CheckCircle2, FileSignature } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PaymentMethodSelector, { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 import StripePaymentForm from "@/components/payment/StripePaymentForm";
+import LegalConfirmationDialog from "@/components/LegalConfirmationDialog";
 import { formatPrice, Currency } from "@/lib/currency";
+import { motion } from "framer-motion";
 
 interface ReservationDetails {
   id: string;
@@ -40,6 +42,12 @@ const Payment = () => {
   const [reservationDetails, setReservationDetails] = useState<ReservationDetails | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('card');
   const [stripeKey, setStripeKey] = useState<string | null>(() => import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || null);
+  
+  // New states for signature flow
+  const [hasSigned, setHasSigned] = useState(false);
+  const [legalDialogOpen, setLegalDialogOpen] = useState(false);
+  const [buyerFee, setBuyerFee] = useState(0);
+  const [totalWithFee, setTotalWithFee] = useState(0);
 
   const stripePromise: Promise<Stripe | null> = useMemo(
     () => (stripeKey ? loadStripe(stripeKey) : Promise.resolve(null)),
@@ -119,6 +127,8 @@ const Payment = () => {
 
         // Use the client secret directly from the response
         setClientSecret(paymentData.clientSecret);
+        setBuyerFee(paymentData.buyerFee || 0);
+        setTotalWithFee(paymentData.totalAmount || 0);
         setLoading(false);
         return;
       }
@@ -142,6 +152,12 @@ const Payment = () => {
 
   const getCurrency = (): Currency => {
     return (reservationDetails?.listing?.currency as Currency) || 'EUR';
+  };
+
+  const handleSignatureConfirmed = () => {
+    setHasSigned(true);
+    setLegalDialogOpen(false);
+    toast.success("Signature enregistrée ! Vous pouvez maintenant procéder au paiement.");
   };
 
   if (loading) {
@@ -170,7 +186,7 @@ const Payment = () => {
       </header>
 
       <div className="container px-4 sm:px-6 py-6 max-w-md mx-auto space-y-6">
-        {/* Reservation Summary */}
+        {/* Reservation Summary with fees */}
         {reservationDetails && (
           <Card>
             <CardHeader>
@@ -191,10 +207,24 @@ const Payment = () => {
                 <span className="text-muted-foreground">Poids</span>
                 <span className="font-medium">{reservationDetails.requested_kg} kg</span>
               </div>
-              <div className="flex justify-between text-lg font-bold">
-                <span>Total</span>
-                <span className="text-primary">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Sous-total</span>
+                <span className="font-medium">
                   {formatPrice(reservationDetails.total_price, getCurrency())}
+                </span>
+              </div>
+              {buyerFee > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Frais de service (5%)</span>
+                  <span className="font-medium text-muted-foreground">
+                    +{formatPrice(buyerFee, getCurrency())}
+                  </span>
+                </div>
+              )}
+              <div className="border-t pt-3 flex justify-between text-lg font-bold">
+                <span>Total à payer</span>
+                <span className="text-primary">
+                  {formatPrice(totalWithFee > 0 ? totalWithFee : reservationDetails.total_price * 1.05, getCurrency())}
                 </span>
               </div>
             </CardContent>
@@ -208,7 +238,49 @@ const Payment = () => {
           currency={getCurrency()}
         />
 
-        {/* Payment Form - all methods use Stripe (Wave/Orange prepaid cards are Stripe compatible) */}
+        {/* Signature Step - Must sign before payment */}
+        {!hasSigned && clientSecret && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <FileSignature className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Signature requise</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Veuillez signer les conditions générales avant de procéder au paiement
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => setLegalDialogOpen(true)}
+                  className="w-full"
+                  size="lg"
+                >
+                  <FileSignature className="mr-2 h-5 w-5" />
+                  Signer le formulaire
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Signature confirmed indicator */}
+        {hasSigned && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-lg"
+          >
+            <CheckCircle2 className="h-6 w-6 text-green-500 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-green-700 dark:text-green-400">Signature enregistrée</p>
+              <p className="text-sm text-muted-foreground">Vous pouvez maintenant procéder au paiement</p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Payment Form - only show after signature */}
         {!stripeKey ? (
           <Card className="border-destructive/50">
             <CardContent className="pt-6">
@@ -221,7 +293,7 @@ const Payment = () => {
               </div>
             </CardContent>
           </Card>
-        ) : clientSecret ? (
+        ) : clientSecret && hasSigned ? (
           <Card>
             <CardHeader>
               <CardTitle>
@@ -232,7 +304,11 @@ const Payment = () => {
             </CardHeader>
             <CardContent>
               <Elements stripe={stripePromise} options={{ clientSecret }}>
-                <StripePaymentForm clientSecret={clientSecret} reservationId={reservationId!} />
+                <StripePaymentForm 
+                  clientSecret={clientSecret} 
+                  reservationId={reservationId!}
+                  skipLegalDialog={true}
+                />
               </Elements>
               {(selectedMethod === 'wave_visa' || selectedMethod === 'orange_visa') && (
                 <p className="text-xs text-muted-foreground mt-3">
@@ -243,12 +319,29 @@ const Payment = () => {
           </Card>
         ) : null}
 
-
         <p className="text-xs text-center text-muted-foreground">
-          Votre paiement est sécurisé. L'argent sera conservé jusqu'à la livraison confirmée, 
-          puis transféré au voyageur avec une commission de 5% pour la plateforme.
+          Votre paiement est sécurisé. Une commission de 5% est prélevée sur l'acheteur et 5% sur le vendeur. 
+          L'argent sera conservé jusqu'à la livraison confirmée.
         </p>
       </div>
+
+      {/* Legal Signature Dialog */}
+      <LegalConfirmationDialog
+        open={legalDialogOpen}
+        onOpenChange={setLegalDialogOpen}
+        onConfirm={handleSignatureConfirmed}
+        type="sender"
+        loading={false}
+        reservationId={reservationId || undefined}
+        reservationDetails={reservationDetails ? {
+          id: reservationDetails.id,
+          departure: reservationDetails.listing.departure,
+          arrival: reservationDetails.listing.arrival,
+          requestedKg: reservationDetails.requested_kg,
+          totalPrice: totalWithFee > 0 ? totalWithFee : reservationDetails.total_price * 1.05,
+          itemDescription: `Transport de ${reservationDetails.requested_kg} kg`,
+        } : undefined}
+      />
     </div>
   );
 };
