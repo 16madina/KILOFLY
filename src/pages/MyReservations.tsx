@@ -570,6 +570,7 @@ const MyReservations = () => {
           </DialogHeader>
           {selectedReservation && (
             <ReservationChat
+              key={selectedReservation.id}
               reservationId={selectedReservation.id}
               otherUserId={
                 activeTab === "received"
