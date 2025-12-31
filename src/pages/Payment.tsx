@@ -39,43 +39,27 @@ const Payment = () => {
   const [loading, setLoading] = useState(true);
   const [reservationDetails, setReservationDetails] = useState<ReservationDetails | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('card');
-  const [stripeKey, setStripeKey] = useState<string | null>(null);
-  const [stripeKeyLoading, setStripeKeyLoading] = useState(true);
+  const [stripeKey, setStripeKey] = useState<string | null>(() => import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || null);
 
-  const stripePromise = useMemo(
-    () => (stripeKey ? loadStripe(stripeKey) : null),
+  const stripePromise: Promise<Stripe | null> = useMemo(
+    () => (stripeKey ? loadStripe(stripeKey) : Promise.resolve(null)),
     [stripeKey]
   );
 
-  // Fetch Stripe key on mount
   useEffect(() => {
-    const fetchStripeKey = async () => {
-      // Try env variable first
-      const envKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-      if (envKey) {
-        setStripeKey(envKey);
-        setStripeKeyLoading(false);
+    if (stripeKey) return;
+
+    (async () => {
+      const { data, error } = await supabase.functions.invoke('get-stripe-publishable-key');
+      if (error) {
+        console.error('Error fetching Stripe publishable key:', error);
         return;
       }
 
-      // Fallback to edge function
-      try {
-        const { data, error } = await supabase.functions.invoke('get-stripe-publishable-key');
-        if (error) {
-          console.error('Error fetching Stripe publishable key:', error);
-        } else {
-          const key = (data as any)?.publishableKey as string | undefined;
-          if (key) setStripeKey(key);
-        }
-      } catch (err) {
-        console.error('Error fetching Stripe key:', err);
-      } finally {
-        setStripeKeyLoading(false);
-      }
-    };
-
-    fetchStripeKey();
-  }, []);
+      const key = (data as any)?.publishableKey as string | undefined;
+      if (key) setStripeKey(key);
+    })();
+  }, [stripeKey]);
 
 
   useEffect(() => {
@@ -225,16 +209,7 @@ const Payment = () => {
         />
 
         {/* Payment Form - all methods use Stripe (Wave/Orange prepaid cards are Stripe compatible) */}
-        {stripeKeyLoading ? (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center gap-3 text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Chargement du formulaire de paiement...</p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : !stripeKey ? (
+        {!stripeKey ? (
           <Card className="border-destructive/50">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center gap-3 text-center">
@@ -246,7 +221,7 @@ const Payment = () => {
               </div>
             </CardContent>
           </Card>
-        ) : clientSecret && stripePromise ? (
+        ) : clientSecret ? (
           <Card>
             <CardHeader>
               <CardTitle>
