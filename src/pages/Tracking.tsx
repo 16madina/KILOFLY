@@ -336,6 +336,7 @@ const Tracking = () => {
                           arrival={listing.arrival}
                           initialStatus={reservation.status}
                           sellerId={reservation.seller_id}
+                          buyerId={reservation.buyer_id}
                           compact={true}
                         />
                       )}

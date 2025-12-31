@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Package, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +18,7 @@ interface PackageTrackerProps {
   arrival: string;
   initialStatus: string;
   sellerId: string;
+  buyerId?: string;
   compact?: boolean;
 }
 
@@ -26,51 +28,45 @@ export function PackageTracker({
   arrival, 
   initialStatus,
   sellerId,
+  buyerId,
   compact = false 
 }: PackageTrackerProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [currentStatus, setCurrentStatus] = useState(initialStatus);
   const [expanded, setExpanded] = useState(!compact);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number; name?: string } | null>(null);
   const [isPaid, setIsPaid] = useState(false);
   const [checkingPayment, setCheckingPayment] = useState(true);
+  const [listingId, setListingId] = useState<string | null>(null);
   
   const isSeller = user?.id === sellerId;
+  const isBuyer = user?.id === buyerId;
 
-  // Check if payment has been made
+  // Check if payment has been made and subscribe to realtime updates
   useEffect(() => {
     const checkPaymentStatus = async () => {
       setCheckingPayment(true);
       try {
-        // Check if there's a completed transaction for this reservation
-        const { data: transaction } = await supabase
-          .from('transactions')
-          .select('id, payment_status')
-          .eq('listing_id', reservationId)
-          .in('payment_status', ['completed', 'captured', 'authorized'])
-          .maybeSingle();
+        // First get the listing_id from the reservation
+        const { data: reservationData } = await supabase
+          .from('reservations')
+          .select('listing_id')
+          .eq('id', reservationId)
+          .single();
 
-        if (transaction) {
-          setIsPaid(true);
-        } else {
-          // Also check by looking at reservation's linked listing
-          const { data: reservationData } = await supabase
-            .from('reservations')
-            .select('listing_id')
-            .eq('id', reservationId)
-            .single();
+        if (reservationData) {
+          setListingId(reservationData.listing_id);
+          
+          const { data: txByListing } = await supabase
+            .from('transactions')
+            .select('id, payment_status')
+            .eq('listing_id', reservationData.listing_id)
+            .in('payment_status', ['completed', 'captured', 'authorized'])
+            .limit(1)
+            .maybeSingle();
 
-          if (reservationData) {
-            const { data: txByListing } = await supabase
-              .from('transactions')
-              .select('id, payment_status')
-              .eq('listing_id', reservationData.listing_id)
-              .in('payment_status', ['completed', 'captured', 'authorized'])
-              .limit(1)
-              .maybeSingle();
-
-            setIsPaid(!!txByListing);
-          }
+          setIsPaid(!!txByListing);
         }
       } catch (error) {
         console.error('Error checking payment status:', error);
@@ -80,7 +76,36 @@ export function PackageTracker({
     };
 
     checkPaymentStatus();
-  }, [reservationId]);
+
+    // Subscribe to realtime transaction updates
+    const transactionChannel = supabase
+      .channel(`payment-status-${reservationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+        },
+        (payload) => {
+          const transaction = payload.new as any;
+          if (transaction && listingId && transaction.listing_id === listingId) {
+            if (['completed', 'captured', 'authorized'].includes(transaction.payment_status)) {
+              setIsPaid(true);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(transactionChannel);
+    };
+  }, [reservationId, listingId]);
+
+  const handlePayNow = () => {
+    navigate(`/payment?reservationId=${reservationId}`);
+  };
 
   useEffect(() => {
     // Fetch latest tracking event with location
@@ -220,6 +245,26 @@ export function PackageTracker({
               <CreditCard className="h-4 w-4 text-amber-500" />
               <AlertDescription className="text-amber-600 dark:text-amber-400">
                 En attente du paiement de l'expéditeur. Vous pourrez récupérer le colis une fois le paiement effectué.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Pay now button for buyer if not paid */}
+          {isBuyer && !isPaid && !checkingPayment && currentStatus === 'approved' && (
+            <Alert className="bg-primary/10 border-primary/20">
+              <CreditCard className="h-4 w-4 text-primary" />
+              <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <span className="text-foreground">
+                  Le voyageur a accepté votre réservation. Effectuez le paiement pour qu'il puisse récupérer votre colis.
+                </span>
+                <Button 
+                  onClick={handlePayNow}
+                  className="whitespace-nowrap"
+                  size="sm"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Payer maintenant
+                </Button>
               </AlertDescription>
             </Alert>
           )}
