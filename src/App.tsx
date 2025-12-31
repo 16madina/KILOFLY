@@ -55,6 +55,7 @@ import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useExchangeRates } from "./hooks/useExchangeRates";
 import { useCurrencyWelcome } from "./hooks/useCurrencyWelcome";
+import { useTransportOfferNotifications } from "./hooks/useTransportOfferNotifications";
 
 const queryClient = new QueryClient();
 
@@ -161,9 +162,9 @@ const AnimatedRoutes = () => {
   );
 };
 
-// Component that needs to be inside AuthProvider
 const AppContent = () => {
   useCurrencyWelcome();
+  useTransportOfferNotifications();
   
   return (
     <div className="relative">
