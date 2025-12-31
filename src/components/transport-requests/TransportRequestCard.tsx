@@ -2,10 +2,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, MapPin, Package, Wallet, Plane, Clock } from "lucide-react";
+import { Calendar, MapPin, Package, Wallet, Plane, Clock, ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatPrice, Currency, CURRENCY_SYMBOLS } from "@/lib/currency";
+import { useHaptics } from "@/hooks/useHaptics";
 
 interface TransportRequestCardProps {
   id: string;
@@ -22,6 +23,7 @@ interface TransportRequestCardProps {
   description: string | null;
   createdAt: string;
   onOfferTransport?: () => void;
+  onClick?: () => void;
   isOwnRequest?: boolean;
   offersCount?: number;
 }
@@ -41,9 +43,12 @@ export const TransportRequestCard = ({
   description,
   createdAt,
   onOfferTransport,
+  onClick,
   isOwnRequest = false,
   offersCount = 0,
 }: TransportRequestCardProps) => {
+  const { impact, ImpactStyle } = useHaptics();
+  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
@@ -51,8 +56,18 @@ export const TransportRequestCard = ({
 
   const timeAgo = formatDistanceToNow(new Date(createdAt), { addSuffix: true, locale: fr });
 
+  const handleCardClick = () => {
+    if (onClick) {
+      impact(ImpactStyle.Light);
+      onClick();
+    }
+  };
+
   return (
-    <Card className="group overflow-hidden border-0 shadow-card hover:shadow-elegant transition-all duration-300 bg-card">
+    <Card 
+      className={`group overflow-hidden border-0 shadow-card hover:shadow-elegant transition-all duration-300 bg-card ${onClick ? 'cursor-pointer active:scale-[0.98]' : ''}`}
+      onClick={handleCardClick}
+    >
       <CardContent className="p-0">
         {/* Header with gradient */}
         <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 p-4 border-b border-border/50">
@@ -137,13 +152,19 @@ export const TransportRequestCard = ({
             )}
             {!isOwnRequest && onOfferTransport && (
               <Button 
-                onClick={onOfferTransport}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOfferTransport();
+                }}
                 className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
                 size="sm"
               >
                 <Plane className="h-4 w-4 mr-2" />
                 Je peux transporter
               </Button>
+            )}
+            {onClick && (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             )}
           </div>
         </div>
