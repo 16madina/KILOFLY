@@ -1,29 +1,34 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Currency, formatPriceWithConversion } from "@/lib/currency";
+import { Currency, formatPrice, convertCurrency } from "@/lib/currency";
 
 interface PriceDisplayProps {
   amount: number;
   currency: Currency;
-  showOriginal?: boolean;
+  showConversion?: boolean;
   className?: string;
+  conversionClassName?: string;
 }
 
 export function PriceDisplay({ 
   amount, 
   currency, 
-  showOriginal = false,
-  className = ""
+  showConversion = true,
+  className = "",
+  conversionClassName = "text-xs text-muted-foreground"
 }: PriceDisplayProps) {
   const { user } = useAuth();
-  const [displayPrice, setDisplayPrice] = useState<string>("");
-  const [userCurrency, setUserCurrency] = useState<Currency>(currency);
+  const [userCurrency, setUserCurrency] = useState<Currency | null>(null);
+  const [convertedPrice, setConvertedPrice] = useState<string>("");
+
+  // Original price in seller's currency
+  const originalPrice = formatPrice(amount, currency);
 
   useEffect(() => {
     async function loadUserCurrency() {
       if (!user) {
-        setUserCurrency(currency);
+        setUserCurrency(null);
         return;
       }
 
@@ -43,21 +48,37 @@ export function PriceDisplay({
     }
 
     loadUserCurrency();
-  }, [user, currency]);
+  }, [user]);
 
   useEffect(() => {
-    async function updatePrice() {
-      const formatted = await formatPriceWithConversion(
-        amount,
-        currency,
-        userCurrency,
-        { showOriginal }
-      );
-      setDisplayPrice(formatted);
+    async function updateConversion() {
+      // Only show conversion if user has a different preferred currency
+      if (!userCurrency || userCurrency === currency) {
+        setConvertedPrice("");
+        return;
+      }
+
+      try {
+        const converted = await convertCurrency(amount, currency, userCurrency);
+        const formatted = formatPrice(converted, userCurrency);
+        setConvertedPrice(formatted);
+      } catch (error) {
+        console.error('Error converting currency:', error);
+        setConvertedPrice("");
+      }
     }
 
-    updatePrice();
-  }, [amount, currency, userCurrency, showOriginal]);
+    if (showConversion) {
+      updateConversion();
+    }
+  }, [amount, currency, userCurrency, showConversion]);
 
-  return <span className={className}>{displayPrice || "..."}</span>;
+  return (
+    <span className="flex flex-col">
+      <span className={className}>{originalPrice}</span>
+      {showConversion && convertedPrice && (
+        <span className={conversionClassName}>≈ {convertedPrice}</span>
+      )}
+    </span>
+  );
 }
