@@ -38,7 +38,8 @@ interface ReservationDetails {
 const Payment = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const reservationId = searchParams.get('reservation');
+  // Backward-compatible: accept both ?reservation= and legacy ?reservationId=
+  const reservationId = searchParams.get('reservation') || searchParams.get('reservationId');
   
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
