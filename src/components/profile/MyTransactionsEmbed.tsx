@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Receipt, MapPin, Calendar, ArrowUpRight, ArrowDownLeft, X, ChevronRight } from "lucide-react";
+import { Receipt, MapPin, Calendar, ArrowUpRight, ArrowDownLeft, ChevronRight, User } from "lucide-react";
 import { format, startOfWeek, startOfMonth, startOfYear } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -40,6 +40,14 @@ interface Transaction {
     arrival: string;
     currency: string;
   };
+  buyer?: {
+    full_name: string;
+    avatar_url: string;
+  };
+  seller?: {
+    full_name: string;
+    avatar_url: string;
+  };
 }
 
 type PeriodFilter = "all" | "week" | "month" | "year";
@@ -65,7 +73,9 @@ export function MyTransactionsEmbed() {
       .from('transactions')
       .select(`
         *,
-        listing:listings(departure, arrival, currency)
+        listing:listings(departure, arrival, currency),
+        buyer:profiles!transactions_buyer_id_fkey(full_name, avatar_url),
+        seller:profiles!transactions_seller_id_fkey(full_name, avatar_url)
       `)
       .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
       .order('created_at', { ascending: false })
@@ -320,6 +330,48 @@ export function MyTransactionsEmbed() {
 
               {/* Details */}
               <div className="space-y-4">
+                {/* Buyer info */}
+                <div className="flex justify-between items-center py-3 border-b">
+                  <span className="text-muted-foreground">Payé par</span>
+                  <div className="flex items-center gap-2">
+                    {selectedTransaction.buyer?.avatar_url ? (
+                      <img 
+                        src={selectedTransaction.buyer.avatar_url} 
+                        alt="" 
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                        <User className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                    )}
+                    <span className="font-medium">
+                      {selectedTransaction.buyer?.full_name || 'Utilisateur'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Seller info */}
+                <div className="flex justify-between items-center py-3 border-b">
+                  <span className="text-muted-foreground">Voyageur</span>
+                  <div className="flex items-center gap-2">
+                    {selectedTransaction.seller?.avatar_url ? (
+                      <img 
+                        src={selectedTransaction.seller.avatar_url} 
+                        alt="" 
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                        <User className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                    )}
+                    <span className="font-medium">
+                      {selectedTransaction.seller?.full_name || 'Utilisateur'}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="flex justify-between items-center py-3 border-b">
                   <span className="text-muted-foreground">Trajet</span>
                   <span className="font-medium">
@@ -328,7 +380,7 @@ export function MyTransactionsEmbed() {
                 </div>
                 
                 <div className="flex justify-between items-center py-3 border-b">
-                  <span className="text-muted-foreground">Date</span>
+                  <span className="text-muted-foreground">Date de paiement</span>
                   <span className="font-medium">
                     {format(new Date(selectedTransaction.created_at), 'dd MMMM yyyy à HH:mm', { locale: fr })}
                   </span>
@@ -347,14 +399,14 @@ export function MyTransactionsEmbed() {
                 </div>
                 
                 <div className="flex justify-between items-center py-3 border-b">
-                  <span className="text-muted-foreground">Commission plateforme (5%)</span>
-                  <span className="font-medium text-muted-foreground">
+                  <span className="text-muted-foreground">Commission KiloFly (5%)</span>
+                  <span className="font-medium text-orange-600 dark:text-orange-400">
                     -{selectedTransaction.platform_commission} {selectedTransaction.listing?.currency || 'EUR'}
                   </span>
                 </div>
                 
                 <div className="flex justify-between items-center py-3 border-b">
-                  <span className="text-muted-foreground">Montant voyageur</span>
+                  <span className="text-muted-foreground">Montant voyageur (95%)</span>
                   <span className="font-medium text-green-600">
                     {selectedTransaction.seller_amount} {selectedTransaction.listing?.currency || 'EUR'}
                   </span>
