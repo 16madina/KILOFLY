@@ -6,10 +6,16 @@ import { CreateTransportRequestForm } from "./CreateTransportRequestForm";
 import { Button } from "@/components/ui/button";
 import { SkeletonShimmer } from "@/components/ui/skeleton-shimmer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Package, Search } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Package, Search, MapPin, Calendar, Wallet, Plane, User, MessageCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { CURRENCY_SYMBOLS, Currency } from "@/lib/currency";
 
 interface TransportRequest {
   id: string;
@@ -37,6 +43,8 @@ export const TransportRequestsList = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [offerDialogOpen, setOfferDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<TransportRequest | null>(null);
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [detailRequest, setDetailRequest] = useState<TransportRequest | null>(null);
 
   useEffect(() => {
     fetchRequests();
@@ -83,6 +91,15 @@ export const TransportRequestsList = () => {
   const handleCreateSuccess = () => {
     setCreateDialogOpen(false);
     fetchRequests();
+  };
+
+  const handleCardClick = (request: TransportRequest) => {
+    setDetailRequest(request);
+    setDetailSheetOpen(true);
+  };
+
+  const formatDate = (dateString: string) => {
+    return format(new Date(dateString), 'dd MMMM yyyy', { locale: fr });
   };
 
   return (
@@ -189,10 +206,142 @@ export const TransportRequestsList = () => {
               createdAt={request.created_at}
               isOwnRequest={user?.id === request.user_id}
               onOfferTransport={() => handleOfferTransport(request)}
+              onClick={() => handleCardClick(request)}
             />
           ))}
         </div>
       )}
+
+      {/* Detail Sheet */}
+      <Sheet open={detailSheetOpen} onOpenChange={setDetailSheetOpen}>
+        <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl">
+          <SheetHeader className="pb-4 border-b">
+            <SheetTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-amber-500" />
+              Demande de transport
+            </SheetTitle>
+          </SheetHeader>
+          
+          {detailRequest && (
+            <div className="py-6 space-y-6 overflow-y-auto">
+              {/* User info */}
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16 ring-2 ring-amber-500/20">
+                  <AvatarImage src={detailRequest.profiles.avatar_url} />
+                  <AvatarFallback className="bg-gradient-to-br from-amber-500 to-orange-500 text-white text-xl">
+                    {detailRequest.profiles.full_name?.charAt(0) || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-lg font-semibold">{detailRequest.profiles.full_name}</p>
+                  <p className="text-sm text-muted-foreground">Recherche un voyageur</p>
+                </div>
+              </div>
+
+              {/* Route */}
+              <div className="p-4 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className="h-4 w-4 rounded-full bg-amber-500" />
+                    <div className="w-0.5 h-10 bg-gradient-to-b from-amber-500 to-orange-500" />
+                    <div className="h-4 w-4 rounded-full bg-orange-500" />
+                  </div>
+                  <div className="flex-1 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-amber-500" />
+                      <span className="text-lg font-semibold">{detailRequest.departure}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Plane className="h-5 w-5 text-orange-500" />
+                      <span className="text-lg font-semibold">{detailRequest.arrival}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Details */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center py-3 border-b">
+                  <span className="text-muted-foreground flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Date souhaitée
+                  </span>
+                  <span className="font-medium">
+                    {formatDate(detailRequest.departure_date_start)}
+                    {detailRequest.departure_date_end && ` - ${formatDate(detailRequest.departure_date_end)}`}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center py-3 border-b">
+                  <span className="text-muted-foreground flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Poids à transporter
+                  </span>
+                  <Badge variant="secondary" className="text-base">
+                    {detailRequest.requested_kg} kg
+                  </Badge>
+                </div>
+                
+                {detailRequest.budget_max && (
+                  <div className="flex justify-between items-center py-3 border-b">
+                    <span className="text-muted-foreground flex items-center gap-2">
+                      <Wallet className="h-4 w-4" />
+                      Budget maximum
+                    </span>
+                    <span className="font-semibold text-green-600">
+                      {detailRequest.budget_max} {CURRENCY_SYMBOLS[detailRequest.currency as Currency] || detailRequest.currency}
+                    </span>
+                  </div>
+                )}
+
+                {detailRequest.description && (
+                  <div className="py-3">
+                    <p className="text-muted-foreground mb-2 flex items-center gap-2">
+                      <MessageCircle className="h-4 w-4" />
+                      Description
+                    </p>
+                    <p className="text-foreground bg-muted/50 p-3 rounded-lg">
+                      {detailRequest.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="space-y-3 pt-4">
+                {user?.id !== detailRequest.user_id && (
+                  <Button
+                    onClick={() => {
+                      setDetailSheetOpen(false);
+                      handleOfferTransport(detailRequest);
+                    }}
+                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                    size="lg"
+                  >
+                    <Plane className="h-5 w-5 mr-2" />
+                    Je peux transporter ce colis
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/user/${detailRequest.user_id}`)}
+                  className="w-full"
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Voir le profil
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => setDetailSheetOpen(false)}
+                >
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Offer Dialog */}
       <TransportOfferDialog
