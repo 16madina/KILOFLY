@@ -51,23 +51,29 @@ serve(async (req) => {
       throw new Error('Reservation must be approved before processing payment');
     }
 
-    // Calculate amounts
-    const totalAmount = reservation.total_price;
-    const platformCommission = Math.round(totalAmount * 100 * 0.05) / 100; // 5%
-    const sellerAmount = totalAmount - platformCommission;
+    // Calculate amounts with 5% commission on BOTH sides
+    const baseAmount = reservation.total_price;
+    const buyerFee = Math.round(baseAmount * 100 * 0.05) / 100; // 5% from buyer
+    const sellerFee = Math.round(baseAmount * 100 * 0.05) / 100; // 5% from seller
+    const totalAmountWithFee = baseAmount + buyerFee; // What buyer pays
+    const sellerAmount = baseAmount - sellerFee; // What seller receives
+    const platformCommission = buyerFee + sellerFee; // Total platform revenue
 
     // Get buyer's email
     const { data: buyerAuth } = await supabase.auth.admin.getUserById(reservation.buyer_id);
     const buyerEmail = buyerAuth?.user?.email || '';
 
-    // Create Payment Intent
+    // Create Payment Intent with buyer fee included
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(totalAmount * 100), // Convert to cents
+      amount: Math.round(totalAmountWithFee * 100), // Convert to cents - includes buyer fee
       currency: reservation.listing.currency ? reservation.listing.currency.toLowerCase() : 'eur',
       receipt_email: buyerEmail,
       description: `KiloFly - Transport ${reservation.listing.departure} → ${reservation.listing.arrival}`,
       metadata: {
         reservationId,
+        baseAmount: (baseAmount * 100).toString(),
+        buyerFee: (buyerFee * 100).toString(),
+        sellerFee: (sellerFee * 100).toString(),
         platformCommission: (platformCommission * 100).toString(),
         sellerAmount: (sellerAmount * 100).toString(),
         sellerId: reservation.seller_id,
@@ -86,9 +92,9 @@ serve(async (req) => {
         listing_id: reservation.listing_id,
         buyer_id: reservation.buyer_id,
         seller_id: reservation.seller_id,
-        amount: totalAmount,
-        platform_commission: platformCommission,
-        seller_amount: sellerAmount,
+        amount: totalAmountWithFee, // Amount including buyer fee
+        platform_commission: platformCommission, // Total platform revenue (buyer fee + seller fee)
+        seller_amount: sellerAmount, // What seller receives after seller fee
         stripe_payment_intent_id: paymentIntent.id,
         status: 'pending',
         payment_status: 'requires_payment',
@@ -100,10 +106,11 @@ serve(async (req) => {
     }
 
     // Send notification to buyer
+    const currency = reservation.listing.currency || 'EUR';
     await supabase.rpc('send_notification', {
       p_user_id: reservation.buyer_id,
       p_title: 'Paiement requis 💳',
-      p_message: `Votre réservation a été approuvée ! Veuillez procéder au paiement de ${totalAmount.toFixed(2)}€ pour confirmer votre commande.`,
+      p_message: `Votre réservation a été approuvée ! Veuillez procéder au paiement de ${totalAmountWithFee.toFixed(2)} ${currency} pour confirmer votre commande.`,
       p_type: 'info',
     });
 
@@ -111,7 +118,9 @@ serve(async (req) => {
       JSON.stringify({
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
-        amount: totalAmount,
+        baseAmount,
+        buyerFee,
+        totalAmount: totalAmountWithFee,
         platformCommission,
         sellerAmount,
       }),
