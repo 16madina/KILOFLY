@@ -119,42 +119,42 @@ const LegalConfirmationDialog = ({
       setSignatureSaved(true);
       toast.success("Signature enregistrée avec succès");
 
-      // Generate PDF and send email automatically
-      try {
-        const pdfResult = await generateLegalPDF({
-          type,
-          userName: userName || user?.email || "Utilisateur",
-          signatureData,
-          timestamp: format(new Date(signatureRecord.signed_at), "PPPp", { locale: fr }),
-          ipAddress: signatureRecord.ip_address,
-          conditionsAccepted: conditions,
-          reservationDetails,
-        });
-
-        // Send email with PDF
-        const { error: emailError } = await supabase.functions.invoke("send-signature-email", {
-          body: {
-            userEmail: user?.email,
+      // Generate PDF and send email automatically (in background)
+      (async () => {
+        try {
+          const pdfResult = await generateLegalPDF({
+            type,
             userName: userName || user?.email || "Utilisateur",
-            signatureType: type,
-            signedAt: format(new Date(signatureRecord.signed_at), "PPPp", { locale: fr }),
+            signatureData,
+            timestamp: format(new Date(signatureRecord.signed_at), "PPPp", { locale: fr }),
             ipAddress: signatureRecord.ip_address,
             conditionsAccepted: conditions,
             reservationDetails,
-            pdfBase64: pdfResult.base64,
-          },
-        });
+          });
 
-        if (emailError) {
-          console.error("Error sending email:", emailError);
-          toast.warning("Signature enregistrée mais l'email n'a pas pu être envoyé");
-        } else {
-          toast.success("Email de confirmation envoyé");
+          // Send email with PDF
+          const { error: emailError } = await supabase.functions.invoke("send-signature-email", {
+            body: {
+              userEmail: user?.email,
+              userName: userName || user?.email || "Utilisateur",
+              signatureType: type,
+              signedAt: format(new Date(signatureRecord.signed_at), "PPPp", { locale: fr }),
+              ipAddress: signatureRecord.ip_address,
+              conditionsAccepted: conditions,
+              reservationDetails,
+              pdfBase64: pdfResult.base64,
+            },
+          });
+
+          if (emailError) {
+            console.error("Error sending email:", emailError);
+          }
+        } catch (error) {
+          console.error("Error generating PDF or sending email:", error);
         }
-      } catch (error) {
-        console.error("Error generating PDF or sending email:", error);
-      }
+      })();
       
+      // Immediately call onConfirm to proceed with payment
       onConfirm({ 
         signature: signatureData, 
         timestamp,
