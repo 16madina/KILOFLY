@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, MapPin, Calendar, Check, X, User } from "lucide-react";
+import { Package, MapPin, Calendar, Check, X, User, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -211,26 +211,37 @@ export function MyReservationsEmbed() {
             
             {/* Action buttons for pending reservations */}
             {res.status === 'pending' && (
-              <div className="flex gap-2 mt-4 pt-3 border-t border-border/50">
+              <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-border/50">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/10"
-                  onClick={() => handleReject(res.id)}
-                  disabled={processingId === res.id}
+                  className="w-full"
+                  onClick={() => navigate(`/conversation/${res.id}?type=reservation`)}
                 >
-                  <X className="h-4 w-4 mr-1" />
-                  Refuser
+                  <MessageCircle className="h-4 w-4 mr-1" />
+                  Envoyer un message
                 </Button>
-                <Button
-                  size="sm"
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                  onClick={() => handleApproveClick(res)}
-                  disabled={processingId === res.id}
-                >
-                  <Check className="h-4 w-4 mr-1" />
-                  Approuver
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={() => handleReject(res.id)}
+                    disabled={processingId === res.id}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Refuser
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => handleApproveClick(res)}
+                    disabled={processingId === res.id}
+                  >
+                    <Check className="h-4 w-4 mr-1" />
+                    Approuver
+                  </Button>
+                </div>
               </div>
             )}
           </Card>
