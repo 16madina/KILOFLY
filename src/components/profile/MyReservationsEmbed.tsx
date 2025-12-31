@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, MapPin, Calendar } from "lucide-react";
+import { Package, MapPin, Calendar, Check, X, User } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import LegalConfirmationDialog from "@/components/LegalConfirmationDialog";
 
 interface Reservation {
   id: string;
@@ -35,6 +37,9 @@ export function MyReservationsEmbed() {
   const navigate = useNavigate();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showLegalDialog, setShowLegalDialog] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchReservations();
@@ -58,6 +63,53 @@ export function MyReservationsEmbed() {
       setReservations(data as Reservation[]);
     }
     setLoading(false);
+  };
+
+  const handleApproveClick = (reservation: Reservation) => {
+    setSelectedReservation(reservation);
+    setShowLegalDialog(true);
+  };
+
+  const handleLegalConfirm = async (signatureData?: { signature: string; timestamp: string; signatureId?: string }) => {
+    if (!selectedReservation) return;
+    
+    setProcessingId(selectedReservation.id);
+    
+    const { error } = await supabase
+      .from('reservations')
+      .update({ status: 'approved' })
+      .eq('id', selectedReservation.id);
+    
+    if (error) {
+      toast.error("Erreur lors de l'approbation");
+      console.error(error);
+    } else {
+      toast.success("Réservation approuvée !");
+      fetchReservations();
+    }
+    
+    setProcessingId(null);
+    setShowLegalDialog(false);
+    setSelectedReservation(null);
+  };
+
+  const handleReject = async (reservationId: string) => {
+    setProcessingId(reservationId);
+    
+    const { error } = await supabase
+      .from('reservations')
+      .update({ status: 'rejected' })
+      .eq('id', reservationId);
+    
+    if (error) {
+      toast.error("Erreur lors du refus");
+      console.error(error);
+    } else {
+      toast.success("Réservation refusée");
+      fetchReservations();
+    }
+    
+    setProcessingId(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -112,44 +164,96 @@ export function MyReservationsEmbed() {
   }
 
   return (
-    <div className="space-y-3">
-      {reservations.map((res) => (
-        <Card
-          key={res.id}
-          className="p-4 backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-                <span className="font-medium text-sm truncate">
-                  {res.listing?.departure} → {res.listing?.arrival}
-                </span>
+    <>
+      <div className="space-y-3">
+        {reservations.map((res) => (
+          <Card
+            key={res.id}
+            className="p-4 backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                {/* Buyer info */}
+                <div className="flex items-center gap-2 mb-2">
+                  <User className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    Expéditeur: {res.buyer?.full_name || 'Non spécifié'}
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span className="font-medium text-sm truncate">
+                    {res.listing?.departure} → {res.listing?.arrival}
+                  </span>
+                </div>
+                
+                <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
+                  {res.item_description}
+                </p>
+                
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {res.listing?.departure_date && format(new Date(res.listing.departure_date), 'dd MMM yyyy', { locale: fr })}
+                  </span>
+                  <span>{res.requested_kg} kg</span>
+                  <span className="font-medium text-foreground">
+                    {res.total_price} {res.listing?.currency || 'EUR'}
+                  </span>
+                </div>
               </div>
               
-              <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
-                {res.item_description}
-              </p>
-              
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  {res.listing?.departure_date && format(new Date(res.listing.departure_date), 'dd MMM yyyy', { locale: fr })}
-                </span>
-                <span>{res.requested_kg} kg</span>
-                <span className="font-medium text-foreground">
-                  {res.total_price} {res.listing?.currency || 'EUR'}
-                </span>
+              <div className="flex flex-col items-end gap-2">
+                {getStatusBadge(res.status)}
               </div>
             </div>
             
-            <div className="flex flex-col items-end gap-2">
-              {getStatusBadge(res.status)}
-            </div>
-          </div>
-        </Card>
-      ))}
+            {/* Action buttons for pending reservations */}
+            {res.status === 'pending' && (
+              <div className="flex gap-2 mt-4 pt-3 border-t border-border/50">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                  onClick={() => handleReject(res.id)}
+                  disabled={processingId === res.id}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Refuser
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => handleApproveClick(res)}
+                  disabled={processingId === res.id}
+                >
+                  <Check className="h-4 w-4 mr-1" />
+                  Approuver
+                </Button>
+              </div>
+            )}
+          </Card>
+        ))}
+      </div>
       
-    </div>
+      {/* Legal Confirmation Dialog */}
+      <LegalConfirmationDialog
+        open={showLegalDialog}
+        onOpenChange={setShowLegalDialog}
+        onConfirm={handleLegalConfirm}
+        type="transporter"
+        loading={processingId !== null}
+        reservationId={selectedReservation?.id}
+        reservationDetails={selectedReservation ? {
+          id: selectedReservation.id,
+          departure: selectedReservation.listing?.departure || '',
+          arrival: selectedReservation.listing?.arrival || '',
+          requestedKg: selectedReservation.requested_kg,
+          totalPrice: selectedReservation.total_price,
+          itemDescription: selectedReservation.item_description,
+        } : undefined}
+      />
+    </>
   );
 }
