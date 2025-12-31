@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import LegalConfirmationDialog from "@/components/LegalConfirmationDialog";
@@ -19,14 +19,23 @@ const StripePaymentForm = ({ clientSecret, reservationId }: StripePaymentFormPro
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [legalDialogOpen, setLegalDialogOpen] = useState(false);
+  const [stripeReady, setStripeReady] = useState(false);
 
   const handlePayClick = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Vérifier que Stripe est prêt avant d'ouvrir le dialogue
+    if (!stripe || !elements || !stripeReady) {
+      toast.error("Le formulaire de paiement n'est pas encore prêt. Veuillez patienter.");
+      return;
+    }
+    
     setLegalDialogOpen(true);
   };
 
   const handlePayConfirmed = async () => {
-    if (!stripe || !elements) {
+    if (!stripe || !elements || !stripeReady) {
+      toast.error("Le formulaire de paiement n'est pas prêt");
       return;
     }
 
@@ -73,15 +82,25 @@ const StripePaymentForm = ({ clientSecret, reservationId }: StripePaymentFormPro
       {loading && <PaymentLoader />}
       
       <form onSubmit={handlePayClick} className="space-y-6">
-        <PaymentElement />
+        <PaymentElement 
+          onReady={() => setStripeReady(true)}
+          onLoadError={() => toast.error("Erreur de chargement du formulaire Stripe")}
+        />
         
         <Button 
           type="submit" 
           className="w-full" 
           size="lg"
-          disabled={!stripe || loading}
+          disabled={!stripe || !stripeReady || loading}
         >
-          Payer maintenant
+          {!stripeReady ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Chargement...
+            </>
+          ) : (
+            "Payer maintenant"
+          )}
         </Button>
 
         <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
