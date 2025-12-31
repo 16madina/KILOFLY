@@ -28,7 +28,8 @@ const StripePaymentForm = ({ clientSecret, reservationId }: StripePaymentFormPro
     if (!elements || paymentElementReady) return;
 
     const interval = window.setInterval(() => {
-      const paymentEl = (elements as any)?.getElement?.("payment");
+      // react-stripe-js expects the Element *type* here (not a string)
+      const paymentEl = elements.getElement(PaymentElement);
       if (paymentEl) {
         setPaymentElementReady(true);
         window.clearInterval(interval);
