@@ -4,11 +4,12 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Package, Receipt, ShieldCheck, AlertTriangle, TrendingUp, Mail, Ban, UserX, Bot } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Users, Package, Receipt, ShieldCheck, AlertTriangle, TrendingUp, Mail, Ban, UserX, Bot, LayoutDashboard, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -274,246 +275,394 @@ const AdminDashboard = () => {
     );
   }
 
+  const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'];
+
+  const userStatsData = [
+    { name: 'Vérifiés', value: stats.verifiedUsers, color: '#22c55e' },
+    { name: 'Non vérifiés', value: stats.totalUsers - stats.verifiedUsers, color: '#f59e0b' },
+  ];
+
+  const listingStatsData = [
+    { name: 'Actives', value: stats.activeListings, color: '#3b82f6' },
+    { name: 'Inactives', value: stats.totalListings - stats.activeListings, color: '#94a3b8' },
+  ];
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <Navbar />
       
       <div className="container py-8 max-w-7xl">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Panneau d'Administration</h1>
           <p className="text-muted-foreground">
             Vue d'ensemble et gestion de la plateforme KiloFly
           </p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Utilisateurs</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsers}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.verifiedUsers} vérifiés
-              </p>
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <LayoutDashboard className="h-4 w-4" />
+              Vue d'ensemble
+            </TabsTrigger>
+            <TabsTrigger value="statistics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Statistiques
+            </TabsTrigger>
+          </TabsList>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Annonces</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalListings}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.activeListings} actives
-              </p>
-            </CardContent>
-          </Card>
+          {/* Overview Tab - Quick Links */}
+          <TabsContent value="overview" className="space-y-6">
+            {/* Key Metrics Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
+                <CardContent className="pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Utilisateurs</p>
+                      <p className="text-2xl font-bold">{stats.totalUsers}</p>
+                    </div>
+                    <Users className="h-8 w-8 text-blue-500" />
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Revenus</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalRevenue.toFixed(2)} $</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.totalTransactions} transactions
-              </p>
-            </CardContent>
-          </Card>
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
+                <CardContent className="pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Annonces</p>
+                      <p className="text-2xl font-bold">{stats.activeListings}</p>
+                    </div>
+                    <Package className="h-8 w-8 text-green-500" />
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">En Attente</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.pendingVerifications + stats.pendingReports}</div>
-              <p className="text-xs text-muted-foreground">
-                Vérifications & signalements
-              </p>
-            </CardContent>
-          </Card>
+              <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800">
+                <CardContent className="pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">En attente</p>
+                      <p className="text-2xl font-bold">{stats.pendingVerifications + stats.pendingReports}</p>
+                    </div>
+                    <AlertTriangle className="h-8 w-8 text-amber-500" />
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setShowBannedDialog(true)}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Bannis</CardTitle>
-              <UserX className="h-4 w-4 text-destructive" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-destructive">{stats.totalBanned}</div>
-              <p className="text-xs text-muted-foreground">
-                Voir la liste
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+              <Card 
+                className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800 cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => setShowBannedDialog(true)}
+              >
+                <CardContent className="pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Bannis</p>
+                      <p className="text-2xl font-bold">{stats.totalBanned}</p>
+                    </div>
+                    <UserX className="h-8 w-8 text-red-500" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                Actions Admin (7 derniers jours)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="emails" stroke="#3b82f6" name="Emails" />
-                  <Line type="monotone" dataKey="warnings" stroke="#f59e0b" name="Avertissements" />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            {/* Quick Links Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Link to="/admin/users">
+                <Card className="hover:bg-muted/50 transition-all hover:shadow-md cursor-pointer h-full">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Users className="h-5 w-5 text-blue-500" />
+                      Gestion des Utilisateurs
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      {stats.totalUsers} utilisateurs • {stats.verifiedUsers} vérifiés
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Ban className="h-5 w-5" />
-                Bannissements (7 derniers jours)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="bans" fill="#ef4444" name="Bannissements" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
+              <Link to="/admin/verification">
+                <Card className="hover:bg-muted/50 transition-all hover:shadow-md cursor-pointer h-full">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <ShieldCheck className="h-5 w-5 text-green-500" />
+                      Vérification d'Identité
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      {stats.pendingVerifications} documents en attente
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
 
-        {/* Quick Links */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Link to="/admin/email">
-            <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5" />
-                  Envoi d'Emails
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Envoyer des emails à vos utilisateurs avec Resend
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
+              <Link to="/admin/listings">
+                <Card className="hover:bg-muted/50 transition-all hover:shadow-md cursor-pointer h-full">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Package className="h-5 w-5 text-purple-500" />
+                      Gestion des Annonces
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      {stats.totalListings} annonces • {stats.activeListings} actives
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
 
-          <Link to="/admin/users">
-            <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Gestion des Utilisateurs
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Voir tous les utilisateurs, bannir, envoyer des messages
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
+              <Link to="/admin/transactions">
+                <Card className="hover:bg-muted/50 transition-all hover:shadow-md cursor-pointer h-full">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Receipt className="h-5 w-5 text-emerald-500" />
+                      Transactions & Revenus
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      {stats.totalRevenue.toFixed(2)} $ de commissions
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
 
-          <Link to="/admin/listings">
-            <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  Gestion des Annonces
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Voir toutes les annonces, modérer, supprimer
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
+              <Link to="/admin/reports">
+                <Card className="hover:bg-muted/50 transition-all hover:shadow-md cursor-pointer h-full">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <AlertTriangle className="h-5 w-5 text-amber-500" />
+                      Signalements
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      {stats.pendingReports} signalements en attente
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
 
-          <Link to="/admin/verification">
-            <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5" />
-                  Vérification d'Identité
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {stats.pendingVerifications} documents en attente
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
+              <Link to="/admin/email">
+                <Card className="hover:bg-muted/50 transition-all hover:shadow-md cursor-pointer h-full">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Mail className="h-5 w-5 text-sky-500" />
+                      Envoi d'Emails
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      Envoyer des emails avec Resend
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
 
-          <Link to="/admin/ai-analytics">
-            <Card className="hover:bg-muted/50 transition-colors cursor-pointer bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-purple-600" />
-                  Analytics IA
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Statistiques de vérification automatique
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
+              <Link to="/admin/ai-analytics">
+                <Card className="hover:bg-muted/50 transition-all hover:shadow-md cursor-pointer h-full bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Bot className="h-5 w-5 text-purple-600" />
+                      Analytics IA
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      Statistiques de vérification automatique
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            </div>
+          </TabsContent>
 
-          <Link to="/admin/transactions">
-            <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Receipt className="h-5 w-5" />
-                  Transactions & Revenus
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Voir les paiements et commissions
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
+          {/* Statistics Tab - Charts and Data */}
+          <TabsContent value="statistics" className="space-y-6">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Utilisateurs</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalUsers}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.verifiedUsers} vérifiés ({stats.totalUsers > 0 ? Math.round((stats.verifiedUsers / stats.totalUsers) * 100) : 0}%)
+                  </p>
+                </CardContent>
+              </Card>
 
-          <Link to="/admin/reports">
-            <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5" />
-                  Signalements
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {stats.pendingReports} signalements en attente
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Annonces</CardTitle>
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalListings}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.activeListings} actives ({stats.totalListings > 0 ? Math.round((stats.activeListings / stats.totalListings) * 100) : 0}%)
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Revenus</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalRevenue.toFixed(2)} $</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.totalTransactions} transactions
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">En Attente</CardTitle>
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.pendingVerifications + stats.pendingReports}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.pendingVerifications} vérif. • {stats.pendingReports} signal.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setShowBannedDialog(true)}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Bannis</CardTitle>
+                  <UserX className="h-4 w-4 text-destructive" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-destructive">{stats.totalBanned}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Voir la liste
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Pie Charts */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Répartition Utilisateurs
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={userStatsData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {userStatsData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Répartition Annonces
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={listingStatsData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {listingStatsData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Line/Bar Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    Actions Admin (7 derniers jours)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="emails" stroke="#3b82f6" name="Emails" strokeWidth={2} />
+                      <Line type="monotone" dataKey="warnings" stroke="#f59e0b" name="Avertissements" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Ban className="h-5 w-5" />
+                    Bannissements (7 derniers jours)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="bans" fill="#ef4444" name="Bannissements" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Banned Users Dialog */}
         <Dialog open={showBannedDialog} onOpenChange={setShowBannedDialog}>
