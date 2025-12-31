@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Package, ChevronDown, ChevronUp } from 'lucide-react';
+import { Package, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrackingTimeline } from './TrackingTimeline';
@@ -9,6 +9,7 @@ import { TrackingActions } from './TrackingActions';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface PackageTrackerProps {
   reservationId: string;
@@ -31,8 +32,55 @@ export function PackageTracker({
   const [currentStatus, setCurrentStatus] = useState(initialStatus);
   const [expanded, setExpanded] = useState(!compact);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number; name?: string } | null>(null);
+  const [isPaid, setIsPaid] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(true);
   
   const isSeller = user?.id === sellerId;
+
+  // Check if payment has been made
+  useEffect(() => {
+    const checkPaymentStatus = async () => {
+      setCheckingPayment(true);
+      try {
+        // Check if there's a completed transaction for this reservation
+        const { data: transaction } = await supabase
+          .from('transactions')
+          .select('id, payment_status')
+          .eq('listing_id', reservationId)
+          .in('payment_status', ['completed', 'captured', 'authorized'])
+          .maybeSingle();
+
+        if (transaction) {
+          setIsPaid(true);
+        } else {
+          // Also check by looking at reservation's linked listing
+          const { data: reservationData } = await supabase
+            .from('reservations')
+            .select('listing_id')
+            .eq('id', reservationId)
+            .single();
+
+          if (reservationData) {
+            const { data: txByListing } = await supabase
+              .from('transactions')
+              .select('id, payment_status')
+              .eq('listing_id', reservationData.listing_id)
+              .in('payment_status', ['completed', 'captured', 'authorized'])
+              .limit(1)
+              .maybeSingle();
+
+            setIsPaid(!!txByListing);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking payment status:', error);
+      } finally {
+        setCheckingPayment(false);
+      }
+    };
+
+    checkPaymentStatus();
+  }, [reservationId]);
 
   useEffect(() => {
     // Fetch latest tracking event with location
@@ -166,13 +214,25 @@ export function PackageTracker({
             currentLocation={currentLocation || undefined}
           />
 
-          {/* Seller action button */}
-          <TrackingActions
-            reservationId={reservationId}
-            currentStatus={currentStatus}
-            isSeller={isSeller}
-            onStatusUpdate={handleStatusUpdate}
-          />
+          {/* Payment warning for seller if not paid */}
+          {isSeller && !isPaid && !checkingPayment && currentStatus === 'approved' && (
+            <Alert className="bg-amber-500/10 border-amber-500/20">
+              <CreditCard className="h-4 w-4 text-amber-500" />
+              <AlertDescription className="text-amber-600 dark:text-amber-400">
+                En attente du paiement de l'expéditeur. Vous pourrez récupérer le colis une fois le paiement effectué.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Seller action button - only show if paid */}
+          {isPaid && (
+            <TrackingActions
+              reservationId={reservationId}
+              currentStatus={currentStatus}
+              isSeller={isSeller}
+              onStatusUpdate={handleStatusUpdate}
+            />
+          )}
 
           {/* Timeline */}
           <div className="pt-4 border-t">
