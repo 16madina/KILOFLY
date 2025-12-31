@@ -79,6 +79,7 @@ const PostListing = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editingId = searchParams.get("edit");
+  const isReactivating = searchParams.get("reactivate") === "true";
   
   const [loading, setLoading] = useState(false);
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
@@ -217,25 +218,37 @@ const PostListing = () => {
       });
 
       if (editingId) {
-        // Update existing listing
+        // Update existing listing (and reactivate if needed)
+        const updateData: Record<string, unknown> = {
+          departure: validatedData.departure,
+          arrival: validatedData.arrival,
+          departure_date: validatedData.departure_date,
+          arrival_date: validatedData.arrival_date,
+          available_kg: validatedData.available_kg,
+          price_per_kg: validatedData.price_per_kg,
+          currency,
+          description: validatedData.description || null,
+          prohibited_items: validatedData.prohibited_items,
+          delivery_option: deliveryOption,
+        };
+
+        // If reactivating, set status back to active
+        if (isReactivating) {
+          updateData.status = 'active';
+        }
+
         const { error } = await supabase
           .from("listings")
-          .update({
-            departure: validatedData.departure,
-            arrival: validatedData.arrival,
-            departure_date: validatedData.departure_date,
-            arrival_date: validatedData.arrival_date,
-            available_kg: validatedData.available_kg,
-            price_per_kg: validatedData.price_per_kg,
-            currency,
-            description: validatedData.description || null,
-            prohibited_items: validatedData.prohibited_items,
-            delivery_option: deliveryOption,
-          })
+          .update(updateData)
           .eq("id", editingId);
 
         if (error) throw error;
-        toast.success("Annonce mise à jour avec succès!");
+        
+        if (isReactivating) {
+          toast.success("Annonce réactivée avec succès!");
+        } else {
+          toast.success("Annonce mise à jour avec succès!");
+        }
       } else {
         // Create new listing
         const { error } = await supabase.from("listings").insert({
@@ -283,11 +296,22 @@ const PostListing = () => {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-bold">{editingId ? "Modifier l'annonce" : "Poster une annonce"}</h1>
+          <h1 className="text-xl font-bold">
+            {isReactivating ? "Réactiver l'annonce" : editingId ? "Modifier l'annonce" : "Poster une annonce"}
+          </h1>
         </div>
       </header>
 
       <div className="container px-4 sm:px-6 py-6">
+        {isReactivating && (
+          <Alert className="mb-6 border-primary/20 bg-primary/5">
+            <AlertCircle className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-primary">
+              Pour réactiver cette annonce, modifiez les dates de voyage avec des dates futures, puis enregistrez.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <Card className="shadow-card animate-fade-in transition-all duration-200 hover:shadow-lg">
           <CardHeader>
             <CardTitle>Détails du voyage</CardTitle>
