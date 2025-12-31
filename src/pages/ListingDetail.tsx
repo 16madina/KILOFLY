@@ -328,7 +328,7 @@ const ListingDetail = () => {
             <Button
               variant="secondary"
               size="icon"
-              onClick={() => navigate(`/post?edit=${listing.id}`)}
+              onClick={() => navigate(`/post-listing?edit=${listing.id}`)}
               className="h-10 w-10 rounded-full bg-background/80 backdrop-blur-md shadow-lg hover:bg-background border-0"
             >
               <Edit className="h-5 w-5" />
