@@ -295,13 +295,32 @@ const Messages = () => {
                       navigate('/my-reservations');
                     }
                   }}
-                  className="w-full flex items-center gap-3 p-4 bg-card hover:bg-muted/50 rounded-xl transition-all duration-200 hover:scale-[1.01] hover:shadow-md text-left animate-fade-in"
+                  className="w-full flex items-center gap-3 p-4 bg-card hover:bg-muted/50 rounded-xl transition-all duration-200 hover:scale-[1.01] hover:shadow-md text-left animate-fade-in relative"
                 >
                   {conversation.type === 'reservation' && (
-                    <div className="absolute top-2 right-2">
-                      <Badge variant="secondary" className="bg-primary/10 text-primary">
-                        <Package className="h-3 w-3 mr-1" />
-                        Réservation
+                    <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        #{conversation.id.slice(0, 6).toUpperCase()}
+                      </span>
+                      <Badge 
+                        variant="secondary" 
+                        className={`text-[10px] px-1.5 py-0.5 ${
+                          conversation.reservation?.status === 'pending' 
+                            ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' 
+                            : conversation.reservation?.status === 'approved' 
+                            ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                            : conversation.reservation?.status === 'in_progress'
+                            ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20'
+                            : conversation.reservation?.status === 'delivered'
+                            ? 'bg-primary/10 text-primary border border-primary/20'
+                            : 'bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        {conversation.reservation?.status === 'pending' && 'En attente'}
+                        {conversation.reservation?.status === 'approved' && 'Approuvée'}
+                        {conversation.reservation?.status === 'in_progress' && 'En cours'}
+                        {conversation.reservation?.status === 'delivered' && 'Livrée'}
+                        {!['pending', 'approved', 'in_progress', 'delivered'].includes(conversation.reservation?.status || '') && conversation.reservation?.status}
                       </Badge>
                     </div>
                   )}
@@ -313,21 +332,26 @@ const Messages = () => {
                     </AvatarFallback>
                   </Avatar>
 
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 pr-24">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold truncate flex-shrink min-w-0">{otherUser.full_name}</h3>
                       <VerifiedBadge verified={otherUser.id_verified || false} size="sm" />
                       <span className="text-xs text-muted-foreground whitespace-nowrap ml-auto flex-shrink-0">
                         {new Date(conversation.updated_at).toLocaleDateString('fr-FR', {
                           day: 'numeric',
-                          month: 'short'
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit'
                         })}
                       </span>
                     </div>
                     {conversation.type === 'reservation' && conversation.reservation?.listing && (
-                      <p className="text-xs text-primary mb-1">
-                        {conversation.reservation.listing.departure} → {conversation.reservation.listing.arrival} • {conversation.reservation.requested_kg} kg
-                      </p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Package className="h-3 w-3 text-primary flex-shrink-0" />
+                        <p className="text-xs text-primary truncate">
+                          {conversation.reservation.listing.departure} → {conversation.reservation.listing.arrival} • {conversation.reservation.requested_kg} kg
+                        </p>
+                      </div>
                     )}
                     <p className="text-sm text-muted-foreground truncate">
                       {lastMessage}
@@ -335,7 +359,7 @@ const Messages = () => {
                   </div>
 
                   {unreadCount > 0 && (
-                    <Badge className="bg-primary text-primary-foreground animate-scale-in">
+                    <Badge className="bg-primary text-primary-foreground animate-scale-in absolute bottom-3 right-3">
                       {unreadCount}
                     </Badge>
                   )}
