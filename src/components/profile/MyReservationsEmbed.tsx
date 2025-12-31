@@ -24,7 +24,7 @@ interface Reservation {
     departure_date: string;
     currency: string;
   };
-  seller?: {
+  buyer?: {
     full_name: string;
     avatar_url: string;
   };
@@ -48,9 +48,9 @@ export function MyReservationsEmbed() {
       .select(`
         *,
         listing:listings(departure, arrival, departure_date, currency),
-        seller:profiles!reservations_seller_id_fkey(full_name, avatar_url)
+        buyer:profiles!reservations_buyer_id_fkey(full_name, avatar_url)
       `)
-      .eq('buyer_id', user.id)
+      .eq('seller_id', user.id)
       .order('created_at', { ascending: false })
       .limit(10);
 
@@ -100,12 +100,12 @@ export function MyReservationsEmbed() {
     return (
       <Card className="p-8 text-center backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
         <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <h3 className="font-semibold mb-2">Aucune réservation</h3>
+        <h3 className="font-semibold mb-2">Aucune demande reçue</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Vous n'avez pas encore fait de réservation.
+          Vous n'avez pas encore reçu de demandes sur vos voyages.
         </p>
-        <Button onClick={() => navigate('/')} size="sm">
-          Trouver un voyageur
+        <Button onClick={() => navigate('/post')} size="sm">
+          Publier un voyage
         </Button>
       </Card>
     );

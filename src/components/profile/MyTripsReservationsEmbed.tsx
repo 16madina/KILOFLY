@@ -24,7 +24,7 @@ interface Reservation {
     departure_date: string;
     currency: string;
   };
-  buyer?: {
+  seller?: {
     full_name: string;
     avatar_url: string;
   };
@@ -48,9 +48,9 @@ export function MyTripsReservationsEmbed() {
       .select(`
         *,
         listing:listings(departure, arrival, departure_date, currency),
-        buyer:profiles!reservations_buyer_id_fkey(full_name, avatar_url)
+        seller:profiles!reservations_seller_id_fkey(full_name, avatar_url)
       `)
-      .eq('seller_id', user.id)
+      .eq('buyer_id', user.id)
       .order('created_at', { ascending: false })
       .limit(10);
 
@@ -100,12 +100,12 @@ export function MyTripsReservationsEmbed() {
     return (
       <Card className="p-8 text-center backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
         <Plane className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <h3 className="font-semibold mb-2">Aucune demande reçue</h3>
+        <h3 className="font-semibold mb-2">Aucune réservation effectuée</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Vous n'avez pas encore reçu de demandes sur vos trajets.
+          Vous n'avez pas encore réservé sur un voyage.
         </p>
-        <Button onClick={() => navigate('/post')} size="sm">
-          Publier un voyage
+        <Button onClick={() => navigate('/')} size="sm">
+          Trouver un voyageur
         </Button>
       </Card>
     );
@@ -130,7 +130,7 @@ export function MyTripsReservationsEmbed() {
               <div className="flex items-center gap-2 mb-2">
                 <User className="h-3 w-3 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">
-                  {res.buyer?.full_name || 'Client'}
+                  Voyageur: {res.seller?.full_name || 'Non spécifié'}
                 </span>
               </div>
               
