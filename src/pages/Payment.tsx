@@ -5,7 +5,7 @@ import type { Stripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2, AlertTriangle, CheckCircle2, FileSignature } from "lucide-react";
+import { ArrowLeft, Loader2, AlertTriangle, CheckCircle2, FileSignature, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PaymentMethodSelector, { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
@@ -23,6 +23,7 @@ interface ReservationDetails {
     avatar_url: string;
   };
   listing: {
+    id: string;
     departure: string;
     arrival: string;
     departure_date: string;
@@ -34,16 +35,17 @@ interface ReservationDetails {
 const Payment = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  // Backward-compatible: accept both ?reservation= and legacy ?reservationId=
   const reservationId = searchParams.get('reservation') || searchParams.get('reservationId');
   
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [regenerating, setRegenerating] = useState(false);
   const [reservationDetails, setReservationDetails] = useState<ReservationDetails | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('card');
   const [stripeKey, setStripeKey] = useState<string | null>(() => import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  // New states for signature flow
+  // Signature flow states
   const [hasSigned, setHasSigned] = useState(false);
   const [legalDialogOpen, setLegalDialogOpen] = useState(false);
   const [buyerFee, setBuyerFee] = useState(0);
@@ -69,7 +71,6 @@ const Payment = () => {
     })();
   }, [stripeKey]);
 
-
   useEffect(() => {
     if (!reservationId) {
       toast.error("Réservation introuvable");
@@ -81,6 +82,7 @@ const Payment = () => {
   }, [reservationId]);
 
   const fetchPaymentDetails = async () => {
+    setErrorMessage(null);
     try {
       // Get reservation details
       const { data: reservation, error: reservationError } = await supabase
@@ -88,7 +90,7 @@ const Payment = () => {
         .select(`
           *,
           seller:profiles!seller_id(full_name, avatar_url),
-          listing:listings!listing_id(departure, arrival, departure_date, arrival_date, currency)
+          listing:listings!listing_id(id, departure, arrival, departure_date, arrival_date, currency)
         `)
         .eq('id', reservationId)
         .single();
@@ -97,55 +99,101 @@ const Payment = () => {
 
       setReservationDetails(reservation as ReservationDetails);
 
-      // Get transaction with client secret - use maybeSingle to avoid error if not found
-      const { data: transaction, error: transactionError } = await supabase
+      // First try to find transaction by reservation_id (new method)
+      let transaction = null;
+      const { data: txByReservation, error: txError1 } = await supabase
         .from('transactions')
         .select('stripe_payment_intent_id')
-        .eq('listing_id', reservation.listing_id)
-        .eq('buyer_id', reservation.buyer_id)
+        .eq('reservation_id', reservationId)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (transactionError) throw transactionError;
+      if (!txError1 && txByReservation) {
+        transaction = txByReservation;
+      } else {
+        // Fallback: find by listing_id + buyer_id (legacy method)
+        const { data: txByLegacy, error: txError2 } = await supabase
+          .from('transactions')
+          .select('stripe_payment_intent_id')
+          .eq('listing_id', reservation.listing_id)
+          .eq('buyer_id', reservation.buyer_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!txError2 && txByLegacy) {
+          transaction = txByLegacy;
+        }
+      }
 
       let paymentIntentId = transaction?.stripe_payment_intent_id;
 
-      // If no transaction exists, create one by calling process-stripe-payment
+      // If no transaction exists, create one
       if (!paymentIntentId) {
         console.log('No transaction found, creating payment intent...');
-        const { data: paymentData, error: paymentError } = await supabase.functions.invoke('process-stripe-payment', {
-          body: { reservationId },
-        });
-
-        if (paymentError) {
-          console.error('Error creating payment intent:', paymentError);
-          toast.error("Erreur lors de la création du paiement");
-          navigate('/profile?tab=rdv');
-          return;
-        }
-
-        // Use the client secret directly from the response
-        setClientSecret(paymentData.clientSecret);
-        setBuyerFee(paymentData.buyerFee || 0);
-        setTotalWithFee(paymentData.totalAmount || 0);
-        setLoading(false);
+        await createNewPaymentIntent();
         return;
       }
 
       // Get payment intent details from edge function
+      console.log('Fetching existing payment intent:', paymentIntentId);
       const { data, error } = await supabase.functions.invoke('get-payment-intent', {
         body: { paymentIntentId },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching payment intent:', error);
+        setErrorMessage(`Erreur lors de la récupération du paiement: ${error.message || 'Erreur inconnue'}`);
+        // Calculate fees for display
+        const baseFee = reservation.total_price * 0.05;
+        setBuyerFee(baseFee);
+        setTotalWithFee(reservation.total_price + baseFee);
+        setLoading(false);
+        return;
+      }
 
       setClientSecret(data.clientSecret);
+      // Calculate fees for display
+      const baseFee = reservation.total_price * 0.05;
+      setBuyerFee(baseFee);
+      setTotalWithFee(reservation.total_price + baseFee);
     } catch (error) {
       console.error('Error fetching payment details:', error);
       toast.error("Erreur lors du chargement du paiement");
       navigate('/profile?tab=rdv');
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const createNewPaymentIntent = async () => {
+    setRegenerating(true);
+    setErrorMessage(null);
+    
+    try {
+      const { data: paymentData, error: paymentError } = await supabase.functions.invoke('process-stripe-payment', {
+        body: { reservationId },
+      });
+
+      if (paymentError) {
+        console.error('Error creating payment intent:', paymentError);
+        setErrorMessage(`Erreur lors de la création du paiement: ${paymentError.message || 'Erreur inconnue'}`);
+        toast.error("Erreur lors de la création du paiement");
+        return;
+      }
+
+      setClientSecret(paymentData.clientSecret);
+      setBuyerFee(paymentData.buyerFee || 0);
+      setTotalWithFee(paymentData.totalAmount || 0);
+      setErrorMessage(null);
+      toast.success("Nouveau paiement créé avec succès");
+    } catch (error: any) {
+      console.error('Error creating payment:', error);
+      setErrorMessage(`Erreur: ${error.message || 'Erreur inconnue'}`);
+      toast.error("Erreur lors de la création du paiement");
+    } finally {
+      setRegenerating(false);
       setLoading(false);
     }
   };
@@ -231,15 +279,49 @@ const Payment = () => {
           </Card>
         )}
 
+        {/* Error message with retry option */}
+        {errorMessage && (
+          <Card className="border-destructive/50 bg-destructive/5">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center gap-4 text-center">
+                <AlertTriangle className="h-10 w-10 text-destructive" />
+                <div>
+                  <p className="font-medium text-destructive">Erreur de paiement</p>
+                  <p className="text-sm text-muted-foreground mt-1">{errorMessage}</p>
+                </div>
+                <Button 
+                  onClick={createNewPaymentIntent}
+                  disabled={regenerating}
+                  className="w-full"
+                >
+                  {regenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Création en cours...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Régénérer le paiement
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Payment Method Selection */}
-        <PaymentMethodSelector
-          selectedMethod={selectedMethod}
-          onSelect={setSelectedMethod}
-          currency={getCurrency()}
-        />
+        {!errorMessage && (
+          <PaymentMethodSelector
+            selectedMethod={selectedMethod}
+            onSelect={setSelectedMethod}
+            currency={getCurrency()}
+          />
+        )}
 
         {/* Signature Step - Must sign before payment */}
-        {!hasSigned && clientSecret && (
+        {!hasSigned && clientSecret && !errorMessage && (
           <Card className="border-primary/30 bg-primary/5">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center gap-4 text-center">
@@ -293,7 +375,7 @@ const Payment = () => {
               </div>
             </CardContent>
           </Card>
-        ) : clientSecret && hasSigned ? (
+        ) : clientSecret && hasSigned && !errorMessage ? (
           <Card>
             <CardHeader>
               <CardTitle>

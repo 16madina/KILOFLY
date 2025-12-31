@@ -25,13 +25,11 @@ const StripePaymentForm = ({ clientSecret, reservationId, skipLegalDialog = fals
   const handlePayClick = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Vérifier que Stripe est prêt avant de procéder
     if (!stripe || !elements || !stripeReady) {
       toast.error("Le formulaire de paiement n'est pas encore prêt. Veuillez patienter.");
       return;
     }
     
-    // If legal dialog was already handled externally, skip it
     if (skipLegalDialog) {
       handlePayConfirmed();
     } else {
@@ -60,18 +58,30 @@ const StripePaymentForm = ({ clientSecret, reservationId, skipLegalDialog = fals
       if (error) {
         toast.error(error.message || "Erreur lors du paiement");
         setLoading(false);
-      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        // Update transaction status
-        await supabase
-          .from('transactions')
-          .update({ payment_status: 'paid', status: 'completed' })
-          .eq('stripe_payment_intent_id', paymentIntent.id);
+        return;
+      }
+      
+      if (paymentIntent && (paymentIntent.status === 'succeeded' || paymentIntent.status === 'requires_capture')) {
+        // Call backend to update transaction status (bypasses RLS)
+        console.log('Payment confirmed, updating transaction status...');
+        const { data, error: updateError } = await supabase.functions.invoke('mark-transaction-paid', {
+          body: { 
+            paymentIntentId: paymentIntent.id,
+            reservationId 
+          },
+        });
 
-        toast.success("Paiement réussi ! 🎉");
-        navigate(`/payment-success?reservation=${reservationId}`);
-      } else if (paymentIntent && paymentIntent.status === 'requires_capture') {
-        // Manual capture mode - payment authorized
-        toast.success("Paiement autorisé ! 🎉");
+        if (updateError) {
+          console.error('Error updating transaction status:', updateError);
+          // Don't block navigation, payment was successful
+        } else {
+          console.log('Transaction status updated:', data);
+        }
+
+        const statusMessage = paymentIntent.status === 'succeeded' 
+          ? "Paiement réussi ! 🎉" 
+          : "Paiement autorisé ! 🎉";
+        toast.success(statusMessage);
         navigate(`/payment-success?reservation=${reservationId}`);
       } else {
         setLoading(false);
