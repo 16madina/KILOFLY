@@ -19,14 +19,22 @@ const StripePaymentForm = ({ clientSecret, reservationId }: StripePaymentFormPro
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [legalDialogOpen, setLegalDialogOpen] = useState(false);
+  const [paymentElementReady, setPaymentElementReady] = useState(false);
 
   const handlePayClick = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!stripe || !elements || !paymentElementReady) {
+      toast.message("Chargement du formulaire de paiement…");
+      return;
+    }
+
     setLegalDialogOpen(true);
   };
 
   const handlePayConfirmed = async () => {
-    if (!stripe || !elements) {
+    if (!stripe || !elements || !paymentElementReady) {
+      toast.message("Chargement du formulaire de paiement…");
       return;
     }
 
@@ -73,13 +81,13 @@ const StripePaymentForm = ({ clientSecret, reservationId }: StripePaymentFormPro
       {loading && <PaymentLoader />}
       
       <form onSubmit={handlePayClick} className="space-y-6">
-        <PaymentElement />
+        <PaymentElement onReady={() => setPaymentElementReady(true)} />
         
         <Button 
           type="submit" 
           className="w-full" 
           size="lg"
-          disabled={!stripe || loading}
+          disabled={!stripe || loading || !paymentElementReady}
         >
           Payer maintenant
         </Button>
