@@ -25,7 +25,8 @@ import {
   Clock,
   Plane,
   ChevronRight,
-  Send
+  Send,
+  Edit
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -280,6 +281,24 @@ const ListingDetail = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </motion.div>
+
+        {/* Edit Button - Floating (only for owner) */}
+        {user && listing && user.id === listing.user_id && (
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="absolute top-4 right-4 z-50 pt-safe"
+          >
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={() => navigate(`/post?edit=${listing.id}`)}
+              className="h-10 w-10 rounded-full bg-background/80 backdrop-blur-md shadow-lg hover:bg-background border-0"
+            >
+              <Edit className="h-5 w-5" />
+            </Button>
+          </motion.div>
+        )}
 
         {/* Hero Image */}
         <div className="relative h-72 sm:h-80 md:h-96 overflow-hidden">
