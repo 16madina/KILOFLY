@@ -11,13 +11,48 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+const parseWebhookBody = async (req: Request): Promise<Record<string, any>> => {
+  const contentType = req.headers.get('content-type') || '';
+
+  try {
+    if (contentType.includes('application/json')) {
+      return await req.json();
+    }
+
+    if (contentType.includes('multipart/form-data')) {
+      const fd = await req.formData();
+      return Object.fromEntries(fd.entries());
+    }
+
+    const text = await req.text();
+    const params = new URLSearchParams(text);
+    const obj: Record<string, any> = {};
+    params.forEach((value, key) => {
+      obj[key] = value;
+    });
+
+    if (Object.keys(obj).length === 0 && text) {
+      try {
+        return JSON.parse(text);
+      } catch {
+        // ignore
+      }
+    }
+
+    return obj;
+  } catch (e) {
+    console.error('Failed to parse CinetPay webhook body:', e);
+    return {};
+  }
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const body = await req.json();
+    const body = await parseWebhookBody(req);
     console.log('CinetPay webhook received:', JSON.stringify(body));
 
     const { 
@@ -131,12 +166,13 @@ serve(async (req) => {
       }
     );
   } catch (error: any) {
+    // IMPORTANT: Never fail the provider callback with 5xx; it can mark payout as failed/unstable.
     console.error('Webhook error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ received: true, error: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
+        status: 200,
       }
     );
   }
