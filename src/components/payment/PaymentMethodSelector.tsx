@@ -129,11 +129,8 @@ export const getPaymentProvider = (method: PaymentMethod): 'stripe' | 'cinetpay'
 };
 
 const PaymentMethodSelector = ({ selectedMethod, onSelect, currency }: PaymentMethodSelectorProps) => {
-  // Show CinetPay options only for XOF currency
-  const availableMethods = currency === 'XOF' 
-    ? paymentMethods 
-    : paymentMethods.filter(m => m.provider === 'stripe');
-
+  // Show all payment methods for all currencies
+  const availableMethods = paymentMethods;
   return (
     <div className="space-y-4">
       <h3 className="text-base font-semibold">Méthode de paiement</h3>
@@ -194,8 +191,8 @@ const PaymentMethodSelector = ({ selectedMethod, onSelect, currency }: PaymentMe
         </div>
       </div>
 
-      {/* CinetPay methods - only for XOF */}
-      {currency === 'XOF' && (
+      {/* CinetPay methods - available for all currencies */}
+      {(
         <div>
           <p className="text-xs text-muted-foreground mb-2">Mobile Money</p>
           <div className="grid grid-cols-2 gap-3">
