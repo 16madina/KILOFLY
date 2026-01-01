@@ -71,6 +71,31 @@ const Payment = () => {
     })();
   }, [stripeKey]);
 
+  // Check if user already signed for this reservation
+  useEffect(() => {
+    const checkExistingSignature = async () => {
+      if (!reservationId) return;
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: existingSignature } = await supabase
+        .from('legal_signatures')
+        .select('id, signed_at')
+        .eq('reservation_id', reservationId)
+        .eq('user_id', user.id)
+        .eq('signature_type', 'sender')
+        .maybeSingle();
+
+      if (existingSignature) {
+        console.log('Existing signature found:', existingSignature.id);
+        setHasSigned(true);
+      }
+    };
+
+    checkExistingSignature();
+  }, [reservationId]);
+
   useEffect(() => {
     if (!reservationId) {
       toast.error("Réservation introuvable");
@@ -385,11 +410,12 @@ const Payment = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Elements stripe={stripePromise} options={{ clientSecret }}>
+              <Elements key={clientSecret} stripe={stripePromise} options={{ clientSecret }}>
                 <StripePaymentForm 
                   clientSecret={clientSecret} 
                   reservationId={reservationId!}
                   skipLegalDialog={true}
+                  onRegeneratePayment={createNewPaymentIntent}
                 />
               </Elements>
               {(selectedMethod === 'wave_visa' || selectedMethod === 'orange_visa') && (

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { ShieldCheck, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import LegalConfirmationDialog from "@/components/LegalConfirmationDialog";
@@ -12,15 +13,39 @@ interface StripePaymentFormProps {
   clientSecret: string;
   reservationId: string;
   skipLegalDialog?: boolean;
+  onRegeneratePayment?: () => void;
 }
 
-const StripePaymentForm = ({ clientSecret, reservationId, skipLegalDialog = false }: StripePaymentFormProps) => {
+const STRIPE_LOAD_TIMEOUT = 15000; // 15 seconds
+
+const StripePaymentForm = ({ 
+  clientSecret, 
+  reservationId, 
+  skipLegalDialog = false,
+  onRegeneratePayment 
+}: StripePaymentFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [legalDialogOpen, setLegalDialogOpen] = useState(false);
   const [stripeReady, setStripeReady] = useState(false);
+  const [stripeError, setStripeError] = useState<string | null>(null);
+  const [loadTimeout, setLoadTimeout] = useState(false);
+
+  // Timeout for Stripe loading
+  useEffect(() => {
+    if (stripeReady || stripeError) return;
+
+    const timer = setTimeout(() => {
+      if (!stripeReady && !stripeError) {
+        setLoadTimeout(true);
+        setStripeError("Le formulaire de paiement ne répond pas. Veuillez réessayer.");
+      }
+    }, STRIPE_LOAD_TIMEOUT);
+
+    return () => clearTimeout(timer);
+  }, [stripeReady, stripeError]);
 
   const handlePayClick = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +87,6 @@ const StripePaymentForm = ({ clientSecret, reservationId, skipLegalDialog = fals
       }
       
       if (paymentIntent && (paymentIntent.status === 'succeeded' || paymentIntent.status === 'requires_capture')) {
-        // Call backend to update transaction status (bypasses RLS)
         console.log('Payment confirmed, updating transaction status...');
         const { data, error: updateError } = await supabase.functions.invoke('mark-transaction-paid', {
           body: { 
@@ -73,7 +97,6 @@ const StripePaymentForm = ({ clientSecret, reservationId, skipLegalDialog = fals
 
         if (updateError) {
           console.error('Error updating transaction status:', updateError);
-          // Don't block navigation, payment was successful
         } else {
           console.log('Transaction status updated:', data);
         }
@@ -93,14 +116,68 @@ const StripePaymentForm = ({ clientSecret, reservationId, skipLegalDialog = fals
     }
   };
 
+  const handleStripeReady = () => {
+    setStripeReady(true);
+    setStripeError(null);
+    setLoadTimeout(false);
+  };
+
+  const handleStripeError = (event: { elementType: string; error: { message?: string } }) => {
+    const errorMsg = event.error?.message || "Erreur de chargement du formulaire Stripe";
+    setStripeError(errorMsg);
+    toast.error(errorMsg);
+  };
+
+  const handleRetry = () => {
+    setStripeError(null);
+    setLoadTimeout(false);
+    setStripeReady(false);
+    window.location.reload();
+  };
+
+  // Show error state
+  if (stripeError || loadTimeout) {
+    return (
+      <Card className="border-destructive/50 bg-destructive/5">
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <AlertTriangle className="h-10 w-10 text-destructive" />
+            <div>
+              <p className="font-medium text-destructive">Erreur Stripe</p>
+              <p className="text-sm text-muted-foreground mt-1">{stripeError}</p>
+            </div>
+            <div className="flex gap-2 w-full flex-col sm:flex-row">
+              <Button 
+                onClick={handleRetry}
+                variant="outline"
+                className="flex-1"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Recharger
+              </Button>
+              {onRegeneratePayment && (
+                <Button 
+                  onClick={onRegeneratePayment}
+                  className="flex-1"
+                >
+                  Régénérer le paiement
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <>
       {loading && <PaymentLoader />}
       
       <form onSubmit={handlePayClick} className="space-y-6">
         <PaymentElement 
-          onReady={() => setStripeReady(true)}
-          onLoadError={() => toast.error("Erreur de chargement du formulaire Stripe")}
+          onReady={handleStripeReady}
+          onLoadError={handleStripeError}
         />
         
         <Button 
