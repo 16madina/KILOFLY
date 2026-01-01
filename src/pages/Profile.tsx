@@ -12,6 +12,7 @@ import { MyTransportRequestsEmbed } from "@/components/profile/MyTransportReques
 import { MyReservationsEmbed } from "@/components/profile/MyReservationsEmbed";
 import { MyTripsReservationsEmbed } from "@/components/profile/MyTripsReservationsEmbed";
 import { MyTransactionsEmbed } from "@/components/profile/MyTransactionsEmbed";
+import WalletCard from "@/components/wallet/WalletCard";
 import { TrustScore } from "@/components/TrustScore";
 import { 
   ChevronLeft,
@@ -542,6 +543,9 @@ const Profile = () => {
 
           {/* Tab: Mes transactions */}
           <TabsContent value="transactions" className="mt-4 space-y-4">
+            {/* Wallet Card */}
+            <WalletCard />
+            
             <MyTransactionsEmbed />
             
             <Link to="/currency-settings">
