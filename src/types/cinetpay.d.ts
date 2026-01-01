@@ -27,7 +27,8 @@ declare global {
         lock_amount?: boolean;
         lock_currency?: boolean;
       }) => void;
-      waitResponse: (callback: (data: {
+      // Callbacks can be assigned directly as properties
+      waitResponse: ((data: {
         status: 'ACCEPTED' | 'REFUSED' | 'PENDING';
         payment_token?: string;
         payment_url?: string;
@@ -35,8 +36,17 @@ declare global {
         amount?: number;
         currency?: string;
         message?: string;
-      }) => void) => void;
-      onClose: (callback: () => void) => void;
+      }) => void) | ((callback: (data: {
+        status: 'ACCEPTED' | 'REFUSED' | 'PENDING';
+        payment_token?: string;
+        payment_url?: string;
+        transaction_id?: string;
+        amount?: number;
+        currency?: string;
+        message?: string;
+      }) => void) => void);
+      onClose: (() => void) | ((callback: () => void) => void);
+      onError?: (error: { message?: string; code?: string }) => void;
     };
   }
 }
