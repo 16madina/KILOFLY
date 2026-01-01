@@ -50,6 +50,7 @@ import TransportRequestDetail from "./pages/TransportRequestDetail";
 import Tracking from "./pages/Tracking";
 import EmailConfirmed from "./pages/EmailConfirmed";
 import MyRewards from "./pages/MyRewards";
+import Wallet from "./pages/Wallet";
 import ReservationChatPage from "./pages/ReservationChatPage";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
@@ -146,6 +147,7 @@ const AnimatedRoutes = () => {
                   <Route path="/currency-settings" element={<CurrencySettings />} />
                   <Route path="/trust-score-info" element={<TrustScoreInfo />} />
                   <Route path="/my-rewards" element={<MyRewards />} />
+                  <Route path="/wallet" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Wallet /></motion.div>} />
                   <Route path="/favorites" element={<Favorites />} />
                   <Route path="/route-alerts" element={<RouteAlerts />} />
           <Route path="/verify-identity" element={<VerifyIdentity />} />

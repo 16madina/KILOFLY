@@ -5,14 +5,17 @@ import type { Stripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2, AlertTriangle, CheckCircle2, FileSignature, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, Loader2, AlertTriangle, CheckCircle2, FileSignature, RefreshCw, ChevronDown, ChevronUp, Smartphone, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import PaymentMethodSelector, { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
+import PaymentMethodSelector, { PaymentMethod, getPaymentProvider } from "@/components/payment/PaymentMethodSelector";
 import StripePaymentForm from "@/components/payment/StripePaymentForm";
 import LegalConfirmationDialog from "@/components/LegalConfirmationDialog";
 import { formatPrice, Currency } from "@/lib/currency";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ReservationDetails {
   id: string;
@@ -70,6 +73,7 @@ const DiagnosticSection = ({ stripeKey, stripeKeySource }: { stripeKey: string; 
 
 const Payment = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const reservationId = searchParams.get('reservation') || searchParams.get('reservationId');
   
@@ -87,6 +91,10 @@ const Payment = () => {
   const [legalDialogOpen, setLegalDialogOpen] = useState(false);
   const [buyerFee, setBuyerFee] = useState(0);
   const [totalWithFee, setTotalWithFee] = useState(0);
+  
+  // CinetPay states
+  const [cinetpayLoading, setCinetpayLoading] = useState(false);
+  const [cinetpayPhone, setCinetpayPhone] = useState('');
 
   const stripePromise: Promise<Stripe | null> = useMemo(
     () => (stripeKey ? loadStripe(stripeKey) : Promise.resolve(null)),
@@ -281,6 +289,48 @@ const Payment = () => {
     toast.success("Signature enregistrée ! Vous pouvez maintenant procéder au paiement.");
   };
 
+  // Check if CinetPay method is selected
+  const isCinetpayMethod = selectedMethod === 'cinetpay_wave' || selectedMethod === 'cinetpay_orange';
+
+  // Handle CinetPay payment
+  const handleCinetpayPayment = async () => {
+    if (!reservationDetails || !user) return;
+    
+    if (!cinetpayPhone || cinetpayPhone.length < 8) {
+      toast.error('Veuillez entrer votre numéro de téléphone');
+      return;
+    }
+
+    setCinetpayLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('cinetpay-payment', {
+        body: {
+          reservationId,
+          amount: reservationDetails.total_price,
+          buyerEmail: user.email || '',
+          buyerPhone: cinetpayPhone,
+          buyerName: user.user_metadata?.full_name || 'Client',
+          sellerName: reservationDetails.seller.full_name,
+          route: `${reservationDetails.listing.departure} → ${reservationDetails.listing.arrival}`,
+          currency: getCurrency(),
+          returnUrl: `${window.location.origin}/payment-success?reservation=${reservationId}`,
+          cancelUrl: `${window.location.origin}/payment?reservation=${reservationId}&cancelled=true`
+        }
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+
+      // Redirect to CinetPay payment page
+      window.location.href = data.paymentUrl;
+    } catch (error: any) {
+      console.error('CinetPay payment error:', error);
+      toast.error(error.message || 'Erreur lors du paiement');
+    } finally {
+      setCinetpayLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -435,8 +485,71 @@ const Payment = () => {
           </motion.div>
         )}
 
-        {/* Payment Form - only show after signature */}
-        {!stripeKey ? (
+        {/* CinetPay Payment Form */}
+        {isCinetpayMethod && hasSigned && !errorMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Card className="border-primary/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Smartphone className="h-5 w-5 text-primary" />
+                  {selectedMethod === 'cinetpay_wave' ? 'Paiement Wave' : 'Paiement Orange Money'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 rounded-lg bg-muted/50 text-center">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Vous serez redirigé vers la page de paiement sécurisée
+                  </p>
+                  <p className="text-2xl font-bold text-primary">
+                    {formatPrice(totalWithFee > 0 ? totalWithFee : (reservationDetails?.total_price || 0) * 1.05, getCurrency())}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cinetpay-phone">Numéro de téléphone</Label>
+                  <div className="relative">
+                    <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="cinetpay-phone"
+                      type="tel"
+                      placeholder={selectedMethod === 'cinetpay_wave' ? '+221 77 123 45 67' : '+225 07 12 34 56 78'}
+                      value={cinetpayPhone}
+                      onChange={(e) => setCinetpayPhone(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Numéro associé à votre compte {selectedMethod === 'cinetpay_wave' ? 'Wave' : 'Orange Money'}
+                  </p>
+                </div>
+
+                <Button
+                  onClick={handleCinetpayPayment}
+                  disabled={cinetpayLoading || !cinetpayPhone}
+                  className="w-full gap-2"
+                  size="lg"
+                >
+                  {cinetpayLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <ExternalLink className="h-5 w-5" />
+                  )}
+                  {cinetpayLoading ? 'Redirection...' : 'Payer maintenant'}
+                </Button>
+
+                <p className="text-xs text-center text-muted-foreground">
+                  🔒 Paiement sécurisé par CinetPay
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Stripe Payment Form - only show for card methods after signature */}
+        {!isCinetpayMethod && !stripeKey ? (
           <Card className="border-destructive/50">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center gap-3 text-center">
@@ -448,7 +561,7 @@ const Payment = () => {
               </div>
             </CardContent>
           </Card>
-        ) : clientSecret && hasSigned && !errorMessage ? (
+        ) : !isCinetpayMethod && clientSecret && hasSigned && !errorMessage ? (
           <Card>
             <CardHeader>
               <CardTitle>
@@ -475,8 +588,8 @@ const Payment = () => {
           </Card>
         ) : null}
 
-        {/* Stripe Diagnostic (collapsible) */}
-        {stripeKey && (
+        {/* Stripe Diagnostic (collapsible) - only for stripe methods */}
+        {!isCinetpayMethod && stripeKey && (
           <DiagnosticSection stripeKey={stripeKey} stripeKeySource={stripeKeySource} />
         )}
 
