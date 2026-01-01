@@ -26,6 +26,11 @@ declare global {
         alternative_currency?: string;
         lock_amount?: boolean;
         lock_currency?: boolean;
+        return_url?: string;
+        cancel_url?: string;
+        metadata?: string;
+        lang?: string;
+        lock_phone_number?: boolean;
       }) => void;
       // Callbacks can be assigned directly as properties
       waitResponse: ((data: {
