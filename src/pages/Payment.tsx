@@ -5,7 +5,7 @@ import type { Stripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2, AlertTriangle, CheckCircle2, FileSignature, RefreshCw } from "lucide-react";
+import { ArrowLeft, Loader2, AlertTriangle, CheckCircle2, FileSignature, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PaymentMethodSelector, { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
@@ -32,6 +32,42 @@ interface ReservationDetails {
   };
 }
 
+// Diagnostic section component
+const DiagnosticSection = ({ stripeKey, stripeKeySource }: { stripeKey: string; stripeKeySource: 'env' | 'backend' | null }) => {
+  const [open, setOpen] = useState(false);
+  const keyPrefix = stripeKey.substring(0, 7);
+  const keyLast4 = stripeKey.slice(-4);
+  const mode = stripeKey.startsWith('pk_live') ? 'LIVE' : stripeKey.startsWith('pk_test') ? 'TEST' : 'INCONNU';
+  
+  return (
+    <div className="text-xs border border-border rounded-lg overflow-hidden">
+      <button 
+        onClick={() => setOpen(!open)} 
+        className="w-full flex items-center justify-between px-3 py-2 bg-muted/50 hover:bg-muted transition-colors"
+      >
+        <span className="text-muted-foreground">Diagnostic Stripe</span>
+        {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+      </button>
+      {open && (
+        <div className="px-3 py-2 space-y-1 bg-background">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Mode</span>
+            <span className={mode === 'LIVE' ? 'text-green-600 font-medium' : 'text-amber-600 font-medium'}>{mode}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Clé</span>
+            <span className="font-mono">{keyPrefix}...{keyLast4}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Source</span>
+            <span className={stripeKeySource === 'backend' ? 'text-green-600' : 'text-amber-600'}>{stripeKeySource || 'inconnue'}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Payment = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -42,7 +78,8 @@ const Payment = () => {
   const [regenerating, setRegenerating] = useState(false);
   const [reservationDetails, setReservationDetails] = useState<ReservationDetails | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('card');
-  const [stripeKey, setStripeKey] = useState<string | null>(() => import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || null);
+  const [stripeKey, setStripeKey] = useState<string | null>(null);
+  const [stripeKeySource, setStripeKeySource] = useState<'env' | 'backend' | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   // Signature flow states
@@ -56,20 +93,31 @@ const Payment = () => {
     [stripeKey]
   );
 
+  // Always try to fetch key from backend first, fallback to env
   useEffect(() => {
-    if (stripeKey) return;
-
     (async () => {
-      const { data, error } = await supabase.functions.invoke('get-stripe-publishable-key');
-      if (error) {
-        console.error('Error fetching Stripe publishable key:', error);
-        return;
+      try {
+        const { data, error } = await supabase.functions.invoke('get-stripe-publishable-key');
+        if (!error && data?.publishableKey) {
+          console.log('[Stripe] Key from backend:', data.publishableKey.substring(0, 12) + '...' + data.publishableKey.slice(-4));
+          setStripeKey(data.publishableKey);
+          setStripeKeySource('backend');
+          return;
+        }
+        console.warn('[Stripe] Backend key fetch failed, falling back to env:', error?.message);
+      } catch (e) {
+        console.warn('[Stripe] Backend fetch error:', e);
       }
 
-      const key = (data as any)?.publishableKey as string | undefined;
-      if (key) setStripeKey(key);
+      // Fallback to env variable
+      const envKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+      if (envKey) {
+        console.log('[Stripe] Key from env:', envKey.substring(0, 12) + '...' + envKey.slice(-4));
+        setStripeKey(envKey);
+        setStripeKeySource('env');
+      }
     })();
-  }, [stripeKey]);
+  }, []);
 
   // Check if user already signed for this reservation
   useEffect(() => {
@@ -426,6 +474,11 @@ const Payment = () => {
             </CardContent>
           </Card>
         ) : null}
+
+        {/* Stripe Diagnostic (collapsible) */}
+        {stripeKey && (
+          <DiagnosticSection stripeKey={stripeKey} stripeKeySource={stripeKeySource} />
+        )}
 
         <p className="text-xs text-center text-muted-foreground">
           Votre paiement est sécurisé. Une commission de 5% est prélevée sur l'acheteur et 5% sur le vendeur. 
