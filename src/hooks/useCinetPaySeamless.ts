@@ -52,9 +52,20 @@ export const useCinetPaySeamless = () => {
   }, []);
 
   const openPaymentModal = useCallback(async (options: PaymentOptions) => {
+    console.log('[CinetPay] Starting payment modal...', { 
+      hasSDK: !!window.CinetPay, 
+      hasConfig: !!config 
+    });
+
     if (!window.CinetPay) {
       toast.error('SDK CinetPay non chargé. Veuillez rafraîchir la page.');
       options.onError('SDK not loaded');
+      return;
+    }
+
+    if (!config) {
+      toast.error('Configuration CinetPay non disponible.');
+      options.onError('Config not loaded');
       return;
     }
 
@@ -69,18 +80,16 @@ export const useCinetPaySeamless = () => {
       const totalAmount = options.amount + buyerFee;
 
       // CinetPay only supports XOF on this account, so we must use XOF
-      // Amount must be a multiple of 5 for XOF
-      const xofAmount = Math.ceil(totalAmount / 5) * 5;
+      // Amount must be a multiple of 5 for XOF and minimum 100 XOF
+      const xofAmount = Math.max(100, Math.ceil(totalAmount / 5) * 5);
 
-      // Configure CinetPay SDK
-      if (config) {
-        window.CinetPay.setConfig({
-          apikey: config.apiKey,
-          site_id: config.siteId,
-          notify_url: config.notifyUrl,
-          mode: config.mode
-        });
-      }
+      console.log('[CinetPay] Payment config:', {
+        transactionId,
+        originalAmount: options.amount,
+        xofAmount,
+        apiKey: config.apiKey?.substring(0, 8) + '...',
+        siteId: config.siteId
+      });
 
       // Create transaction record in database first
       const { data: reservation } = await supabase
@@ -105,25 +114,22 @@ export const useCinetPaySeamless = () => {
           payment_status: 'pending',
           stripe_payment_intent_id: transactionId
         });
+        console.log('[CinetPay] Transaction record created');
       }
 
-      // Open CinetPay Seamless modal
-      window.CinetPay.getCheckout({
-        transaction_id: transactionId,
-        amount: xofAmount,
-        currency: 'XOF', // Force XOF as per account limitation
-        channels: 'ALL',
-        description: options.description,
-        customer_name: options.customerName.split(' ')[0] || options.customerName,
-        customer_surname: options.customerName.split(' ').slice(1).join(' ') || '',
-        customer_email: options.customerEmail,
-        customer_phone_number: options.customerPhone.replace(/[\s+\-()]/g, ''),
-        lock_amount: true,
-        lock_currency: true
+      // Step 1: Set config FIRST
+      console.log('[CinetPay] Setting config...');
+      window.CinetPay.setConfig({
+        apikey: config.apiKey,
+        site_id: config.siteId,
+        notify_url: config.notifyUrl,
+        mode: config.mode
       });
 
-      // Handle response
-      window.CinetPay.waitResponse((data) => {
+      // Step 2: Define callbacks BEFORE getCheckout (per SDK docs)
+      console.log('[CinetPay] Setting up callbacks...');
+      window.CinetPay.waitResponse = (data: any) => {
+        console.log('[CinetPay] Response received:', data);
         setIsLoading(false);
         
         if (data.status === 'ACCEPTED') {
@@ -136,17 +142,44 @@ export const useCinetPaySeamless = () => {
           // PENDING - wait for webhook
           toast.info('Paiement en attente de confirmation...');
         }
-      });
+      };
 
-      // Handle modal close
-      window.CinetPay.onClose(() => {
+      window.CinetPay.onClose = () => {
+        console.log('[CinetPay] Modal closed');
         setIsLoading(false);
         options.onClose();
+      };
+
+      if (window.CinetPay.onError !== undefined) {
+        window.CinetPay.onError = (error: any) => {
+          console.error('[CinetPay] SDK Error:', error);
+          setIsLoading(false);
+          toast.error('Erreur technique CinetPay');
+          options.onError(error?.message || 'SDK error');
+        };
+      }
+
+      // Step 3: Open the checkout modal
+      console.log('[CinetPay] Opening checkout modal...');
+      window.CinetPay.getCheckout({
+        transaction_id: transactionId,
+        amount: xofAmount,
+        currency: 'XOF',
+        channels: 'ALL',
+        description: options.description,
+        customer_name: options.customerName.split(' ')[0] || options.customerName,
+        customer_surname: options.customerName.split(' ').slice(1).join(' ') || '',
+        customer_email: options.customerEmail,
+        customer_phone_number: options.customerPhone.replace(/[\s+\-()]/g, ''),
+        lock_amount: true,
+        lock_currency: true
       });
+
+      console.log('[CinetPay] getCheckout called successfully');
 
     } catch (error: any) {
       setIsLoading(false);
-      console.error('CinetPay error:', error);
+      console.error('[CinetPay] Error:', error);
       toast.error(error.message || 'Erreur lors du paiement');
       options.onError(error.message || 'Unknown error');
     }
