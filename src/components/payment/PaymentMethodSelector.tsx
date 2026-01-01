@@ -1,9 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { CreditCard, Check } from "lucide-react";
+import { CreditCard, Check, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
-export type PaymentMethod = 'card' | 'wave_visa' | 'orange_visa';
+export type PaymentMethod = 'card' | 'wave_visa' | 'orange_visa' | 'cinetpay_wave' | 'cinetpay_orange';
 
 interface PaymentMethodOption {
   id: PaymentMethod;
@@ -12,6 +12,7 @@ interface PaymentMethodOption {
   icon: React.ReactNode;
   accentColor: string;
   selectedBg: string;
+  provider: 'stripe' | 'cinetpay';
 }
 
 interface PaymentMethodSelectorProps {
@@ -21,8 +22,8 @@ interface PaymentMethodSelectorProps {
 }
 
 // Wave logo - official blue wave pattern
-const WaveLogo = () => (
-  <svg viewBox="0 0 48 48" className="h-10 w-10">
+const WaveLogo = ({ size = 10 }: { size?: number }) => (
+  <svg viewBox="0 0 48 48" className={`h-${size} w-${size}`} style={{ height: size * 4, width: size * 4 }}>
     <circle cx="24" cy="24" r="22" fill="#1DC8F2"/>
     <path 
       d="M10 22 Q17 14, 24 22 T38 22" 
@@ -43,8 +44,8 @@ const WaveLogo = () => (
 );
 
 // Orange Money logo - official orange design
-const OrangeMoneyLogo = () => (
-  <svg viewBox="0 0 48 48" className="h-10 w-10">
+const OrangeMoneyLogo = ({ size = 10 }: { size?: number }) => (
+  <svg viewBox="0 0 48 48" className={`h-${size} w-${size}`} style={{ height: size * 4, width: size * 4 }}>
     <rect x="2" y="2" width="44" height="44" rx="10" fill="#FF6600"/>
     <text 
       x="24" 
@@ -67,6 +68,13 @@ const CardLogo = () => (
   </div>
 );
 
+// CinetPay Mobile Money icon
+const MobileMoneyIcon = ({ color }: { color: string }) => (
+  <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", color)}>
+    <Smartphone className="h-6 w-6 text-white" />
+  </div>
+);
+
 const paymentMethods: PaymentMethodOption[] = [
   {
     id: 'card',
@@ -75,93 +83,181 @@ const paymentMethods: PaymentMethodOption[] = [
     icon: <CardLogo />,
     accentColor: 'border-blue-500',
     selectedBg: 'bg-blue-500/10',
+    provider: 'stripe',
   },
   {
     id: 'wave_visa',
     name: 'Wave',
-    description: 'Carte Visa prépayée',
-    icon: <WaveLogo />,
+    description: 'Carte Visa Wave',
+    icon: <WaveLogo size={10} />,
     accentColor: 'border-cyan-500',
     selectedBg: 'bg-cyan-500/10',
+    provider: 'stripe',
   },
   {
     id: 'orange_visa',
     name: 'Orange Money',
-    description: 'Carte Visa prépayée',
-    icon: <OrangeMoneyLogo />,
+    description: 'Carte Visa OM',
+    icon: <OrangeMoneyLogo size={10} />,
     accentColor: 'border-orange-500',
     selectedBg: 'bg-orange-500/10',
+    provider: 'stripe',
+  },
+  {
+    id: 'cinetpay_wave',
+    name: 'Wave Direct',
+    description: 'Paiement mobile',
+    icon: <WaveLogo size={10} />,
+    accentColor: 'border-cyan-600',
+    selectedBg: 'bg-cyan-600/10',
+    provider: 'cinetpay',
+  },
+  {
+    id: 'cinetpay_orange',
+    name: 'OM Direct',
+    description: 'Paiement mobile',
+    icon: <OrangeMoneyLogo size={10} />,
+    accentColor: 'border-orange-600',
+    selectedBg: 'bg-orange-600/10',
+    provider: 'cinetpay',
   },
 ];
 
-const PaymentMethodSelector = ({ selectedMethod, onSelect }: PaymentMethodSelectorProps) => {
+export const getPaymentProvider = (method: PaymentMethod): 'stripe' | 'cinetpay' => {
+  const found = paymentMethods.find(m => m.id === method);
+  return found?.provider || 'stripe';
+};
+
+const PaymentMethodSelector = ({ selectedMethod, onSelect, currency }: PaymentMethodSelectorProps) => {
+  // Show CinetPay options only for XOF currency
+  const availableMethods = currency === 'XOF' 
+    ? paymentMethods 
+    : paymentMethods.filter(m => m.provider === 'stripe');
+
   return (
     <div className="space-y-4">
       <h3 className="text-base font-semibold">Méthode de paiement</h3>
       
-      <div className="grid grid-cols-3 gap-3">
-        {paymentMethods.map((method, index) => {
-          const isSelected = selectedMethod === method.id;
-          
-          return (
-            <motion.div
-              key={method.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.05 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Card
-                className={cn(
-                  "cursor-pointer transition-all duration-200 border-2 relative overflow-hidden",
-                  isSelected
-                    ? cn("border-primary shadow-lg", method.selectedBg)
-                    : "border-border/50 hover:border-primary/40 bg-card"
-                )}
-                onClick={() => onSelect(method.id)}
+      {/* Stripe methods */}
+      <div>
+        <p className="text-xs text-muted-foreground mb-2">Carte bancaire</p>
+        <div className="grid grid-cols-3 gap-3">
+          {availableMethods.filter(m => m.provider === 'stripe').map((method, index) => {
+            const isSelected = selectedMethod === method.id;
+            
+            return (
+              <motion.div
+                key={method.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.05 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <CardContent className="p-3 flex flex-col items-center text-center gap-2">
-                  {/* Selected checkmark */}
-                  {isSelected && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center"
-                    >
-                      <Check className="h-3 w-3 text-primary-foreground" />
-                    </motion.div>
+                <Card
+                  className={cn(
+                    "cursor-pointer transition-all duration-200 border-2 relative overflow-hidden",
+                    isSelected
+                      ? cn("border-primary shadow-lg", method.selectedBg)
+                      : "border-border/50 hover:border-primary/40 bg-card"
                   )}
-
-                  {/* Icon */}
-                  <div className="relative">
-                    {method.icon}
-                  </div>
-
-                  {/* Text */}
-                  <div>
-                    <span className={cn(
-                      "text-sm font-medium block",
-                      isSelected && "text-primary"
-                    )}>
-                      {method.name}
-                    </span>
-                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
-                      {method.description}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
+                  onClick={() => onSelect(method.id)}
+                >
+                  <CardContent className="p-3 flex flex-col items-center text-center gap-2">
+                    {isSelected && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center"
+                      >
+                        <Check className="h-3 w-3 text-primary-foreground" />
+                      </motion.div>
+                    )}
+                    <div className="relative">
+                      {method.icon}
+                    </div>
+                    <div>
+                      <span className={cn(
+                        "text-sm font-medium block",
+                        isSelected && "text-primary"
+                      )}>
+                        {method.name}
+                      </span>
+                      <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                        {method.description}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
+
+      {/* CinetPay methods - only for XOF */}
+      {currency === 'XOF' && (
+        <div>
+          <p className="text-xs text-muted-foreground mb-2">Mobile Money</p>
+          <div className="grid grid-cols-2 gap-3">
+            {availableMethods.filter(m => m.provider === 'cinetpay').map((method, index) => {
+              const isSelected = selectedMethod === method.id;
+              
+              return (
+                <motion.div
+                  key={method.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: (index + 3) * 0.05 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Card
+                    className={cn(
+                      "cursor-pointer transition-all duration-200 border-2 relative overflow-hidden",
+                      isSelected
+                        ? cn("border-primary shadow-lg", method.selectedBg)
+                        : "border-border/50 hover:border-primary/40 bg-card"
+                    )}
+                    onClick={() => onSelect(method.id)}
+                  >
+                    <CardContent className="p-3 flex flex-col items-center text-center gap-2">
+                      {isSelected && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center"
+                        >
+                          <Check className="h-3 w-3 text-primary-foreground" />
+                        </motion.div>
+                      )}
+                      <div className="relative">
+                        {method.icon}
+                      </div>
+                      <div>
+                        <span className={cn(
+                          "text-sm font-medium block",
+                          isSelected && "text-primary"
+                        )}>
+                          {method.name}
+                        </span>
+                        <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                          {method.description}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
           <path d="M7 11V7a5 5 0 0110 0v4"/>
         </svg>
-        Paiement sécurisé par Stripe
+        Paiement sécurisé
       </div>
     </div>
   );
