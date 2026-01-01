@@ -179,35 +179,36 @@ const Payment = () => {
 
       setReservationDetails(reservation as ReservationDetails);
 
-      // First try to find transaction by reservation_id (new method)
-      let transaction = null;
-      const { data: txByReservation, error: txError1 } = await supabase
+      // Find existing Stripe transaction (must start with 'pi_')
+      let paymentIntentId: string | null = null;
+      
+      const { data: txByReservation } = await supabase
         .from('transactions')
         .select('stripe_payment_intent_id')
         .eq('reservation_id', reservationId)
+        .like('stripe_payment_intent_id', 'pi_%')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (!txError1 && txByReservation) {
-        transaction = txByReservation;
+      if (txByReservation?.stripe_payment_intent_id) {
+        paymentIntentId = txByReservation.stripe_payment_intent_id;
       } else {
         // Fallback: find by listing_id + buyer_id (legacy method)
-        const { data: txByLegacy, error: txError2 } = await supabase
+        const { data: txByLegacy } = await supabase
           .from('transactions')
           .select('stripe_payment_intent_id')
           .eq('listing_id', reservation.listing_id)
           .eq('buyer_id', reservation.buyer_id)
+          .like('stripe_payment_intent_id', 'pi_%')
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        if (!txError2 && txByLegacy) {
-          transaction = txByLegacy;
+        if (txByLegacy?.stripe_payment_intent_id) {
+          paymentIntentId = txByLegacy.stripe_payment_intent_id;
         }
       }
-
-      let paymentIntentId = transaction?.stripe_payment_intent_id;
 
       // If no transaction exists, create one
       if (!paymentIntentId) {
