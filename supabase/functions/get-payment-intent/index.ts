@@ -15,10 +15,18 @@ serve(async (req) => {
     
     console.log('Retrieving payment intent:', paymentIntentId);
 
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    const stripeSecretKey = (Deno.env.get('STRIPE_SECRET_KEY') || '').trim();
     if (!stripeSecretKey) {
       throw new Error('STRIPE_SECRET_KEY is not configured');
     }
+
+    const keyMode = stripeSecretKey.startsWith('sk_live_')
+      ? 'live'
+      : stripeSecretKey.startsWith('sk_test_')
+        ? 'test'
+        : 'unknown';
+
+    console.log('Stripe key mode:', keyMode, 'last4:', stripeSecretKey.slice(-4));
 
     // Use fetch API directly instead of Stripe SDK to avoid Deno compatibility issues
     const response = await fetch(`https://api.stripe.com/v1/payment_intents/${paymentIntentId}`, {
