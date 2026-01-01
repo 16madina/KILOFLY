@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.cinetpay-payment-webhook]
 verify_jwt = false
+
+[functions.get-cinetpay-config]
+verify_jwt = false
