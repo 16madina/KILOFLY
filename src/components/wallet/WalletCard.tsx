@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Wallet, ArrowDownCircle, ArrowUpCircle, Loader2, CheckCircle, XCircle, Clock, Smartphone } from 'lucide-react';
+import { Wallet, ArrowDownCircle, ArrowUpCircle, Loader2, CheckCircle, XCircle, Clock, Smartphone, ChevronRight } from 'lucide-react';
 import { useWallet } from '@/hooks/useWallet';
 import { toast } from 'sonner';
 import { formatPrice } from '@/lib/currency';
@@ -102,10 +103,15 @@ export default function WalletCard() {
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/5 rounded-full translate-y-1/2 -translate-x-1/2" />
         
         <CardHeader className="relative">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Wallet className="h-5 w-5 text-primary" />
-            Mon Portefeuille
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Wallet className="h-5 w-5 text-primary" />
+              Mon Portefeuille
+            </CardTitle>
+            <Link to="/wallet" className="text-xs text-primary flex items-center gap-1 hover:underline">
+              Voir tout <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
         </CardHeader>
         
         <CardContent className="relative">
@@ -116,14 +122,22 @@ export default function WalletCard() {
             </p>
           </div>
 
-          <Button
-            onClick={() => setShowWithdrawForm(!showWithdrawForm)}
-            className="w-full gap-2"
-            disabled={!wallet || wallet.balance < 500}
-          >
-            <ArrowUpCircle className="h-4 w-4" />
-            Retirer des fonds
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowWithdrawForm(!showWithdrawForm)}
+              className="flex-1 gap-2"
+              disabled={!wallet || wallet.balance < 500}
+            >
+              <ArrowUpCircle className="h-4 w-4" />
+              Retirer
+            </Button>
+            <Link to="/wallet" className="flex-1">
+              <Button variant="outline" className="w-full gap-2">
+                <Wallet className="h-4 w-4" />
+                Détails
+              </Button>
+            </Link>
+          </div>
 
           {wallet && wallet.balance < 500 && (
             <p className="text-xs text-muted-foreground text-center mt-2">
