@@ -14,19 +14,61 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+const parseWebhookBody = async (req: Request): Promise<Record<string, any>> => {
+  const contentType = req.headers.get('content-type') || '';
+
+  try {
+    if (contentType.includes('application/json')) {
+      return await req.json();
+    }
+
+    if (contentType.includes('multipart/form-data')) {
+      const fd = await req.formData();
+      return Object.fromEntries(fd.entries());
+    }
+
+    const text = await req.text();
+
+    // x-www-form-urlencoded (common for payment providers)
+    const params = new URLSearchParams(text);
+    const obj: Record<string, any> = {};
+    params.forEach((value, key) => {
+      obj[key] = value;
+    });
+
+    // Fallback: if body wasn't urlencoded, try JSON
+    if (Object.keys(obj).length === 0 && text) {
+      try {
+        return JSON.parse(text);
+      } catch {
+        // ignore
+      }
+    }
+
+    return obj;
+  } catch (e) {
+    console.error('Failed to parse CinetPay webhook body:', e);
+    return {};
+  }
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const body = await req.json();
+    const body = await parseWebhookBody(req);
     console.log('CinetPay payment webhook received:', JSON.stringify(body));
 
-    const { cpm_trans_id } = body;
+    const cpm_trans_id = body?.cpm_trans_id || body?.transaction_id;
 
     if (!cpm_trans_id) {
-      throw new Error('Missing transaction ID');
+      console.warn('CinetPay payment webhook: missing transaction id');
+      return new Response(JSON.stringify({ received: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
     }
 
     // Verify transaction status with CinetPay
@@ -127,12 +169,13 @@ serve(async (req) => {
       }
     );
   } catch (error: any) {
+    // IMPORTANT: Never fail the provider callback with 5xx; it can mark payment as failed.
     console.error('Payment webhook error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ received: true, error: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
+        status: 200,
       }
     );
   }
