@@ -24,27 +24,47 @@ export default function Favorites() {
   const fetchFavorites = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // First get favorites
+      const { data: favoritesData, error: favError } = await supabase
         .from('favorites')
-        .select(`
-          id,
-          listing_id,
-          created_at,
-          listings (
-            *,
-            profiles (
-              id,
-              full_name,
-              avatar_url,
-              id_verified
-            )
-          )
-        `)
+        .select('id, listing_id, created_at')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setFavorites(data || []);
+      if (favError) throw favError;
+
+      if (!favoritesData || favoritesData.length === 0) {
+        setFavorites([]);
+        return;
+      }
+
+      // Get listing IDs
+      const listingIds = favoritesData.map(f => f.listing_id);
+
+      // Fetch listings with real available kg from the view
+      const { data: listingsData, error: listingsError } = await supabase
+        .from('listings_with_available_kg')
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            full_name,
+            avatar_url,
+            id_verified
+          )
+        `)
+        .in('id', listingIds);
+
+      if (listingsError) throw listingsError;
+
+      // Combine favorites with listings data
+      const combinedData = favoritesData.map(fav => ({
+        ...fav,
+        listings: listingsData?.find(l => l.id === fav.listing_id)
+      })).filter(fav => fav.listings); // Filter out any with missing listings
+
+      setFavorites(combinedData);
     } catch (error: any) {
       console.error('Error fetching favorites:', error);
       toast.error('Erreur lors du chargement des favoris');
@@ -131,7 +151,7 @@ export default function Favorites() {
                   arrival={listing.arrival}
                   departureDate={new Date(listing.departure_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                   arrivalDate={new Date(listing.arrival_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  availableKg={listing.available_kg}
+                  availableKg={listing.real_available_kg ?? listing.available_kg}
                   pricePerKg={listing.price_per_kg}
                   destinationImage={listing.destination_image}
                   isFavorited={true}
