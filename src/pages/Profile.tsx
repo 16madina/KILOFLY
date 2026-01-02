@@ -440,59 +440,48 @@ const Profile = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="annonces" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 h-12 backdrop-blur-xl bg-card/70 border border-white/20 dark:border-white/10">
-            <TabsTrigger value="annonces" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Package className="h-4 w-4 mr-1" />
-              Annonces
-            </TabsTrigger>
-            <TabsTrigger value="reservations" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <CalendarCheck className="h-4 w-4 mr-1" />
-              RDV
-            </TabsTrigger>
-            <TabsTrigger value="transactions" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Receipt className="h-4 w-4 mr-1" />
-              Transactions
-            </TabsTrigger>
-            <TabsTrigger value="parametres" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <SettingsIcon className="h-4 w-4 mr-1" />
-              Paramètres
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Stats Grid - Below Tabs */}
-          <div className="grid grid-cols-4 gap-2 mt-4 p-4 rounded-xl backdrop-blur-xl bg-card/70 border border-white/20 dark:border-white/10">
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+          {/* Tabs styled like stats grid */}
+          <TabsList className="grid w-full grid-cols-4 gap-2 p-4 h-auto rounded-xl backdrop-blur-xl bg-card/70 border border-white/20 dark:border-white/10">
+            <TabsTrigger 
+              value="annonces" 
+              className="flex flex-col items-center gap-1 py-2 px-1 h-auto rounded-lg data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center transition-transform data-[state=active]:scale-110">
                 <Package className="h-4 w-4 text-orange-600 dark:text-orange-400" />
               </div>
-              <p className="text-lg font-bold">{stats.activeListings}</p>
-              <p className="text-[10px] text-muted-foreground text-center">Annonces</p>
-            </div>
+              <p className="text-[10px] text-muted-foreground text-center data-[state=active]:text-foreground data-[state=active]:font-semibold">Annonces</p>
+            </TabsTrigger>
 
-            <div className="flex flex-col items-center gap-1">
+            <TabsTrigger 
+              value="reservations" 
+              className="flex flex-col items-center gap-1 py-2 px-1 h-auto rounded-lg data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
               <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <CalendarCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
               </div>
-              <p className="text-lg font-bold">{stats.soldItems}</p>
-              <p className="text-[10px] text-muted-foreground text-center">Vendus</p>
-            </div>
+              <p className="text-[10px] text-muted-foreground text-center">RDV</p>
+            </TabsTrigger>
 
-            <div className="flex flex-col items-center gap-1">
+            <TabsTrigger 
+              value="transactions" 
+              className="flex flex-col items-center gap-1 py-2 px-1 h-auto rounded-lg data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
               <div className="w-9 h-9 rounded-lg bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
-                <Star className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                <Receipt className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
               </div>
-              <p className="text-lg font-bold">{stats.averageRating.toFixed(1)}</p>
-              <p className="text-[10px] text-muted-foreground text-center">Note</p>
-            </div>
+              <p className="text-[10px] text-muted-foreground text-center">Transactions</p>
+            </TabsTrigger>
 
-            <div className="flex flex-col items-center gap-1">
+            <TabsTrigger 
+              value="parametres" 
+              className="flex flex-col items-center gap-1 py-2 px-1 h-auto rounded-lg data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
               <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
-                <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <SettingsIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
-              <p className="text-lg font-bold">{stats.followers}</p>
-              <p className="text-[10px] text-muted-foreground text-center">Abonnés</p>
-            </div>
-          </div>
+              <p className="text-[10px] text-muted-foreground text-center">Paramètres</p>
+            </TabsTrigger>
+          </TabsList>
 
           {/* Tab: Mes annonces */}
           <TabsContent value="annonces" className="mt-4">
