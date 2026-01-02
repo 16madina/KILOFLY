@@ -397,6 +397,7 @@ const Home = () => {
                       departureDate={formatDate(listing.departure_date)}
                       arrivalDate={formatDate(listing.arrival_date)}
                       availableKg={listing.real_available_kg ?? listing.available_kg}
+                      originalKg={listing.available_kg}
                       pricePerKg={listing.price_per_kg}
                       currency={listing.currency}
                       destinationImage={listing.destination_image || getDestinationImage(listing.arrival)}

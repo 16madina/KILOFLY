@@ -22,6 +22,7 @@ interface ListingCardProps {
   departureDate: string;
   arrivalDate: string;
   availableKg: number;
+  originalKg?: number; // Original kg before reservations
   pricePerKg: number;
   currency?: string;
   destinationImage?: string;
@@ -43,6 +44,7 @@ const ListingCard = ({
   departureDate,
   arrivalDate,
   availableKg,
+  originalKg,
   pricePerKg,
   currency = "EUR",
   destinationImage,
@@ -219,24 +221,41 @@ const ListingCard = ({
       <div className="p-4 space-y-3">
         {/* Route */}
         <motion.div 
-          className="flex items-center gap-2"
+          className="flex items-center justify-between gap-2"
           initial={{ opacity: 0, x: -10 }}
           animate={isInView ? { opacity: 1, x: 0 } : {}}
           transition={{ delay: index * 0.08 + 0.35 }}
         >
-          <div className="p-1.5 rounded-lg bg-primary/10">
-            <MapPin className="h-4 w-4 text-primary" />
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="p-1.5 rounded-lg bg-primary/10 flex-shrink-0">
+              <MapPin className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex items-center gap-2 text-sm min-w-0">
+              <span className="font-semibold text-foreground truncate">{departure}</span>
+              <motion.div
+                animate={{ x: [0, 4, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="flex-shrink-0"
+              >
+                <ArrowRight className="h-4 w-4 text-accent" />
+              </motion.div>
+              <span className="font-semibold text-foreground truncate">{arrival}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 flex-1 text-sm">
-            <span className="font-semibold text-foreground">{departure}</span>
-            <motion.div
-              animate={{ x: [0, 4, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              <ArrowRight className="h-4 w-4 text-accent" />
-            </motion.div>
-            <span className="font-semibold text-foreground">{arrival}</span>
-          </div>
+          {/* Remaining kg badge */}
+          <Badge 
+            variant="secondary" 
+            className={cn(
+              "text-xs font-medium flex-shrink-0",
+              availableKg === 0 
+                ? "bg-destructive/10 text-destructive border-destructive/20" 
+                : availableKg <= 5 
+                  ? "bg-orange-500/10 text-orange-600 border-orange-500/20"
+                  : "bg-green-500/10 text-green-600 border-green-500/20"
+            )}
+          >
+            {availableKg === 0 ? "Complet" : `Reste ${availableKg} kg`}
+          </Badge>
         </motion.div>
 
         {/* Date */}
