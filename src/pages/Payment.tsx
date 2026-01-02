@@ -5,22 +5,24 @@ import type { Stripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2, AlertTriangle, CheckCircle2, FileSignature, RefreshCw, ChevronDown, ChevronUp, Smartphone } from "lucide-react";
+import { ArrowLeft, Loader2, AlertTriangle, CheckCircle2, FileSignature, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import PaymentMethodSelector, { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
+import PaymentMethodSelector, { PaymentMethod, getPaymentProvider } from "@/components/payment/PaymentMethodSelector";
 import StripePaymentForm from "@/components/payment/StripePaymentForm";
+import WavePaymentManual from "@/components/payment/WavePaymentManual";
 import LegalConfirmationDialog from "@/components/LegalConfirmationDialog";
 import { formatPrice, Currency } from "@/lib/currency";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCinetPaySeamless } from "@/hooks/useCinetPaySeamless";
-import '@/types/cinetpay.d.ts';
 
 interface ReservationDetails {
   id: string;
   requested_kg: number;
   total_price: number;
+  buyer_id: string;
+  seller_id: string;
+  listing_id: string;
   seller: {
     full_name: string;
     avatar_url: string;
@@ -92,8 +94,8 @@ const Payment = () => {
   const [buyerFee, setBuyerFee] = useState(0);
   const [totalWithFee, setTotalWithFee] = useState(0);
   
-  // CinetPay Seamless hook
-  const { openPaymentModal, isLoading: cinetpayLoading, isReady: cinetpayReady } = useCinetPaySeamless();
+  // Wave payment declared state
+  const [wavePaymentDeclared, setWavePaymentDeclared] = useState(false);
 
   const stripePromise: Promise<Stripe | null> = useMemo(
     () => (stripeKey ? loadStripe(stripeKey) : Promise.resolve(null)),
@@ -289,32 +291,9 @@ const Payment = () => {
     toast.success("Signature enregistrée ! Vous pouvez maintenant procéder au paiement.");
   };
 
-  // Check if CinetPay method is selected
-  const isCinetpayMethod = selectedMethod === 'cinetpay_wave' || selectedMethod === 'cinetpay_orange';
-
-  // Handle CinetPay Seamless payment
-  const handleCinetpayPayment = () => {
-    if (!reservationDetails || !user || !reservationId) return;
-
-    openPaymentModal({
-      reservationId,
-      amount: reservationDetails.total_price,
-      currency: getCurrency(),
-      description: `KiloFly - Transport ${reservationDetails.listing.departure} → ${reservationDetails.listing.arrival}`,
-      customerName: user.user_metadata?.full_name || 'Client',
-      customerEmail: user.email || '',
-      customerPhone: user.user_metadata?.phone || '',
-      onSuccess: (transactionId) => {
-        navigate(`/payment-success?reservation=${reservationId}`);
-      },
-      onError: (error) => {
-        console.error('CinetPay error:', error);
-      },
-      onClose: () => {
-        console.log('CinetPay modal closed');
-      }
-    });
-  };
+  // Check if Wave manual method is selected
+  const isWaveMethod = selectedMethod === 'wave_manual';
+  const isStripeMethod = getPaymentProvider(selectedMethod) === 'stripe';
 
   if (loading) {
     return (

@@ -1,9 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { CreditCard, Check, Smartphone } from "lucide-react";
+import { CreditCard, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
-export type PaymentMethod = 'card' | 'wave_visa' | 'orange_visa' | 'cinetpay_wave' | 'cinetpay_orange';
+export type PaymentMethod = 'card' | 'wave_visa' | 'orange_visa' | 'wave_manual';
 
 interface PaymentMethodOption {
   id: PaymentMethod;
@@ -12,7 +12,7 @@ interface PaymentMethodOption {
   icon: React.ReactNode;
   accentColor: string;
   selectedBg: string;
-  provider: 'stripe' | 'cinetpay';
+  provider: 'stripe' | 'wave';
 }
 
 interface PaymentMethodSelectorProps {
@@ -68,13 +68,6 @@ const CardLogo = () => (
   </div>
 );
 
-// CinetPay Mobile Money icon
-const MobileMoneyIcon = ({ color }: { color: string }) => (
-  <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", color)}>
-    <Smartphone className="h-6 w-6 text-white" />
-  </div>
-);
-
 const paymentMethods: PaymentMethodOption[] = [
   {
     id: 'card',
@@ -104,42 +97,34 @@ const paymentMethods: PaymentMethodOption[] = [
     provider: 'stripe',
   },
   {
-    id: 'cinetpay_wave',
+    id: 'wave_manual',
     name: 'Wave Direct',
-    description: 'Paiement mobile',
+    description: 'Transfert Wave',
     icon: <WaveLogo size={10} />,
     accentColor: 'border-cyan-600',
     selectedBg: 'bg-cyan-600/10',
-    provider: 'cinetpay',
-  },
-  {
-    id: 'cinetpay_orange',
-    name: 'OM Direct',
-    description: 'Paiement mobile',
-    icon: <OrangeMoneyLogo size={10} />,
-    accentColor: 'border-orange-600',
-    selectedBg: 'bg-orange-600/10',
-    provider: 'cinetpay',
+    provider: 'wave',
   },
 ];
 
-export const getPaymentProvider = (method: PaymentMethod): 'stripe' | 'cinetpay' => {
+export const getPaymentProvider = (method: PaymentMethod): 'stripe' | 'wave' => {
   const found = paymentMethods.find(m => m.id === method);
   return found?.provider || 'stripe';
 };
 
 const PaymentMethodSelector = ({ selectedMethod, onSelect, currency }: PaymentMethodSelectorProps) => {
-  // Show all payment methods for all currencies
-  const availableMethods = paymentMethods;
+  const stripeMethods = paymentMethods.filter(m => m.provider === 'stripe');
+  const waveMethods = paymentMethods.filter(m => m.provider === 'wave');
+
   return (
     <div className="space-y-4">
       <h3 className="text-base font-semibold">Méthode de paiement</h3>
       
-      {/* Stripe methods */}
+      {/* Stripe methods (Card payments) */}
       <div>
-        <p className="text-xs text-muted-foreground mb-2">Carte bancaire</p>
+        <p className="text-xs text-muted-foreground mb-2">Carte bancaire (Stripe)</p>
         <div className="grid grid-cols-3 gap-3">
-          {availableMethods.filter(m => m.provider === 'stripe').map((method, index) => {
+          {stripeMethods.map((method, index) => {
             const isSelected = selectedMethod === method.id;
             
             return (
@@ -191,63 +176,61 @@ const PaymentMethodSelector = ({ selectedMethod, onSelect, currency }: PaymentMe
         </div>
       </div>
 
-      {/* CinetPay methods - available for all currencies */}
-      {(
-        <div>
-          <p className="text-xs text-muted-foreground mb-2">Mobile Money</p>
-          <div className="grid grid-cols-2 gap-3">
-            {availableMethods.filter(m => m.provider === 'cinetpay').map((method, index) => {
-              const isSelected = selectedMethod === method.id;
-              
-              return (
-                <motion.div
-                  key={method.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: (index + 3) * 0.05 }}
-                  whileTap={{ scale: 0.98 }}
+      {/* Wave Manual (Mobile Money) */}
+      <div>
+        <p className="text-xs text-muted-foreground mb-2">Mobile Money</p>
+        <div className="grid grid-cols-1 gap-3">
+          {waveMethods.map((method, index) => {
+            const isSelected = selectedMethod === method.id;
+            
+            return (
+              <motion.div
+                key={method.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: (index + 3) * 0.05 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Card
+                  className={cn(
+                    "cursor-pointer transition-all duration-200 border-2 relative overflow-hidden",
+                    isSelected
+                      ? cn("border-primary shadow-lg", method.selectedBg)
+                      : "border-border/50 hover:border-primary/40 bg-card"
+                  )}
+                  onClick={() => onSelect(method.id)}
                 >
-                  <Card
-                    className={cn(
-                      "cursor-pointer transition-all duration-200 border-2 relative overflow-hidden",
-                      isSelected
-                        ? cn("border-primary shadow-lg", method.selectedBg)
-                        : "border-border/50 hover:border-primary/40 bg-card"
+                  <CardContent className="p-4 flex items-center gap-4">
+                    {isSelected && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute top-2 right-2 h-5 w-5 rounded-full bg-primary flex items-center justify-center"
+                      >
+                        <Check className="h-3 w-3 text-primary-foreground" />
+                      </motion.div>
                     )}
-                    onClick={() => onSelect(method.id)}
-                  >
-                    <CardContent className="p-3 flex flex-col items-center text-center gap-2">
-                      {isSelected && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center"
-                        >
-                          <Check className="h-3 w-3 text-primary-foreground" />
-                        </motion.div>
-                      )}
-                      <div className="relative">
-                        {method.icon}
-                      </div>
-                      <div>
-                        <span className={cn(
-                          "text-sm font-medium block",
-                          isSelected && "text-primary"
-                        )}>
-                          {method.name}
-                        </span>
-                        <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
-                          {method.description}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </div>
+                    <div className="relative">
+                      {method.icon}
+                    </div>
+                    <div className="flex-1">
+                      <span className={cn(
+                        "text-sm font-medium block",
+                        isSelected && "text-primary"
+                      )}>
+                        {method.name}
+                      </span>
+                      <p className="text-xs text-muted-foreground leading-tight mt-0.5">
+                        {method.description} - Envoyez directement sur notre compte Wave
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
         </div>
-      )}
+      </div>
 
       <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

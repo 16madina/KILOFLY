@@ -52,6 +52,7 @@ import EmailConfirmed from "./pages/EmailConfirmed";
 import MyRewards from "./pages/MyRewards";
 import Wallet from "./pages/Wallet";
 import ReservationChatPage from "./pages/ReservationChatPage";
+import AdminWavePayments from "./pages/AdminWavePayments";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -135,6 +136,7 @@ const AnimatedRoutes = () => {
                   <Route path="/admin/verification" element={<AdminVerification />} />
                   <Route path="/admin/ai-analytics" element={<AdminAIAnalytics />} />
                   <Route path="/admin/reports" element={<AdminReports />} />
+                  <Route path="/admin/wave-payments" element={<AdminWavePayments />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/my-listings" element={<MyListings />} />
                   <Route path="/my-transactions" element={<MyTransactions />} />
