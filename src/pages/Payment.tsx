@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2, CheckCircle2, FileSignature, CreditCard } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, FileSignature, CreditCard, Shield, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PaymentMethodSelector from "@/components/payment/PaymentMethodSelector";
@@ -10,6 +10,8 @@ import LegalConfirmationDialog from "@/components/LegalConfirmationDialog";
 import { formatPrice, Currency } from "@/lib/currency";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import waveLogo from "@/assets/wave-logo.jpeg";
+import orangeMoneyLogo from "@/assets/orange-money-logo.png";
 
 interface ReservationDetails {
   id: string;
@@ -312,10 +314,47 @@ const Payment = () => {
           </Card>
         )}
 
-        <p className="text-xs text-center text-muted-foreground">
-          Votre paiement est sécurisé. Une commission de 5% est prélevée sur l'acheteur et 5% sur le vendeur. 
-          L'argent sera conservé jusqu'à la livraison confirmée.
-        </p>
+        {/* Accepted Payment Methods */}
+        <Card className="border-border/50">
+          <CardContent className="pt-5">
+            <p className="text-xs text-center text-muted-foreground mb-4">
+              Méthodes de paiement acceptées
+            </p>
+            <div className="flex items-center justify-center gap-6">
+              <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg">
+                <CreditCard className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm font-medium">Carte bancaire</span>
+              </div>
+              <img 
+                src={waveLogo} 
+                alt="Wave" 
+                className="h-10 w-auto object-contain rounded-md"
+              />
+              <img 
+                src={orangeMoneyLogo} 
+                alt="Orange Money" 
+                className="h-10 w-auto object-contain"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Security Message */}
+        <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+          <Shield className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="text-sm font-medium">Paiement sécurisé</p>
+            <p className="text-xs text-muted-foreground">
+              Le paiement sera conservé par la plateforme et ne sera envoyé au vendeur 
+              <strong> qu'après réception du colis et confirmation de livraison</strong> par vos soins.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <Lock className="h-3.5 w-3.5" />
+          <span>Paiement sécurisé par Stripe</span>
+        </div>
       </div>
 
       {/* Legal Signature Dialog */}
