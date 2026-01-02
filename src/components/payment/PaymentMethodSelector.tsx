@@ -1,4 +1,6 @@
 import { motion } from "framer-motion";
+import waveLogo from "@/assets/wave-logo.jpeg";
+import orangeMoneyLogo from "@/assets/orange-money-logo.png";
 
 export type PaymentMethod = 'card' | 'wave_visa' | 'orange_visa';
 
@@ -21,48 +23,16 @@ const StripeLogo = () => (
   </svg>
 );
 
-// VISA logo
-const VisaLogo = () => (
-  <div className="h-8 w-12 bg-white rounded flex items-center justify-center border border-border/30">
+// VISA logo badge
+const VisaBadge = () => (
+  <div className="h-10 w-14 bg-white rounded-lg flex items-center justify-center border border-border/30 shadow-sm">
     <svg viewBox="0 0 48 16" className="h-4 w-10">
       <path fill="#1A1F71" d="M19.1 1.2l-3.1 13.6h-3.5l3.1-13.6h3.5zm14.2 8.8l1.8-5 1.1 5h-2.9zm3.9 4.8h3.2l-2.8-13.6h-2.9c-.7 0-1.2.4-1.5 1l-5.2 12.6h3.6l.7-2h4.4l.5 2zm-8.3-4.4c0-3.6-5-3.8-5-5.4 0-.5.5-1 1.5-1.1.5 0 1.9-.1 3.5.6l.6-2.9c-.9-.3-2-.6-3.4-.6-3.6 0-6.1 1.9-6.1 4.6 0 2 1.8 3.1 3.2 3.8 1.4.7 1.9 1.1 1.9 1.7 0 .9-1.1 1.3-2.2 1.4-1.8 0-2.9-.5-3.7-.9l-.7 3c.8.4 2.4.7 4 .8 3.8 0 6.3-1.9 6.4-4.8v-.2zM11 1.2L5.2 14.8H1.5L-1.5 4.1c-.2-.7-.4-.9-.9-1.2C-3.5 2.3-5.3 1.9-7 1.6l.1-.4h5.8c.7 0 1.4.5 1.5 1.4l1.4 7.7 3.6-9.1H11z" transform="translate(7 0)"/>
     </svg>
   </div>
 );
 
-// Wave logo badge
-const WaveBadge = () => (
-  <div className="h-8 w-12 rounded flex items-center justify-center" style={{ backgroundColor: '#1DC8F2' }}>
-    <svg viewBox="0 0 40 20" className="h-4 w-8">
-      <path 
-        d="M4 8 Q10 2, 16 8 T28 8" 
-        stroke="white" 
-        strokeWidth="2.5" 
-        fill="none"
-        strokeLinecap="round"
-      />
-      <path 
-        d="M4 14 Q10 8, 16 14 T28 14" 
-        stroke="white" 
-        strokeWidth="1.8" 
-        fill="none"
-        strokeLinecap="round"
-        opacity="0.7"
-      />
-    </svg>
-  </div>
-);
-
-// Orange Money badge
-const OrangeBadge = () => (
-  <div className="h-8 w-12 rounded flex items-center justify-center" style={{ backgroundColor: '#FF6600' }}>
-    <span className="text-white font-bold text-xs">OM</span>
-  </div>
-);
-
 const PaymentMethodSelector = ({ selectedMethod, onSelect }: PaymentMethodSelectorProps) => {
-  // This component is now display-only (showing accepted methods)
-  // The actual selection happens via Stripe's payment form
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
@@ -73,10 +43,18 @@ const PaymentMethodSelector = ({ selectedMethod, onSelect }: PaymentMethodSelect
       <StripeLogo />
       
       {/* Payment method badges in a row */}
-      <div className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-muted/30">
-        <VisaLogo />
-        <WaveBadge />
-        <OrangeBadge />
+      <div className="flex items-center gap-2 p-2 rounded-xl border border-border/50 bg-muted/30">
+        <VisaBadge />
+        <img 
+          src={waveLogo} 
+          alt="Wave" 
+          className="h-10 w-14 object-cover rounded-lg"
+        />
+        <img 
+          src={orangeMoneyLogo} 
+          alt="Orange Money" 
+          className="h-10 w-14 object-contain rounded-lg bg-[#FF6600]"
+        />
       </div>
       
       {/* Security text */}
