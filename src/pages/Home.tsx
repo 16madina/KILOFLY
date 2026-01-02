@@ -31,6 +31,7 @@ interface Listing {
   departure_date: string;
   arrival_date: string;
   available_kg: number;
+  real_available_kg: number | null;
   price_per_kg: number;
   currency?: string;
   destination_image: string | null;
@@ -144,11 +145,13 @@ const Home = () => {
 
   const fetchListings = async (departure?: string, arrival?: string) => {
     setLoading(true);
+    
+    // Use the view that calculates real available kg
     let query = supabase
-      .from("listings")
+      .from("listings_with_available_kg")
       .select(`
         *,
-        profiles (
+        profiles:user_id (
           full_name,
           avatar_url
         )
@@ -393,7 +396,7 @@ const Home = () => {
                       arrival={listing.arrival}
                       departureDate={formatDate(listing.departure_date)}
                       arrivalDate={formatDate(listing.arrival_date)}
-                      availableKg={listing.available_kg}
+                      availableKg={listing.real_available_kg ?? listing.available_kg}
                       pricePerKg={listing.price_per_kg}
                       currency={listing.currency}
                       destinationImage={listing.destination_image || getDestinationImage(listing.arrival)}
