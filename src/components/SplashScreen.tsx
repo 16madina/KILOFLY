@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import kiloFlySplash from "@/assets/kilofly-splash.png";
+import kiloFlyLogo from "@/assets/kilofly-logo.png";
 
 const SplashScreen = ({ onFinish }: { onFinish: () => void }) => {
   const [isVisible, setIsVisible] = useState(true);
@@ -24,24 +24,28 @@ const SplashScreen = ({ onFinish }: { onFinish: () => void }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] transition-all duration-500 ${
+      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-[#1e5aa8] via-[#2c7cd1] to-[#7ec8ff] transition-all duration-500 ${
         isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
       }`}
     >
-      {/* Full screen background image */}
-      <img
-        src={kiloFlySplash}
-        alt="KiloFly"
-        className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ${
-          logoAnimate ? "scale-[1.02]" : "scale-100"
-        }`}
-      />
-      
-      {/* Animated dots at the bottom */}
-      <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2.5 z-10">
-        <div className="h-2.5 w-2.5 rounded-full bg-white/90 shadow-lg animate-bounce [animation-delay:0ms]"></div>
-        <div className="h-2.5 w-2.5 rounded-full bg-white/90 shadow-lg animate-bounce [animation-delay:150ms]"></div>
-        <div className="h-2.5 w-2.5 rounded-full bg-white/90 shadow-lg animate-bounce [animation-delay:300ms]"></div>
+      <div className="flex flex-col items-center gap-8 animate-fade-in">
+        <div className={`transition-all duration-1000 ${
+          logoAnimate ? "scale-110 rotate-[360deg]" : "scale-100 rotate-0"
+        }`}>
+          <img
+            src={kiloFlyLogo}
+            alt="KiloFly"
+            className="h-48 w-auto object-contain drop-shadow-2xl"
+          />
+        </div>
+        <h2 className="text-2xl font-semibold text-white/95 tracking-wide animate-fade-in [animation-delay:300ms]">
+          Chaque Kilo compte
+        </h2>
+        <div className="flex gap-2.5">
+          <div className="h-2.5 w-2.5 rounded-full bg-white/90 shadow-lg animate-bounce [animation-delay:0ms]"></div>
+          <div className="h-2.5 w-2.5 rounded-full bg-white/90 shadow-lg animate-bounce [animation-delay:150ms]"></div>
+          <div className="h-2.5 w-2.5 rounded-full bg-white/90 shadow-lg animate-bounce [animation-delay:300ms]"></div>
+        </div>
       </div>
     </div>
   );
