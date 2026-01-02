@@ -168,9 +168,6 @@ export const useCinetPaySeamless = () => {
       // Format phone number - must be digits only with country code (no + sign)
       const cleanPhone = options.customerPhone.replace(/[\s+\-()]/g, '');
       
-      // Return URL for after payment
-      const returnUrl = `${window.location.origin}/payment-success?reservation=${options.reservationId}`;
-      
       window.CinetPay.getCheckout({
         transaction_id: transactionId,
         amount: xofAmount,
@@ -181,7 +178,6 @@ export const useCinetPaySeamless = () => {
         customer_surname: options.customerName.split(' ').slice(1).join(' ') || 'KiloFly',
         customer_email: options.customerEmail || 'client@kilofly.com',
         customer_phone_number: cleanPhone,
-        return_url: returnUrl,
         lock_amount: true,
         lock_currency: true
       });
