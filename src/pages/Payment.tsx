@@ -8,9 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Loader2, AlertTriangle, CheckCircle2, FileSignature, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import PaymentMethodSelector, { PaymentMethod, getPaymentProvider } from "@/components/payment/PaymentMethodSelector";
+import PaymentMethodSelector, { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 import StripePaymentForm from "@/components/payment/StripePaymentForm";
-import WavePaymentManual from "@/components/payment/WavePaymentManual";
 import LegalConfirmationDialog from "@/components/LegalConfirmationDialog";
 import { formatPrice, Currency } from "@/lib/currency";
 import { motion } from "framer-motion";
@@ -93,9 +92,6 @@ const Payment = () => {
   const [legalDialogOpen, setLegalDialogOpen] = useState(false);
   const [buyerFee, setBuyerFee] = useState(0);
   const [totalWithFee, setTotalWithFee] = useState(0);
-  
-  // Wave payment declared state
-  const [wavePaymentDeclared, setWavePaymentDeclared] = useState(false);
 
   const stripePromise: Promise<Stripe | null> = useMemo(
     () => (stripeKey ? loadStripe(stripeKey) : Promise.resolve(null)),
@@ -291,10 +287,6 @@ const Payment = () => {
     toast.success("Signature enregistrée ! Vous pouvez maintenant procéder au paiement.");
   };
 
-  // Check if Wave manual method is selected
-  const isWaveMethod = selectedMethod === 'wave_manual';
-  const isStripeMethod = getPaymentProvider(selectedMethod) === 'stripe';
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -403,7 +395,6 @@ const Payment = () => {
           <PaymentMethodSelector
             selectedMethod={selectedMethod}
             onSelect={setSelectedMethod}
-            currency={getCurrency()}
           />
         )}
 
@@ -449,47 +440,8 @@ const Payment = () => {
           </motion.div>
         )}
 
-        {/* Wave Manual Payment */}
-        {isWaveMethod && hasSigned && !errorMessage && reservationDetails && user && !wavePaymentDeclared && (
-          <WavePaymentManual
-            reservationId={reservationId!}
-            amount={reservationDetails.total_price}
-            currency={getCurrency()}
-            buyerName={user.email || 'Acheteur'}
-            buyerId={reservationDetails.buyer_id}
-            sellerId={reservationDetails.seller_id}
-            listingId={reservationDetails.listing_id}
-            onPaymentDeclared={() => setWavePaymentDeclared(true)}
-          />
-        )}
-
-        {/* Wave Payment Declared Confirmation */}
-        {isWaveMethod && wavePaymentDeclared && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-          >
-            <Card className="border-green-500/30 bg-green-500/5">
-              <CardContent className="pt-6">
-                <div className="flex flex-col items-center gap-4 text-center">
-                  <CheckCircle2 className="h-12 w-12 text-green-500" />
-                  <div>
-                    <h3 className="font-semibold text-lg text-green-700 dark:text-green-400">Paiement déclaré</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      L'administrateur va vérifier votre transfert Wave. Vous recevrez une notification une fois le paiement confirmé.
-                    </p>
-                  </div>
-                  <Button variant="outline" onClick={() => navigate('/profile?tab=rdv')}>
-                    Retour à mes réservations
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Stripe Payment Form - only show for card/visa methods after signature */}
-        {isStripeMethod && !stripeKey ? (
+        {/* Stripe Payment Form */}
+        {!stripeKey ? (
           <Card className="border-destructive/50">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center gap-3 text-center">
@@ -501,7 +453,7 @@ const Payment = () => {
               </div>
             </CardContent>
           </Card>
-        ) : isStripeMethod && clientSecret && hasSigned && !errorMessage ? (
+        ) : clientSecret && hasSigned && !errorMessage ? (
           <Card>
             <CardHeader>
               <CardTitle>
@@ -528,8 +480,8 @@ const Payment = () => {
           </Card>
         ) : null}
 
-        {/* Stripe Diagnostic (collapsible) - only for stripe methods */}
-        {isStripeMethod && stripeKey && (
+        {/* Stripe Diagnostic (collapsible) */}
+        {stripeKey && (
           <DiagnosticSection stripeKey={stripeKey} stripeKeySource={stripeKeySource} />
         )}
 
