@@ -152,10 +152,15 @@ export default function Favorites() {
                   departureDate={new Date(listing.departure_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                   arrivalDate={new Date(listing.arrival_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                   availableKg={listing.real_available_kg ?? listing.available_kg}
+                  originalKg={listing.available_kg}
                   pricePerKg={listing.price_per_kg}
+                  currency={listing.currency}
                   destinationImage={listing.destination_image}
                   isFavorited={true}
                   onFavoriteToggle={() => handleRemoveFavorite(favorite.id)}
+                  allowedItems={listing.allowed_items || []}
+                  prohibitedItems={listing.prohibited_items || []}
+                  description={listing.description}
                   index={index}
                 />
               );
