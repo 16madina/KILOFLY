@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice, Currency } from "@/lib/currency";
 import { motion } from "framer-motion";
+import waveQrCode from "@/assets/wave-qr-code.jpeg";
 
 interface WavePaymentManualProps {
   reservationId: string;
@@ -19,8 +20,7 @@ interface WavePaymentManualProps {
 }
 
 // Numéro Wave de la plateforme KiloFly
-const WAVE_DEPOSIT_NUMBER = "+221 77 000 00 00"; // À remplacer par votre vrai numéro
-const WAVE_QR_CODE_URL = ""; // URL de l'image QR code Wave à ajouter
+const WAVE_DEPOSIT_NUMBER = "+225 01 51 99 50 50";
 
 const WavePaymentManual = ({
   reservationId,
@@ -186,20 +186,18 @@ const WavePaymentManual = ({
               </div>
             </div>
 
-            {/* QR Code section (optionnel) */}
-            {WAVE_QR_CODE_URL && (
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
-                  <QrCode className="h-3 w-3" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm mb-2">Ou scannez ce QR code :</p>
-                  <div className="w-32 h-32 bg-white rounded-lg p-2 mx-auto">
-                    <img src={WAVE_QR_CODE_URL} alt="QR Code Wave" className="w-full h-full" />
-                  </div>
+            {/* QR Code section */}
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                <QrCode className="h-3 w-3" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm mb-2">Ou scannez ce QR code :</p>
+                <div className="w-40 h-40 bg-white rounded-lg p-2 mx-auto shadow-md">
+                  <img src={waveQrCode} alt="QR Code Wave KiloFly" className="w-full h-full object-contain" />
                 </div>
               </div>
-            )}
+            </div>
 
             <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
               <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
