@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plane, Search, Bookmark } from "lucide-react";
+import { Plane, Search, Bookmark, X } from "lucide-react";
 import { MyListingsEmbed } from "@/components/profile/MyListingsEmbed";
 import { MyTransportRequestsEmbed } from "@/components/profile/MyTransportRequestsEmbed";
 import { MyReservationsEmbed } from "@/components/profile/MyReservationsEmbed";
 import { MyTripsReservationsEmbed } from "@/components/profile/MyTripsReservationsEmbed";
+import { MyCancelledReservationsEmbed } from "@/components/profile/MyCancelledReservationsEmbed";
 import { MyTransactionsEmbed } from "@/components/profile/MyTransactionsEmbed";
 import WalletCard from "@/components/wallet/WalletCard";
 import { TrustScore } from "@/components/TrustScore";
@@ -520,14 +521,18 @@ const Profile = () => {
           {/* Tab: Mes rendez-vous / réservations */}
           <TabsContent value="reservations" className="mt-4">
             <Tabs defaultValue="mes-reservations" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4 h-10">
-                <TabsTrigger value="mes-reservations" className="text-xs gap-1.5">
+              <TabsList className="grid w-full grid-cols-3 mb-4 h-10">
+                <TabsTrigger value="mes-reservations" className="text-xs gap-1">
                   <Bookmark className="h-3.5 w-3.5" />
-                  Mes réservations
+                  Réservations
                 </TabsTrigger>
-                <TabsTrigger value="mes-trajets" className="text-xs gap-1.5">
+                <TabsTrigger value="mes-trajets" className="text-xs gap-1">
                   <Plane className="h-3.5 w-3.5" />
-                  Mes trajets
+                  Trajets
+                </TabsTrigger>
+                <TabsTrigger value="annulees" className="text-xs gap-1">
+                  <X className="h-3.5 w-3.5" />
+                  Annulées
                 </TabsTrigger>
               </TabsList>
               
@@ -537,6 +542,10 @@ const Profile = () => {
               
               <TabsContent value="mes-trajets">
                 <MyTripsReservationsEmbed />
+              </TabsContent>
+              
+              <TabsContent value="annulees">
+                <MyCancelledReservationsEmbed />
               </TabsContent>
             </Tabs>
           </TabsContent>
