@@ -258,6 +258,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "favorites_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_with_available_kg"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "favorites_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -739,6 +746,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reservations_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_with_available_kg"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reservations_seller_id_fkey"
             columns: ["seller_id"]
             isOneToOne: false
@@ -781,6 +795,13 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_with_available_kg"
             referencedColumns: ["id"]
           },
           {
@@ -956,6 +977,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_with_available_kg"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_reservation_id_fkey"
             columns: ["reservation_id"]
             isOneToOne: false
@@ -1008,6 +1036,13 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_offers_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_with_available_kg"
             referencedColumns: ["id"]
           },
           {
@@ -1217,9 +1252,80 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      listings_with_available_kg: {
+        Row: {
+          allowed_items: string[] | null
+          arrival: string | null
+          arrival_date: string | null
+          available_kg: number | null
+          created_at: string | null
+          currency: string | null
+          delivery_option: string | null
+          departure: string | null
+          departure_date: string | null
+          description: string | null
+          destination_image: string | null
+          id: string | null
+          price_per_kg: number | null
+          prohibited_items: string[] | null
+          real_available_kg: number | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          allowed_items?: string[] | null
+          arrival?: string | null
+          arrival_date?: string | null
+          available_kg?: number | null
+          created_at?: string | null
+          currency?: string | null
+          delivery_option?: string | null
+          departure?: string | null
+          departure_date?: string | null
+          description?: string | null
+          destination_image?: string | null
+          id?: string | null
+          price_per_kg?: number | null
+          prohibited_items?: string[] | null
+          real_available_kg?: never
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          allowed_items?: string[] | null
+          arrival?: string | null
+          arrival_date?: string | null
+          available_kg?: number | null
+          created_at?: string | null
+          currency?: string | null
+          delivery_option?: string | null
+          departure?: string | null
+          departure_date?: string | null
+          description?: string | null
+          destination_image?: string | null
+          id?: string | null
+          price_per_kg?: number | null
+          prohibited_items?: string[] | null
+          real_available_kg?: never
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      get_available_kg: { Args: { listing_id_param: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

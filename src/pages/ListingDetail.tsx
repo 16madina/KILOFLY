@@ -47,6 +47,7 @@ import VerifiedBadge from "@/components/VerifiedBadge";
 import { TrustScore } from "@/components/TrustScore";
 import PinchZoomImage from "@/components/mobile/PinchZoomImage";
 import { motion } from "framer-motion";
+import { useAvailableKg } from "@/hooks/useAvailableKg";
 
 interface Listing {
   id: string;
@@ -95,6 +96,10 @@ const ListingDetail = () => {
   const [regulationsAccepted, setRegulationsAccepted] = useState(false);
   const [avgRating, setAvgRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
+  
+  // Use dynamic available kg calculation
+  const { availableKg: realAvailableKg, loading: kgLoading } = useAvailableKg(id || '');
+  const displayAvailableKg = realAvailableKg ?? listing?.available_kg ?? 0;
 
   useEffect(() => {
     if (id) {
@@ -185,8 +190,8 @@ const ListingDetail = () => {
       return;
     }
 
-    if (requestedKg > listing.available_kg) {
-      toast.error(`Quantité maximale disponible: ${listing.available_kg} kg`);
+    if (requestedKg > displayAvailableKg) {
+      toast.error(`Quantité maximale disponible: ${displayAvailableKg} kg`);
       return;
     }
 
@@ -427,7 +432,14 @@ const ListingDetail = () => {
                 <Weight className="h-4 w-4 text-primary" />
                 <span className="text-sm text-muted-foreground">Disponible</span>
               </div>
-              <span className="text-2xl font-bold text-primary">{listing.available_kg} kg</span>
+              <span className="text-2xl font-bold text-primary">
+                {kgLoading ? '...' : displayAvailableKg} kg
+              </span>
+              {displayAvailableKg < listing.available_kg && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  sur {listing.available_kg} kg
+                </p>
+              )}
             </div>
           </motion.div>
 
@@ -641,11 +653,23 @@ const ListingDetail = () => {
               </h4>
               
               <div className="space-y-5">
+                {/* Sold out message */}
+                {displayAvailableKg === 0 && (
+                  <Alert className="border-amber-500/20 bg-amber-500/10">
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-700 dark:text-amber-400">
+                      Tous les kilos de cette annonce ont été réservés. Revenez plus tard ou cherchez une autre annonce.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
                 {/* Quantity Selector - Premium */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <Label className="text-sm font-medium">Quantité</Label>
-                    <span className="text-xs text-muted-foreground">Max: {listing.available_kg} kg</span>
+                    <span className="text-xs text-muted-foreground">
+                      Disponible: {kgLoading ? '...' : displayAvailableKg} kg
+                    </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Button
@@ -653,7 +677,7 @@ const ListingDetail = () => {
                       variant="outline"
                       size="icon"
                       onClick={() => setRequestedKg(Math.max(1, requestedKg - 1))}
-                      disabled={requestedKg <= 1}
+                      disabled={requestedKg <= 1 || displayAvailableKg === 0}
                       className="h-12 w-12 rounded-xl"
                     >
                       -
@@ -664,10 +688,11 @@ const ListingDetail = () => {
                         value={requestedKg}
                         onChange={(e) => {
                           const value = parseInt(e.target.value) || 1;
-                          setRequestedKg(Math.min(listing.available_kg, Math.max(1, value)));
+                          setRequestedKg(Math.min(displayAvailableKg, Math.max(1, value)));
                         }}
                         min={1}
-                        max={listing.available_kg}
+                        max={displayAvailableKg}
+                        disabled={displayAvailableKg === 0}
                         className="text-center text-xl font-bold h-12 rounded-xl"
                       />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">kg</span>
@@ -676,8 +701,8 @@ const ListingDetail = () => {
                       type="button"
                       variant="outline"
                       size="icon"
-                      onClick={() => setRequestedKg(Math.min(listing.available_kg, requestedKg + 1))}
-                      disabled={requestedKg >= listing.available_kg}
+                      onClick={() => setRequestedKg(Math.min(displayAvailableKg, requestedKg + 1))}
+                      disabled={requestedKg >= displayAvailableKg || displayAvailableKg === 0}
                       className="h-12 w-12 rounded-xl"
                     >
                       +
@@ -738,12 +763,17 @@ const ListingDetail = () => {
                 <Button 
                   className="w-full h-14 text-base font-semibold rounded-xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 gap-2" 
                   onClick={handleReservation}
-                  disabled={contactLoading || !itemDescription.trim() || !regulationsAccepted}
+                  disabled={contactLoading || !itemDescription.trim() || !regulationsAccepted || displayAvailableKg === 0}
                 >
                   {contactLoading ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
                       Envoi en cours...
+                    </>
+                  ) : displayAvailableKg === 0 ? (
+                    <>
+                      <AlertCircle className="h-5 w-5" />
+                      Complet
                     </>
                   ) : (
                     <>
