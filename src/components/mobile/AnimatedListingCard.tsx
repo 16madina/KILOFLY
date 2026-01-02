@@ -12,6 +12,7 @@ interface AnimatedListingCardProps {
   departureDate: string;
   arrivalDate: string;
   availableKg: number;
+  originalKg?: number;
   pricePerKg: number;
   currency?: string;
   destinationImage: string;
