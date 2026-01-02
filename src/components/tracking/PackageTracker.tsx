@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Package, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
+import { Package, ChevronDown, ChevronUp, CreditCard, XCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrackingTimeline } from './TrackingTimeline';
@@ -11,6 +11,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface PackageTrackerProps {
   reservationId: string;
@@ -41,6 +53,7 @@ export function PackageTracker({
   const [listingId, setListingId] = useState<string | null>(null);
   const [totalPrice, setTotalPrice] = useState<number | null>(null);
   const [currency, setCurrency] = useState<string>('EUR');
+  const [cancelling, setCancelling] = useState(false);
   
   const isSeller = user?.id === sellerId;
   const isBuyer = user?.id === buyerId;
@@ -111,6 +124,43 @@ export function PackageTracker({
 
   const handlePayNow = () => {
     navigate(`/payment?reservation=${reservationId}`);
+  };
+
+  const handleCancelReservation = async () => {
+    setCancelling(true);
+    try {
+      // Update reservation status to cancelled
+      const { error } = await supabase
+        .from('reservations')
+        .update({ status: 'cancelled' })
+        .eq('id', reservationId);
+
+      if (error) throw error;
+
+      // Create a tracking event for cancellation
+      await supabase
+        .from('tracking_events')
+        .insert({
+          reservation_id: reservationId,
+          status: 'cancelled',
+          description: 'Réservation annulée par l\'expéditeur avant paiement',
+          is_automatic: true,
+        });
+
+      // Notification is sent automatically via database trigger
+      
+      toast.success("Réservation annulée", {
+        description: "Le voyageur a été notifié de l'annulation"
+      });
+
+      setCurrentStatus('cancelled');
+      
+    } catch (error) {
+      console.error('Error cancelling reservation:', error);
+      toast.error("Erreur lors de l'annulation");
+    } finally {
+      setCancelling(false);
+    }
   };
 
   useEffect(() => {
@@ -259,7 +309,7 @@ export function PackageTracker({
           {isBuyer && !isPaid && !checkingPayment && currentStatus === 'approved' && (
             <Alert className="bg-primary/10 border-primary/20">
               <CreditCard className="h-4 w-4 text-primary" />
-              <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <AlertDescription className="flex flex-col gap-3">
                 <div className="text-foreground">
                   <p>Le voyageur a accepté votre réservation.</p>
                   {totalPrice && (
@@ -268,14 +318,51 @@ export function PackageTracker({
                     </p>
                   )}
                 </div>
-                <Button 
-                  onClick={handlePayNow}
-                  className="whitespace-nowrap"
-                  size="sm"
-                >
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Payer maintenant
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button 
+                    onClick={handlePayNow}
+                    className="whitespace-nowrap flex-1"
+                    size="sm"
+                  >
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Payer maintenant
+                  </Button>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="outline"
+                        className="whitespace-nowrap text-destructive border-destructive/50 hover:bg-destructive/10"
+                        size="sm"
+                        disabled={cancelling}
+                      >
+                        {cancelling ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <XCircle className="w-4 h-4 mr-2" />
+                        )}
+                        Annuler
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Annuler la réservation ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Êtes-vous sûr de vouloir annuler cette réservation ? Le voyageur sera notifié de votre décision.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Non, garder</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={handleCancelReservation}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Oui, annuler
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </AlertDescription>
             </Alert>
           )}
