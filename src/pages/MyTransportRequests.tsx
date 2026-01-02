@@ -56,6 +56,7 @@ interface TransportOffer {
   request_id: string;
   traveler_id: string;
   listing_id: string | null;
+  reservation_id: string | null;
   proposed_price: number | null;
   message: string | null;
   status: string;
@@ -113,7 +114,8 @@ const MyTransportRequests = () => {
         .from('transport_offers')
         .select(`
           *,
-          traveler:profiles!transport_offers_traveler_id_fkey(full_name, avatar_url, id_verified)
+          traveler:profiles!transport_offers_traveler_id_fkey(full_name, avatar_url, id_verified),
+          reservation:reservations(id, status)
         `)
         .in('request_id', requestIds)
         .order('created_at', { ascending: false });
@@ -134,6 +136,26 @@ const MyTransportRequests = () => {
   };
 
   const handleAcceptOffer = async (offerId: string, requestId: string) => {
+    // First get the offer to check if it has a linked listing
+    const { data: offer, error: offerError } = await supabase
+      .from('transport_offers')
+      .select('*, listing:listings(*)')
+      .eq('id', offerId)
+      .single();
+
+    if (offerError || !offer) {
+      toast.error("Erreur lors de la récupération de l'offre");
+      return;
+    }
+
+    // If no listing is linked, we need to inform the user
+    if (!offer.listing_id) {
+      toast.error("Cette offre n'est pas liée à une annonce. Le voyageur doit d'abord créer une annonce pour son voyage.");
+      return;
+    }
+
+    // Update the offer status to 'accepted' - this will trigger the database function
+    // that automatically creates a reservation
     const { error } = await supabase
       .from('transport_offers')
       .update({ status: 'accepted' })
@@ -158,8 +180,24 @@ const MyTransportRequests = () => {
       .neq('id', offerId)
       .eq('status', 'pending');
 
-    toast.success("Offre acceptée !");
-    fetchRequests();
+    // Get the newly created reservation
+    const { data: updatedOffer } = await supabase
+      .from('transport_offers')
+      .select('reservation_id')
+      .eq('id', offerId)
+      .single();
+
+    toast.success("Offre acceptée ! Réservation créée automatiquement.");
+    
+    // Redirect to payment if reservation was created
+    if (updatedOffer?.reservation_id) {
+      toast.info("Redirection vers le paiement...");
+      setTimeout(() => {
+        navigate(`/payment?reservation=${updatedOffer.reservation_id}`);
+      }, 1500);
+    } else {
+      fetchRequests();
+    }
   };
 
   const handleRejectOffer = async (offerId: string) => {
@@ -503,17 +541,45 @@ const RequestCard = ({
                         </div>
                       )}
                       {offer.status === 'accepted' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/user/${offer.traveler_id}`);
-                          }}
-                        >
-                          <MessageSquare className="h-4 w-4 mr-1" />
-                          Contacter
-                        </Button>
+                        <div className="flex flex-col gap-2">
+                          {offer.reservation_id ? (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/reservation-chat/${offer.reservation_id}`);
+                                }}
+                              >
+                                <MessageSquare className="h-4 w-4 mr-1" />
+                                Chat
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/payment?reservation=${offer.reservation_id}`);
+                                }}
+                              >
+                                <Wallet className="h-4 w-4 mr-1" />
+                                Payer
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/user/${offer.traveler_id}`);
+                              }}
+                            >
+                              <MessageSquare className="h-4 w-4 mr-1" />
+                              Contacter
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>

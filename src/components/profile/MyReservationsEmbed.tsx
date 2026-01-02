@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, MapPin, Calendar, Check, X, User, MessageCircle } from "lucide-react";
+import { Package, MapPin, Calendar, Check, X, User, MessageCircle, Search } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -20,6 +20,7 @@ interface Reservation {
   item_description: string;
   status: string;
   created_at: string;
+  transport_offer_id: string | null;
   listing?: {
     departure: string;
     arrival: string;
@@ -191,6 +192,14 @@ export function MyReservationsEmbed() {
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
+                {/* Source badge for transport request */}
+                {res.transport_offer_id && (
+                  <Badge className="mb-2 bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20 text-xs">
+                    <Search className="h-3 w-3 mr-1" />
+                    Via demande de transport
+                  </Badge>
+                )}
+                
                 {/* Buyer info */}
                 <div className="flex items-center gap-2 mb-2">
                   <User className="h-3 w-3 text-muted-foreground" />
@@ -260,6 +269,21 @@ export function MyReservationsEmbed() {
                     Approuver
                   </Button>
                 </div>
+              </div>
+            )}
+            
+            {/* Chat button for approved/in_progress reservations */}
+            {['approved', 'in_progress', 'picked_up'].includes(res.status) && (
+              <div className="mt-4 pt-3 border-t border-border/50">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate(`/reservation-chat/${res.id}`)}
+                >
+                  <MessageCircle className="h-4 w-4 mr-1" />
+                  Ouvrir le chat
+                </Button>
               </div>
             )}
           </Card>
