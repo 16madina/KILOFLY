@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Loader2, CheckCircle2, FileSignature, CreditCard, Shield, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import PaymentMethodSelector from "@/components/payment/PaymentMethodSelector";
 import LegalConfirmationDialog from "@/components/LegalConfirmationDialog";
 import { formatPrice, Currency } from "@/lib/currency";
 import { motion } from "framer-motion";
@@ -237,11 +236,6 @@ const Payment = () => {
           </Card>
         )}
 
-        {/* Payment Method Badge */}
-        <PaymentMethodSelector
-          selectedMethod="card"
-          onSelect={() => {}}
-        />
 
         {/* Signature Step - Must sign before payment */}
         {!hasSigned && (
