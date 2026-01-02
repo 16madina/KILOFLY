@@ -406,41 +406,6 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-4 gap-2 mt-5 pt-5 border-t border-border/50">
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
-                <Package className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-              </div>
-              <p className="text-lg font-bold">{stats.activeListings}</p>
-              <p className="text-[10px] text-muted-foreground text-center">Annonces</p>
-            </div>
-
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
-              </div>
-              <p className="text-lg font-bold">{stats.soldItems}</p>
-              <p className="text-[10px] text-muted-foreground text-center">Vendus</p>
-            </div>
-
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-9 h-9 rounded-lg bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
-                <Star className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-              </div>
-              <p className="text-lg font-bold">{stats.averageRating.toFixed(1)}</p>
-              <p className="text-[10px] text-muted-foreground text-center">Note</p>
-            </div>
-
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
-                <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <p className="text-lg font-bold">{stats.followers}</p>
-              <p className="text-[10px] text-muted-foreground text-center">Abonnés</p>
-            </div>
-          </div>
-
           {/* Verification Badges */}
           <div className="flex flex-wrap gap-2 justify-center mt-4 pt-4 border-t border-border/50">
             {user?.email_confirmed_at ? (
@@ -493,6 +458,41 @@ const Profile = () => {
               Paramètres
             </TabsTrigger>
           </TabsList>
+
+          {/* Stats Grid - Below Tabs */}
+          <div className="grid grid-cols-4 gap-2 mt-4 p-4 rounded-xl backdrop-blur-xl bg-card/70 border border-white/20 dark:border-white/10">
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+                <Package className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+              </div>
+              <p className="text-lg font-bold">{stats.activeListings}</p>
+              <p className="text-[10px] text-muted-foreground text-center">Annonces</p>
+            </div>
+
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+              <p className="text-lg font-bold">{stats.soldItems}</p>
+              <p className="text-[10px] text-muted-foreground text-center">Vendus</p>
+            </div>
+
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-9 h-9 rounded-lg bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
+                <Star className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <p className="text-lg font-bold">{stats.averageRating.toFixed(1)}</p>
+              <p className="text-[10px] text-muted-foreground text-center">Note</p>
+            </div>
+
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <p className="text-lg font-bold">{stats.followers}</p>
+              <p className="text-[10px] text-muted-foreground text-center">Abonnés</p>
+            </div>
+          </div>
 
           {/* Tab: Mes annonces */}
           <TabsContent value="annonces" className="mt-4">
