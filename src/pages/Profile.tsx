@@ -458,41 +458,6 @@ const Profile = () => {
           </div>
         </Card>
 
-        {/* Stats Section */}
-        <Card className="p-4 backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
-          <h3 className="text-sm font-semibold text-muted-foreground mb-3">Statistiques</h3>
-          <div className="grid grid-cols-4 gap-3">
-            <div className="text-center">
-              <div className="w-12 h-12 mx-auto rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-1">
-                <Package className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-              </div>
-              <p className="text-lg font-bold">{stats.activeListings}</p>
-              <p className="text-[10px] text-muted-foreground">Annonces</p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 mx-auto rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-1">
-                <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
-              </div>
-              <p className="text-lg font-bold">{profile.completed_trips || 0}</p>
-              <p className="text-[10px] text-muted-foreground">Voyages</p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 mx-auto rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mb-1">
-                <Star className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-              </div>
-              <p className="text-lg font-bold">{stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '-'}</p>
-              <p className="text-[10px] text-muted-foreground">Note</p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 mx-auto rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-1">
-                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <p className="text-lg font-bold">{profile.response_rate || 0}%</p>
-              <p className="text-[10px] text-muted-foreground">Réponse</p>
-            </div>
-          </div>
-        </Card>
-
         {/* Tabs */}
         <Tabs defaultValue="annonces" className="w-full">
           {/* Tabs styled like stats grid */}
