@@ -32,7 +32,7 @@ const SplashScreen = ({ onFinish }: { onFinish: () => void }) => {
       <img
         src={kiloFlySplash}
         alt="KiloFly"
-        className={`w-full h-auto max-h-[80vh] object-contain transition-all duration-1000 ${
+        className={`w-[90vw] max-w-lg h-auto object-contain transition-all duration-1000 ${
           logoAnimate ? "scale-105" : "scale-100"
         }`}
       />
