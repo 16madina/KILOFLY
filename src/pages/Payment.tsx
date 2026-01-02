@@ -449,56 +449,47 @@ const Payment = () => {
           </motion.div>
         )}
 
-        {/* CinetPay Payment Button - Opens Seamless Modal */}
-        {isCinetpayMethod && hasSigned && !errorMessage && (
+        {/* Wave Manual Payment */}
+        {isWaveMethod && hasSigned && !errorMessage && reservationDetails && user && !wavePaymentDeclared && (
+          <WavePaymentManual
+            reservationId={reservationId!}
+            amount={reservationDetails.total_price}
+            currency={getCurrency()}
+            buyerName={user.email || 'Acheteur'}
+            buyerId={reservationDetails.buyer_id}
+            sellerId={reservationDetails.seller_id}
+            listingId={reservationDetails.listing_id}
+            onPaymentDeclared={() => setWavePaymentDeclared(true)}
+          />
+        )}
+
+        {/* Wave Payment Declared Confirmation */}
+        {isWaveMethod && wavePaymentDeclared && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
           >
-            <Card className="border-primary/30">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Smartphone className="h-5 w-5 text-primary" />
-                  {selectedMethod === 'cinetpay_wave' ? 'Paiement Wave' : 'Paiement Orange Money'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 rounded-lg bg-muted/50 text-center">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Un guichet de paiement sécurisé s'ouvrira
-                  </p>
-                  <p className="text-2xl font-bold text-primary">
-                    {formatPrice(totalWithFee > 0 ? totalWithFee : (reservationDetails?.total_price || 0) * 1.05, getCurrency())}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Paiement en XOF (conversion automatique)
-                  </p>
+            <Card className="border-green-500/30 bg-green-500/5">
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center gap-4 text-center">
+                  <CheckCircle2 className="h-12 w-12 text-green-500" />
+                  <div>
+                    <h3 className="font-semibold text-lg text-green-700 dark:text-green-400">Paiement déclaré</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      L'administrateur va vérifier votre transfert Wave. Vous recevrez une notification une fois le paiement confirmé.
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={() => navigate('/profile?tab=rdv')}>
+                    Retour à mes réservations
+                  </Button>
                 </div>
-
-                <Button
-                  onClick={handleCinetpayPayment}
-                  disabled={cinetpayLoading || !cinetpayReady}
-                  className="w-full gap-2"
-                  size="lg"
-                >
-                  {cinetpayLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Smartphone className="h-5 w-5" />
-                  )}
-                  {cinetpayLoading ? 'Chargement...' : 'Ouvrir le guichet de paiement'}
-                </Button>
-
-                <p className="text-xs text-center text-muted-foreground">
-                  🔒 Paiement sécurisé par CinetPay
-                </p>
               </CardContent>
             </Card>
           </motion.div>
         )}
 
-        {/* Stripe Payment Form - only show for card methods after signature */}
-        {!isCinetpayMethod && !stripeKey ? (
+        {/* Stripe Payment Form - only show for card/visa methods after signature */}
+        {isStripeMethod && !stripeKey ? (
           <Card className="border-destructive/50">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center gap-3 text-center">
@@ -510,7 +501,7 @@ const Payment = () => {
               </div>
             </CardContent>
           </Card>
-        ) : !isCinetpayMethod && clientSecret && hasSigned && !errorMessage ? (
+        ) : isStripeMethod && clientSecret && hasSigned && !errorMessage ? (
           <Card>
             <CardHeader>
               <CardTitle>
@@ -538,7 +529,7 @@ const Payment = () => {
         ) : null}
 
         {/* Stripe Diagnostic (collapsible) - only for stripe methods */}
-        {!isCinetpayMethod && stripeKey && (
+        {isStripeMethod && stripeKey && (
           <DiagnosticSection stripeKey={stripeKey} stripeKeySource={stripeKeySource} />
         )}
 
