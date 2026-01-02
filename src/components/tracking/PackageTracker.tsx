@@ -129,69 +129,26 @@ export function PackageTracker({
   const handleCancelReservation = async () => {
     setCancelling(true);
     try {
-      // Get buyer and listing info for detailed notification
-      const { data: reservationData } = await supabase
-        .from('reservations')
-        .select(`
-          requested_kg,
-          total_price,
-          seller_id,
-          listing:listings(departure, arrival, currency)
-        `)
-        .eq('id', reservationId)
-        .single();
+      const { data, error } = await supabase.functions.invoke('cancel-reservation', {
+        body: { reservationId },
+      });
 
-      const { data: buyerProfile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user?.id)
-        .single();
-
-      // Update reservation status to cancelled
-      const { error } = await supabase
-        .from('reservations')
-        .update({ status: 'cancelled' })
-        .eq('id', reservationId);
-
-      if (error) throw error;
-
-      // Create a detailed tracking event for cancellation
-      const listing = reservationData?.listing as any;
-      const route = listing ? `${listing.departure} → ${listing.arrival}` : '';
-      const descriptionDetail = `Réservation de ${reservationData?.requested_kg} kg annulée par l'expéditeur avant paiement`;
-      
-      await supabase
-        .from('tracking_events')
-        .insert({
-          reservation_id: reservationId,
-          status: 'cancelled',
-          description: descriptionDetail,
-          is_automatic: true,
-        });
-
-      // Send detailed notification to seller
-      if (reservationData?.seller_id) {
-        const buyerName = buyerProfile?.full_name || 'L\'expéditeur';
-        const amount = reservationData.total_price;
-        const currency = listing?.currency || 'EUR';
-        
-        await supabase.rpc('send_notification', {
-          p_user_id: reservationData.seller_id,
-          p_title: '❌ Réservation annulée',
-          p_message: `${buyerName} a annulé sa réservation de ${reservationData.requested_kg} kg sur le trajet ${route}. Montant annulé : ${amount} ${currency}. Le kg réservé est à nouveau disponible.`,
-          p_type: 'warning'
-        });
+      if (error) {
+        throw error;
       }
-      
+
+      if (!data?.success) {
+        throw new Error(data?.error || "Annulation impossible");
+      }
+
       toast.success("Réservation annulée", {
-        description: "Le voyageur a été notifié de l'annulation avec tous les détails"
+        description: "La réservation a été annulée et le voyageur a été notifié",
       });
 
       setCurrentStatus('cancelled');
-      
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error cancelling reservation:', error);
-      toast.error("Erreur lors de l'annulation");
+      toast.error(error?.message || "Erreur lors de l'annulation");
     } finally {
       setCancelling(false);
     }
