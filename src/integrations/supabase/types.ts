@@ -704,6 +704,7 @@ export type Database = {
           seller_id: string
           status: string
           total_price: number
+          transport_offer_id: string | null
           updated_at: string
         }
         Insert: {
@@ -716,6 +717,7 @@ export type Database = {
           seller_id: string
           status?: string
           total_price: number
+          transport_offer_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -728,6 +730,7 @@ export type Database = {
           seller_id?: string
           status?: string
           total_price?: number
+          transport_offer_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -757,6 +760,13 @@ export type Database = {
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_transport_offer_id_fkey"
+            columns: ["transport_offer_id"]
+            isOneToOne: false
+            referencedRelation: "transport_offers"
             referencedColumns: ["id"]
           },
         ]
@@ -1007,6 +1017,7 @@ export type Database = {
           message: string | null
           proposed_price: number | null
           request_id: string
+          reservation_id: string | null
           status: string
           traveler_id: string
         }
@@ -1017,6 +1028,7 @@ export type Database = {
           message?: string | null
           proposed_price?: number | null
           request_id: string
+          reservation_id?: string | null
           status?: string
           traveler_id: string
         }
@@ -1027,6 +1039,7 @@ export type Database = {
           message?: string | null
           proposed_price?: number | null
           request_id?: string
+          reservation_id?: string | null
           status?: string
           traveler_id?: string
         }
@@ -1050,6 +1063,13 @@ export type Database = {
             columns: ["request_id"]
             isOneToOne: false
             referencedRelation: "transport_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_offers_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
             referencedColumns: ["id"]
           },
           {
