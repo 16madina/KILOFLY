@@ -24,15 +24,15 @@ const SplashScreen = ({ onFinish }: { onFinish: () => void }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex items-center justify-center transition-all duration-500 ${
+      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#2d8cf0] transition-all duration-500 ${
         isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
       }`}
     >
-      {/* Full screen background image */}
+      {/* Centered image with proper sizing */}
       <img
         src={kiloFlySplash}
         alt="KiloFly"
-        className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ${
+        className={`w-full h-auto max-h-[80vh] object-contain transition-all duration-1000 ${
           logoAnimate ? "scale-105" : "scale-100"
         }`}
       />
