@@ -10,6 +10,26 @@ type CancelReservationBody = {
   reservationId: string;
 };
 
+type ReservationRecord = {
+  id: string;
+  status: string;
+  buyer_id: string;
+  seller_id: string;
+  requested_kg: number;
+  total_price: number;
+  listing_id: string;
+};
+
+type ListingRecord = {
+  departure: string;
+  arrival: string;
+  currency: string;
+};
+
+type ProfileRecord = {
+  full_name: string | null;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -57,22 +77,10 @@ serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Fetch reservation + route + buyer name (for notification text)
-    const { data: reservation, error: reservationError } = await admin
+    // Fetch reservation (avoid typed select parsing issues by keeping it flat)
+    const { data: reservationRaw, error: reservationError } = await admin
       .from("reservations")
-      .select(
-        `
-        id,
-        status,
-        buyer_id,
-        seller_id,
-        requested_kg,
-        total_price,
-        listing_id,
-        listing:listings(departure, arrival, currency),
-        buyer:profiles!reservations_buyer_id_fkey(full_name)
-      `.trim()
-      )
+      .select("id,status,buyer_id,seller_id,requested_kg,total_price,listing_id")
       .eq("id", reservationId)
       .maybeSingle();
 
@@ -81,12 +89,40 @@ serve(async (req) => {
       throw reservationError;
     }
 
+    const reservation = reservationRaw as unknown as ReservationRecord | null;
+
     if (!reservation) {
       return new Response(JSON.stringify({ error: "Reservation not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Fetch listing route/currency
+    const { data: listingRaw, error: listingError } = await admin
+      .from("listings")
+      .select("departure,arrival,currency")
+      .eq("id", reservation.listing_id)
+      .maybeSingle();
+
+    if (listingError) {
+      console.error("cancel-reservation: failed to load listing", listingError);
+    }
+
+    const listing = listingRaw as unknown as ListingRecord | null;
+
+    // Fetch buyer name (for notification text)
+    const { data: buyerRaw, error: buyerError } = await admin
+      .from("profiles")
+      .select("full_name")
+      .eq("id", reservation.buyer_id)
+      .maybeSingle();
+
+    if (buyerError) {
+      console.error("cancel-reservation: failed to load buyer profile", buyerError);
+    }
+
+    const buyer = buyerRaw as unknown as ProfileRecord | null;
 
     if (reservation.buyer_id !== user.id) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
@@ -167,7 +203,6 @@ serve(async (req) => {
     }
 
     // 3) Tracking event
-    const listing = reservation.listing as any;
     const route = listing ? `${listing.departure} → ${listing.arrival}` : "";
     const description = `Réservation de ${reservation.requested_kg} kg annulée par l'expéditeur avant paiement`;
 
@@ -185,7 +220,7 @@ serve(async (req) => {
 
     // 4) Notify seller
     if (reservation.seller_id) {
-      const buyerName = (reservation.buyer as any)?.full_name || "L'expéditeur";
+      const buyerName = buyer?.full_name || "L'expéditeur";
       const amount = reservation.total_price;
       const currency = listing?.currency || "EUR";
 
