@@ -19,50 +19,40 @@ interface PaymentMethodSelectorProps {
   onSelect: (method: PaymentMethod) => void;
 }
 
-// Wave logo - official blue wave pattern
-const WaveLogo = ({ size = 10 }: { size?: number }) => (
-  <svg viewBox="0 0 48 48" className={`h-${size} w-${size}`} style={{ height: size * 4, width: size * 4 }}>
-    <circle cx="24" cy="24" r="22" fill="#1DC8F2"/>
-    <path 
-      d="M10 22 Q17 14, 24 22 T38 22" 
-      stroke="white" 
-      strokeWidth="4" 
-      fill="none"
-      strokeLinecap="round"
-    />
-    <path 
-      d="M10 30 Q17 22, 24 30 T38 30" 
-      stroke="white" 
-      strokeWidth="3" 
-      fill="none"
-      strokeLinecap="round"
-      opacity="0.8"
-    />
-  </svg>
+// Wave logo - official branding
+const WaveLogo = () => (
+  <div className="h-10 w-10 rounded-xl overflow-hidden flex items-center justify-center" style={{ backgroundColor: '#1DC8F2' }}>
+    <svg viewBox="0 0 40 40" className="h-8 w-8">
+      <path 
+        d="M8 18 Q14 10, 20 18 T32 18" 
+        stroke="white" 
+        strokeWidth="3.5" 
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path 
+        d="M8 26 Q14 18, 20 26 T32 26" 
+        stroke="white" 
+        strokeWidth="2.5" 
+        fill="none"
+        strokeLinecap="round"
+        opacity="0.7"
+      />
+    </svg>
+  </div>
 );
 
-// Orange Money logo - official orange design
-const OrangeMoneyLogo = ({ size = 10 }: { size?: number }) => (
-  <svg viewBox="0 0 48 48" className={`h-${size} w-${size}`} style={{ height: size * 4, width: size * 4 }}>
-    <rect x="2" y="2" width="44" height="44" rx="10" fill="#FF6600"/>
-    <text 
-      x="24" 
-      y="30" 
-      textAnchor="middle" 
-      fill="white" 
-      fontSize="16" 
-      fontWeight="bold"
-      fontFamily="Arial, sans-serif"
-    >
-      OM
-    </text>
-  </svg>
+// Orange Money logo - official branding
+const OrangeMoneyLogo = () => (
+  <div className="h-10 w-10 rounded-xl overflow-hidden flex items-center justify-center" style={{ backgroundColor: '#FF6600' }}>
+    <span className="text-white font-bold text-sm">OM</span>
+  </div>
 );
 
-// Visa/Card icon
+// Card icon with Visa/Mastercard style
 const CardLogo = () => (
-  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
-    <CreditCard className="h-6 w-6 text-white" />
+  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
+    <CreditCard className="h-5 w-5 text-white" />
   </div>
 );
 
@@ -79,7 +69,7 @@ const paymentMethods: PaymentMethodOption[] = [
     id: 'wave_visa',
     name: 'Wave',
     description: 'Carte Visa Wave',
-    icon: <WaveLogo size={10} />,
+    icon: <WaveLogo />,
     accentColor: 'border-cyan-500',
     selectedBg: 'bg-cyan-500/10',
   },
@@ -87,7 +77,7 @@ const paymentMethods: PaymentMethodOption[] = [
     id: 'orange_visa',
     name: 'Orange Money',
     description: 'Carte Visa OM',
-    icon: <OrangeMoneyLogo size={10} />,
+    icon: <OrangeMoneyLogo />,
     accentColor: 'border-orange-500',
     selectedBg: 'bg-orange-500/10',
   },

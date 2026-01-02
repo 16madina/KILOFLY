@@ -463,7 +463,11 @@ const Payment = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Elements key={clientSecret} stripe={stripePromise} options={{ clientSecret }}>
+              <Elements key={clientSecret} stripe={stripePromise} options={{ 
+                clientSecret,
+                appearance: { theme: 'stripe' },
+                payment_method_types: ['card']
+              }}>
                 <StripePaymentForm 
                   clientSecret={clientSecret} 
                   reservationId={reservationId!}
