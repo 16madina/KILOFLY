@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Loader2, AlertTriangle, CheckCircle2, FileSignature, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import PaymentMethodSelector, { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
+import PaymentMethodSelector from "@/components/payment/PaymentMethodSelector";
 import StripePaymentForm from "@/components/payment/StripePaymentForm";
 import LegalConfirmationDialog from "@/components/LegalConfirmationDialog";
 import { formatPrice, Currency } from "@/lib/currency";
@@ -82,7 +82,7 @@ const Payment = () => {
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
   const [reservationDetails, setReservationDetails] = useState<ReservationDetails | null>(null);
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('card');
+  // Payment method is now always card via Stripe
   const [stripeKey, setStripeKey] = useState<string | null>(null);
   const [stripeKeySource, setStripeKeySource] = useState<'env' | 'backend' | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -390,11 +390,11 @@ const Payment = () => {
           </Card>
         )}
 
-        {/* Payment Method Selection */}
+        {/* Payment Method Badge */}
         {!errorMessage && (
           <PaymentMethodSelector
-            selectedMethod={selectedMethod}
-            onSelect={setSelectedMethod}
+            selectedMethod="card"
+            onSelect={() => {}}
           />
         )}
 
@@ -456,11 +456,7 @@ const Payment = () => {
         ) : clientSecret && hasSigned && !errorMessage ? (
           <Card>
             <CardHeader>
-              <CardTitle>
-                {selectedMethod === 'card' && 'Informations de paiement'}
-                {selectedMethod === 'wave_visa' && 'Paiement avec carte Wave'}
-                {selectedMethod === 'orange_visa' && 'Paiement avec carte Orange Money'}
-              </CardTitle>
+              <CardTitle>Informations de paiement</CardTitle>
             </CardHeader>
             <CardContent>
               <Elements key={clientSecret} stripe={stripePromise} options={{ 
@@ -475,11 +471,6 @@ const Payment = () => {
                   onRegeneratePayment={createNewPaymentIntent}
                 />
               </Elements>
-              {(selectedMethod === 'wave_visa' || selectedMethod === 'orange_visa') && (
-                <p className="text-xs text-muted-foreground mt-3">
-                  💡 Utilisez les informations de votre carte Visa prépayée {selectedMethod === 'wave_visa' ? 'Wave' : 'Orange Money'}
-                </p>
-              )}
             </CardContent>
           </Card>
         ) : null}
