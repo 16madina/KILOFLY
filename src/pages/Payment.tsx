@@ -279,35 +279,6 @@ const Payment = () => {
           </motion.div>
         )}
 
-        {/* Pay Now Button */}
-        {hasSigned && (
-          <Card>
-            <CardContent className="pt-6">
-              <Button 
-                onClick={handlePayNow}
-                disabled={processing}
-                className="w-full"
-                size="lg"
-              >
-                {processing ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Redirection...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="mr-2 h-5 w-5" />
-                    Payer maintenant
-                  </>
-                )}
-              </Button>
-              <p className="text-xs text-center text-muted-foreground mt-3">
-                Vous serez redirigé vers Stripe pour finaliser votre paiement en toute sécurité
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Accepted Payment Methods */}
         <Card className="border-border/50">
           <CardContent className="pt-5">
@@ -344,6 +315,35 @@ const Payment = () => {
             </p>
           </div>
         </div>
+
+        {/* Pay Now Button */}
+        {hasSigned && (
+          <Card>
+            <CardContent className="pt-6">
+              <Button 
+                onClick={handlePayNow}
+                disabled={processing}
+                className="w-full"
+                size="lg"
+              >
+                {processing ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Redirection...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="mr-2 h-5 w-5" />
+                    Payer maintenant
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-center text-muted-foreground mt-3">
+                Vous serez redirigé vers Stripe pour finaliser votre paiement en toute sécurité
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <Lock className="h-3.5 w-3.5" />
