@@ -52,4 +52,4 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.cancel-reservation]
-verify_jwt = false
+verify_jwt = true

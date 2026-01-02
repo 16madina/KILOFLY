@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,8 +44,9 @@ export function PackageTracker({
   buyerId,
   compact = false 
 }: PackageTrackerProps) {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [currentStatus, setCurrentStatus] = useState(initialStatus);
   const [expanded, setExpanded] = useState(!compact);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number; name?: string } | null>(null);
@@ -129,15 +131,54 @@ export function PackageTracker({
   const handleCancelReservation = async () => {
     setCancelling(true);
     try {
+      // Get a fresh access token
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        toast.error("Session expirée", {
+          description: "Veuillez vous reconnecter pour effectuer cette action",
+        });
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('cancel-reservation', {
         body: { reservationId },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       });
 
       if (error) {
+        // Parse the error response for specific status codes
+        const errorMessage = error.message || "";
+        if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
+          toast.error("Session expirée", {
+            description: "Veuillez vous reconnecter pour effectuer cette action",
+          });
+          return;
+        }
+        if (errorMessage.includes("403") || errorMessage.includes("Forbidden")) {
+          toast.error("Action non autorisée", {
+            description: "Vous ne pouvez annuler que vos propres réservations",
+          });
+          return;
+        }
+        if (errorMessage.includes("409")) {
+          toast.error("Annulation impossible", {
+            description: "Le paiement a déjà été effectué pour cette réservation",
+          });
+          return;
+        }
         throw error;
       }
 
       if (!data?.success) {
+        // Handle 409 from data.error
+        if (data?.error?.includes("Payment already")) {
+          toast.error("Annulation impossible", {
+            description: "Le paiement a déjà été effectué pour cette réservation",
+          });
+          return;
+        }
         throw new Error(data?.error || "Annulation impossible");
       }
 
@@ -146,6 +187,9 @@ export function PackageTracker({
       });
 
       setCurrentStatus('cancelled');
+
+      // Invalidate tracking reservations query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['tracking-reservations', user?.id] });
     } catch (error: any) {
       console.error('Error cancelling reservation:', error);
       toast.error(error?.message || "Erreur lors de l'annulation");
