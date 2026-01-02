@@ -354,24 +354,44 @@ const Profile = () => {
                 )}
               </div>
               
-              {/* Modifier profil button */}
-              {profile.id_verified ? (
-                <label className="mt-3 flex items-center gap-1.5 text-sm text-primary font-medium cursor-pointer hover:underline">
-                  <Camera className="h-4 w-4" />
-                  <span>Modifier profil</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                    disabled={uploadingAvatar}
-                  />
-                </label>
-              ) : (
-                <p className="mt-3 text-xs text-muted-foreground text-center max-w-[112px]">
-                  📷 Photo modifiable après vérification
-                </p>
-              )}
+              {/* Action buttons under avatar */}
+              <div className="mt-3 flex flex-col gap-1.5 items-center">
+                {profile.id_verified ? (
+                  <label className="flex items-center gap-1.5 text-sm text-primary font-medium cursor-pointer hover:underline">
+                    <Camera className="h-4 w-4" />
+                    <span>Modifier</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      className="hidden"
+                      disabled={uploadingAvatar}
+                    />
+                  </label>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center max-w-[112px]">
+                    📷 Après vérification
+                  </p>
+                )}
+                
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-1 text-xs text-destructive font-medium cursor-pointer hover:underline"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span>Déconnexion</span>
+                </button>
+                
+                {isAdmin && (
+                  <button
+                    onClick={() => navigate('/admin')}
+                    className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 font-medium cursor-pointer hover:underline"
+                  >
+                    <Shield className="h-3.5 w-3.5" />
+                    <span>Admin</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* User Info on Right */}
@@ -438,48 +458,83 @@ const Profile = () => {
           </div>
         </Card>
 
+        {/* Stats Section */}
+        <Card className="p-4 backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10">
+          <h3 className="text-sm font-semibold text-muted-foreground mb-3">Statistiques</h3>
+          <div className="grid grid-cols-4 gap-3">
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-1">
+                <Package className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              </div>
+              <p className="text-lg font-bold">{stats.activeListings}</p>
+              <p className="text-[10px] text-muted-foreground">Annonces</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-1">
+                <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
+              <p className="text-lg font-bold">{profile.completed_trips || 0}</p>
+              <p className="text-[10px] text-muted-foreground">Voyages</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mb-1">
+                <Star className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <p className="text-lg font-bold">{stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '-'}</p>
+              <p className="text-[10px] text-muted-foreground">Note</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-1">
+                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <p className="text-lg font-bold">{profile.response_rate || 0}%</p>
+              <p className="text-[10px] text-muted-foreground">Réponse</p>
+            </div>
+          </div>
+        </Card>
+
         {/* Tabs */}
         <Tabs defaultValue="annonces" className="w-full">
           {/* Tabs styled like stats grid */}
-          <TabsList className="grid w-full grid-cols-4 gap-2 p-4 h-auto rounded-xl backdrop-blur-xl bg-card/70 border border-white/20 dark:border-white/10">
+          <TabsList className="grid w-full grid-cols-4 gap-3 p-4 h-auto rounded-xl backdrop-blur-xl bg-card/70 border border-white/20 dark:border-white/10">
             <TabsTrigger 
               value="annonces" 
-              className="flex flex-col items-center gap-1 py-2 px-1 h-auto rounded-lg data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="flex flex-col items-center gap-2 py-3 px-1 h-auto rounded-xl data-[state=active]:bg-primary/10 data-[state=active]:shadow-none transition-all"
             >
-              <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center transition-transform data-[state=active]:scale-110">
-                <Package className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+              <div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center transition-transform group-data-[state=active]:scale-110">
+                <Package className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
-              <p className="text-[10px] text-muted-foreground text-center data-[state=active]:text-foreground data-[state=active]:font-semibold">Annonces</p>
+              <p className="text-xs font-medium text-muted-foreground data-[state=active]:text-foreground">Annonces</p>
             </TabsTrigger>
 
             <TabsTrigger 
               value="reservations" 
-              className="flex flex-col items-center gap-1 py-2 px-1 h-auto rounded-lg data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="flex flex-col items-center gap-2 py-3 px-1 h-auto rounded-xl data-[state=active]:bg-primary/10 data-[state=active]:shadow-none transition-all"
             >
-              <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                <CalendarCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <CalendarCheck className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
-              <p className="text-[10px] text-muted-foreground text-center">RDV</p>
+              <p className="text-xs font-medium text-muted-foreground data-[state=active]:text-foreground">RDV</p>
             </TabsTrigger>
 
             <TabsTrigger 
               value="transactions" 
-              className="flex flex-col items-center gap-1 py-2 px-1 h-auto rounded-lg data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="flex flex-col items-center gap-2 py-3 px-1 h-auto rounded-xl data-[state=active]:bg-primary/10 data-[state=active]:shadow-none transition-all"
             >
-              <div className="w-9 h-9 rounded-lg bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
-                <Receipt className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+              <div className="w-12 h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                <Receipt className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
               </div>
-              <p className="text-[10px] text-muted-foreground text-center">Transactions</p>
+              <p className="text-xs font-medium text-muted-foreground data-[state=active]:text-foreground">Transactions</p>
             </TabsTrigger>
 
             <TabsTrigger 
               value="parametres" 
-              className="flex flex-col items-center gap-1 py-2 px-1 h-auto rounded-lg data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="flex flex-col items-center gap-2 py-3 px-1 h-auto rounded-xl data-[state=active]:bg-primary/10 data-[state=active]:shadow-none transition-all"
             >
-              <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
-                <SettingsIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <SettingsIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <p className="text-[10px] text-muted-foreground text-center">Paramètres</p>
+              <p className="text-xs font-medium text-muted-foreground data-[state=active]:text-foreground">Paramètres</p>
             </TabsTrigger>
           </TabsList>
 
@@ -663,33 +718,6 @@ const Profile = () => {
               </Card>
             </Link>
 
-            {/* Admin Panel Button */}
-            {isAdmin && (
-              <Link to="/admin">
-                <Card className="p-4 flex items-center justify-between bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90 transition-opacity cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                      <Shield className="h-5 w-5" />
-                    </div>
-                    <span className="font-medium">Panneau d'Administration</span>
-                  </div>
-                  <ChevronRight className="h-5 w-5" />
-                </Card>
-              </Link>
-            )}
-
-            {/* Déconnexion */}
-            <Card 
-              className="p-4 flex items-center justify-between hover:bg-destructive/10 transition-colors cursor-pointer backdrop-blur-xl bg-card/70 border-white/20 dark:border-white/10"
-              onClick={handleSignOut}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                  <LogOut className="h-5 w-5 text-destructive" />
-                </div>
-                <span className="font-medium text-destructive">Déconnexion</span>
-              </div>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
