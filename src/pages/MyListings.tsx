@@ -19,6 +19,7 @@ interface Listing {
   departure_date: string;
   arrival_date: string;
   available_kg: number;
+  real_available_kg: number | null;
   price_per_kg: number;
   status: string;
   description: string | null;
@@ -80,8 +81,9 @@ const MyListings = () => {
   const fetchListings = async () => {
     if (!user) return;
 
+    // Use view with dynamic available kg calculation
     const { data, error } = await supabase
-      .from('listings')
+      .from('listings_with_available_kg')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
@@ -109,7 +111,7 @@ const MyListings = () => {
         );
         // Refetch after archiving
         const { data: refreshedData } = await supabase
-          .from('listings')
+          .from('listings_with_available_kg')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
@@ -235,7 +237,7 @@ const MyListings = () => {
                               </div>
                               <div className="flex items-center gap-1">
                                 <Package className="w-4 h-4" />
-                                {listing.available_kg} kg disponibles
+                                {listing.real_available_kg ?? listing.available_kg} kg disponibles
                               </div>
                             </div>
                           </div>
@@ -334,7 +336,7 @@ const MyListings = () => {
                               </div>
                               <div className="flex items-center gap-1">
                                 <Package className="w-4 h-4" />
-                                {listing.available_kg} kg
+                                {listing.real_available_kg ?? listing.available_kg} kg
                               </div>
                             </div>
                           </div>
