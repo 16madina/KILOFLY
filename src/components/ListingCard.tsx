@@ -183,7 +183,7 @@ const ListingCard = ({
             )}
           >
             <Weight className="h-3.5 w-3.5 mr-1.5" />
-            {availableKg} kg
+            {originalKg ?? availableKg} kg
           </Badge>
         </motion.div>
 
