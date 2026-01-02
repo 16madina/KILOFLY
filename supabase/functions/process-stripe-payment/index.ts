@@ -69,6 +69,7 @@ serve(async (req) => {
       currency: reservation.listing.currency ? reservation.listing.currency.toLowerCase() : 'eur',
       receipt_email: buyerEmail,
       description: `KiloFly - Transport ${reservation.listing.departure} → ${reservation.listing.arrival}`,
+      payment_method_types: ['card'], // Only card payments allowed
       metadata: {
         reservationId,
         baseAmount: (baseAmount * 100).toString(),
@@ -77,9 +78,6 @@ serve(async (req) => {
         platformCommission: (platformCommission * 100).toString(),
         sellerAmount: (sellerAmount * 100).toString(),
         sellerId: reservation.seller_id,
-      },
-      automatic_payment_methods: {
-        enabled: true,
       },
     });
 
