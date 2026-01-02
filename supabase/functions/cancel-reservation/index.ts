@@ -24,6 +24,7 @@ type ListingRecord = {
   departure: string;
   arrival: string;
   currency: string;
+  available_kg: number;
 };
 
 type ProfileRecord = {
@@ -41,25 +42,42 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("cancel-reservation: Missing backend configuration");
       throw new Error("Missing backend configuration");
     }
 
-    const authHeader = req.headers.get("Authorization") || "";
+    // Robustly extract the Authorization header
+    const authHeader = req.headers.get("Authorization") || req.headers.get("authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
 
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
-      },
+    console.log("cancel-reservation: auth check", {
+      hasAuthHeader: !!authHeader,
+      tokenLength: token.length,
     });
 
+    if (!token) {
+      console.error("cancel-reservation: No token provided");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Create user client and explicitly pass the token to getUser
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const {
       data: { user },
       error: userError,
-    } = await userClient.auth.getUser();
+    } = await userClient.auth.getUser(token);
+
+    console.log("cancel-reservation: user lookup", {
+      hasUser: !!user,
+      userId: user?.id,
+      userError: userError?.message,
+    });
 
     if (userError || !user) {
+      console.error("cancel-reservation: User auth failed", userError?.message);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -75,9 +93,11 @@ serve(async (req) => {
       });
     }
 
+    console.log("cancel-reservation: processing", { reservationId, userId: user.id });
+
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Fetch reservation (avoid typed select parsing issues by keeping it flat)
+    // Fetch reservation
     const { data: reservationRaw, error: reservationError } = await admin
       .from("reservations")
       .select("id,status,buyer_id,seller_id,requested_kg,total_price,listing_id")
@@ -98,10 +118,79 @@ serve(async (req) => {
       });
     }
 
-    // Fetch listing route/currency
+    // Check ownership
+    if (reservation.buyer_id !== user.id) {
+      console.error("cancel-reservation: forbidden - user is not buyer", {
+        buyerId: reservation.buyer_id,
+        userId: user.id,
+      });
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Idempotent: if already cancelled, return success
+    if (reservation.status === "cancelled") {
+      console.log("cancel-reservation: already cancelled, returning success");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          reservationId,
+          status: "cancelled",
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Only allow cancel for pending/approved
+    if (!["pending", "approved"].includes(reservation.status)) {
+      console.error("cancel-reservation: invalid status for cancellation", reservation.status);
+      return new Response(
+        JSON.stringify({
+          error: `Cannot cancel reservation in status: ${reservation.status}`,
+        }),
+        {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Block if payment already captured/authorized/paid
+    const { data: paidTx, error: paidTxError } = await admin
+      .from("transactions")
+      .select("id, payment_status, status")
+      .eq("reservation_id", reservationId)
+      .or("payment_status.in.(captured,authorized,paid),status.eq.completed")
+      .limit(1)
+      .maybeSingle();
+
+    if (paidTxError) {
+      console.error("cancel-reservation: failed to check payment status", paidTxError);
+      throw paidTxError;
+    }
+
+    if (paidTx) {
+      console.error("cancel-reservation: payment already completed", paidTx);
+      return new Response(
+        JSON.stringify({
+          error: "Payment already completed for this reservation",
+        }),
+        {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Fetch listing for route info and kg restoration
     const { data: listingRaw, error: listingError } = await admin
       .from("listings")
-      .select("departure,arrival,currency")
+      .select("departure,arrival,currency,available_kg")
       .eq("id", reservation.listing_id)
       .maybeSingle();
 
@@ -111,7 +200,7 @@ serve(async (req) => {
 
     const listing = listingRaw as unknown as ListingRecord | null;
 
-    // Fetch buyer name (for notification text)
+    // Fetch buyer name for notification
     const { data: buyerRaw, error: buyerError } = await admin
       .from("profiles")
       .select("full_name")
@@ -124,58 +213,9 @@ serve(async (req) => {
 
     const buyer = buyerRaw as unknown as ProfileRecord | null;
 
-    if (reservation.buyer_id !== user.id) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    console.log("cancel-reservation: cancelling reservation");
 
-    // Only allow cancel before payment and before logistics
-    if (!["pending", "approved"].includes(reservation.status)) {
-      return new Response(
-        JSON.stringify({
-          error: `Cannot cancel reservation in status: ${reservation.status}`,
-        }),
-        {
-          status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Block cancellation if payment has already been captured/authorized/paid
-    const { data: paidTx, error: paidTxError } = await admin
-      .from("transactions")
-      .select("id, payment_status")
-      .eq("reservation_id", reservationId)
-      .in("payment_status", ["captured", "authorized", "paid"])
-      .limit(1)
-      .maybeSingle();
-
-    if (paidTxError) {
-      console.error("cancel-reservation: failed to check payment status", paidTxError);
-      throw paidTxError;
-    }
-
-    if (paidTx) {
-      return new Response(
-        JSON.stringify({
-          error: "Payment already completed for this reservation",
-        }),
-        {
-          status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    console.log("cancel-reservation: cancelling", {
-      reservationId,
-      buyerId: user.id,
-    });
-
-    // 1) Update reservation
+    // 1) Update reservation to cancelled
     const { error: updateReservationError } = await admin
       .from("reservations")
       .update({ status: "cancelled", updated_at: new Date().toISOString() })
@@ -186,8 +226,8 @@ serve(async (req) => {
       throw updateReservationError;
     }
 
-    // 2) Mark any pending transaction(s) as cancelled (handles duplicates)
-    const { error: updateTxError } = await admin
+    // 2) Cancel all pending transactions for this reservation
+    const { data: cancelledTxs, error: updateTxError } = await admin
       .from("transactions")
       .update({
         status: "cancelled",
@@ -195,14 +235,35 @@ serve(async (req) => {
         updated_at: new Date().toISOString(),
       })
       .eq("reservation_id", reservationId)
-      .not("payment_status", "in", "(captured,authorized,paid)");
+      .not("payment_status", "in", "(captured,authorized,paid)")
+      .not("status", "eq", "completed")
+      .select("id");
 
     if (updateTxError) {
       console.error("cancel-reservation: failed to update transactions", updateTxError);
-      // Don't block cancellation if tx update fails, but log.
+    } else {
+      console.log("cancel-reservation: cancelled transactions", cancelledTxs?.length || 0);
     }
 
-    // 3) Tracking event
+    // 3) Restore kg to the listing
+    if (listing && reservation.requested_kg > 0) {
+      const newAvailableKg = (listing.available_kg || 0) + reservation.requested_kg;
+      const { error: restoreKgError } = await admin
+        .from("listings")
+        .update({ available_kg: newAvailableKg, updated_at: new Date().toISOString() })
+        .eq("id", reservation.listing_id);
+
+      if (restoreKgError) {
+        console.error("cancel-reservation: failed to restore kg", restoreKgError);
+      } else {
+        console.log("cancel-reservation: restored kg", {
+          oldKg: listing.available_kg,
+          newKg: newAvailableKg,
+        });
+      }
+    }
+
+    // 4) Add tracking event
     const route = listing ? `${listing.departure} → ${listing.arrival}` : "";
     const description = `Réservation de ${reservation.requested_kg} kg annulée par l'expéditeur avant paiement`;
 
@@ -218,7 +279,7 @@ serve(async (req) => {
       console.error("cancel-reservation: failed to insert tracking event", trackingError);
     }
 
-    // 4) Notify seller
+    // 5) Notify seller
     if (reservation.seller_id) {
       const buyerName = buyer?.full_name || "L'expéditeur";
       const amount = reservation.total_price;
@@ -227,7 +288,7 @@ serve(async (req) => {
       const { error: notifyError } = await admin.rpc("send_notification", {
         p_user_id: reservation.seller_id,
         p_title: "❌ Réservation annulée",
-        p_message: `${buyerName} a annulé sa réservation de ${reservation.requested_kg} kg sur le trajet ${route}. Montant annulé : ${amount} ${currency}. Le kg réservé est à nouveau disponible.`,
+        p_message: `${buyerName} a annulé sa réservation de ${reservation.requested_kg} kg sur le trajet ${route}. Montant annulé : ${amount} ${currency}. Les kg réservés sont à nouveau disponibles.`,
         p_type: "warning",
       });
 
@@ -235,6 +296,8 @@ serve(async (req) => {
         console.error("cancel-reservation: failed to notify seller", notifyError);
       }
     }
+
+    console.log("cancel-reservation: success", { reservationId });
 
     return new Response(
       JSON.stringify({
