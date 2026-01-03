@@ -9,11 +9,11 @@ import {
   DrawerClose
 } from "@/components/ui/drawer";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, Plane, CalendarIcon, MapPin, ChevronRight, Check, X } from "lucide-react";
+import { Search, Plane, CalendarIcon, MapPin, ChevronRight, X } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { COUNTRIES } from "@/components/CountrySelect";
+import { WORLD_CITIES } from "@/data/worldCities";
 import { hapticImpact, hapticNotification } from "@/hooks/useHaptics";
 import { ImpactStyle, NotificationType } from "@capacitor/haptics";
 import { Input } from "@/components/ui/input";
@@ -34,26 +34,32 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
   const [endDate, setEndDate] = useState<Date>();
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Get all cities from all countries
+  // Get all cities from world cities database
   const allCities = useMemo(() => {
-    const cities: { city: string; country: string; flag: string }[] = [];
-    COUNTRIES.forEach(country => {
-      country.cities.forEach(city => {
-        cities.push({ city, country: country.name, flag: country.flag });
-      });
-    });
-    return cities;
+    return WORLD_CITIES.map(c => ({
+      city: c.city,
+      country: c.country,
+      flag: c.flag
+    }));
   }, []);
 
-  // Filter cities based on search
+  // Filter cities based on search with accent-insensitive matching
   const filteredCities = useMemo(() => {
-    if (!searchQuery) return allCities;
-    const query = searchQuery.toLowerCase();
-    return allCities.filter(
-      item => 
-        item.city.toLowerCase().includes(query) || 
-        item.country.toLowerCase().includes(query)
-    );
+    if (!searchQuery) {
+      // Show popular destinations when empty
+      const popularCities = ["Paris", "Abidjan", "Montréal", "Dakar", "Lomé", "Casablanca", "Douala", "Bruxelles", "Toronto", "New York"];
+      return allCities.filter(c => popularCities.includes(c.city)).slice(0, 10);
+    }
+    
+    const normalizedQuery = searchQuery.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    
+    return allCities
+      .filter(item => {
+        const normalizedCity = item.city.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const normalizedCountry = item.country.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return normalizedCity.includes(normalizedQuery) || normalizedCountry.includes(normalizedQuery);
+      })
+      .slice(0, 20);
   }, [allCities, searchQuery]);
 
   const openDrawer = async (drawer: DrawerType) => {
@@ -121,9 +127,6 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
       setEndDate(undefined);
     }
   };
-
-  // Determine current step
-  const currentStep = !departure ? 1 : !arrival ? 2 : (!startDate || !endDate) ? 3 : 4;
 
   return (
     <div className="space-y-3">
@@ -290,6 +293,11 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
           </div>
           <ScrollArea className="flex-1 px-4 pb-4 max-h-[50vh]">
             <div className="space-y-1">
+              {!searchQuery && (
+                <p className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
+                  Destinations populaires
+                </p>
+              )}
               {filteredCities.map((item, index) => (
                 <button
                   key={`${item.city}-${item.country}-${index}`}
@@ -307,6 +315,11 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
                   </div>
                 </button>
               ))}
+              {searchQuery && filteredCities.length === 0 && (
+                <p className="text-center py-6 text-muted-foreground">
+                  Aucune ville trouvée pour "{searchQuery}"
+                </p>
+              )}
             </div>
           </ScrollArea>
         </DrawerContent>
@@ -335,6 +348,11 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
           </div>
           <ScrollArea className="flex-1 px-4 pb-4 max-h-[50vh]">
             <div className="space-y-1">
+              {!searchQuery && (
+                <p className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
+                  Destinations populaires
+                </p>
+              )}
               {filteredCities
                 .filter(item => item.city !== departure)
                 .map((item, index) => (
@@ -354,6 +372,11 @@ export const SearchFlow = ({ onSearch }: SearchFlowProps) => {
                     </div>
                   </button>
                 ))}
+              {searchQuery && filteredCities.filter(item => item.city !== departure).length === 0 && (
+                <p className="text-center py-6 text-muted-foreground">
+                  Aucune ville trouvée pour "{searchQuery}"
+                </p>
+              )}
             </div>
           </ScrollArea>
         </DrawerContent>
