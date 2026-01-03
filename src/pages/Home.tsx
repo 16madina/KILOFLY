@@ -228,35 +228,24 @@ const Home = () => {
 
         {/* Hero Section */}
         <section className="relative overflow-hidden">
-          {/* Hero Banner Image - Full Width */}
+          {/* Hero Banner Image - Full Width with Mobile Optimization */}
           <div className="relative w-full">
             <img 
               src={kiloflyHeroBanner} 
               alt="KiloFly - Partagez vos kilos" 
-              className="w-full h-auto object-cover animate-fade-in"
+              className="w-full h-[200px] sm:h-[280px] md:h-[360px] lg:h-auto object-cover object-center animate-fade-in"
             />
             {/* Gradient overlay at bottom for smooth transition */}
-            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
           </div>
           
           <div className="relative container px-4 sm:px-6 py-6 md:py-10">
-            {/* Post Listing Button */}
-            <div className="flex justify-center mb-6">
-              <Button
-                onClick={() => navigate('/post-listing')}
-                className="bg-gradient-sky hover:opacity-90 transition-all duration-200 hover:scale-105"
-                size="lg"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Poster une annonce
-              </Button>
-            </div>
-
+            {/* Headline Text */}
             <div className="max-w-3xl mx-auto text-center space-y-4 animate-fade-in">
               <h1 className="text-2xl md:text-4xl font-bold tracking-tight">
                 Partagez vos kilos,{" "}
                 <span className="bg-gradient-sky bg-clip-text text-transparent">
-                  voyagez léger
+                  chaque kilo compte
                 </span>
               </h1>
               <p className="text-sm md:text-base text-muted-foreground">
@@ -324,9 +313,9 @@ const Home = () => {
           </div>
         </section>
 
-        {/* Currency Converter Button */}
+        {/* Currency Converter Button + Post Listing */}
         <section className="container px-4 sm:px-6 py-4">
-          <div className="flex justify-start">
+          <div className="flex flex-wrap items-center gap-3">
             <Dialog>
               <DialogTrigger asChild>
                 <Button 
@@ -341,6 +330,14 @@ const Home = () => {
                 <CurrencyConverter />
               </DialogContent>
             </Dialog>
+            
+            <Button
+              onClick={() => navigate('/post-listing')}
+              className="bg-gradient-sky hover:opacity-90 transition-all duration-200 hover:scale-105"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Poster une annonce
+            </Button>
           </div>
         </section>
 
