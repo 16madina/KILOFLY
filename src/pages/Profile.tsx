@@ -68,6 +68,160 @@ interface Stats {
   followers: number;
 }
 
+// Public Listings View for non-authenticated users
+const PublicListingsView = ({ onNavigateToAuth }: { onNavigateToAuth: () => void }) => {
+  const [listings, setListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchPublicListings = async () => {
+      const { data, error } = await supabase
+        .from("listings_with_available_kg")
+        .select(`
+          *,
+          profiles:user_id (
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(12);
+
+      if (!error && data) {
+        setListings(data);
+      }
+      setLoading(false);
+    };
+
+    fetchPublicListings();
+  }, []);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  };
+
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b">
+        <div className="container flex items-center justify-between py-4 max-w-2xl mx-auto px-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/')}
+            className="rounded-full"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </Button>
+          <h1 className="text-lg font-semibold">Découvrir les annonces</h1>
+          <Button
+            onClick={onNavigateToAuth}
+            size="sm"
+            className="bg-gradient-to-r from-primary to-accent"
+          >
+            Connexion
+          </Button>
+        </div>
+      </div>
+
+      <div className="container px-4 py-6 max-w-4xl mx-auto">
+        {/* Info Card */}
+        <Card className="p-4 mb-6 bg-primary/5 border-primary/20">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-full bg-primary/10">
+              <Info className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm mb-1">Bienvenue sur KiloFly !</h3>
+              <p className="text-xs text-muted-foreground">
+                Créez un compte pour contacter les voyageurs et réserver des kilos.
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Listings Grid */}
+        <h2 className="text-xl font-bold mb-4">Annonces disponibles</h2>
+        
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Card key={i} className="p-4 animate-pulse">
+                <div className="h-32 bg-muted rounded-lg mb-3" />
+                <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+                <div className="h-3 bg-muted rounded w-1/2" />
+              </Card>
+            ))}
+          </div>
+        ) : listings.length === 0 ? (
+          <div className="text-center py-12">
+            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+            <p className="text-muted-foreground">Aucune annonce disponible</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {listings
+              .filter(listing => listing.profiles !== null)
+              .map((listing) => (
+                <Card 
+                  key={listing.id} 
+                  className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => navigate(`/listing/${listing.id}`)}
+                >
+                  <div className="h-32 bg-gradient-to-br from-primary/20 to-accent/20 relative">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Plane className="h-8 w-8 text-primary/40" />
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                        {listing.profiles?.avatar_url ? (
+                          <img src={listing.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="h-4 w-4 text-primary" />
+                        )}
+                      </div>
+                      <span className="text-sm font-medium truncate">{listing.profiles?.full_name || 'Utilisateur'}</span>
+                    </div>
+                    <p className="font-semibold text-sm mb-1">
+                      {listing.departure} → {listing.arrival}
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {formatDate(listing.departure_date)}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                        {listing.real_available_kg ?? listing.available_kg} kg
+                      </span>
+                      <span className="text-sm font-bold text-primary">
+                        {listing.price_per_kg} {listing.currency || 'EUR'}/kg
+                      </span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+          </div>
+        )}
+
+        {/* CTA Button */}
+        <div className="mt-8 text-center">
+          <Button
+            onClick={onNavigateToAuth}
+            size="lg"
+            className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
+          >
+            Créer un compte gratuit
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Profile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -89,12 +243,12 @@ const Profile = () => {
   useTrustScoreNotifications(trustScore);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-      return;
+    if (user) {
+      fetchProfile();
+    } else {
+      setLoading(false);
     }
-    fetchProfile();
-  }, [user, navigate]);
+  }, [user]);
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -248,12 +402,9 @@ const Profile = () => {
     );
   }
 
-  if (!profile) {
-    return (
-      <div className="min-h-screen bg-background flex justify-center items-center">
-        <p className="text-muted-foreground">Profil introuvable</p>
-      </div>
-    );
+  // If user is not logged in, show public listings view
+  if (!user || !profile) {
+    return <PublicListingsView onNavigateToAuth={() => navigate('/auth')} />;
   }
 
   return (

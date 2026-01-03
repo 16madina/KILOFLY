@@ -3,9 +3,10 @@ import Navbar from "@/components/Navbar";
 import { SkeletonShimmer } from "@/components/ui/skeleton-shimmer";
 import { Button } from "@/components/ui/button";
 import { Search, ShieldCheck, CreditCard, Package, Users, TrendingUp, Plus, Plane } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
+import { motion, useScroll, useTransform } from "framer-motion";
 import kiloflyHeroBanner from "@/assets/kilofly-hero-banner.png";
 import montrealImg from "@/assets/destinations/montreal.jpg";
 import abidjanImg from "@/assets/destinations/abidjan.jpg";
@@ -43,6 +44,71 @@ interface Listing {
     avatar_url: string;
   };
 }
+
+// Hero Section with Parallax Effect
+const HeroSection = ({ 
+  kiloflyHeroBanner, 
+  onSearch 
+}: { 
+  kiloflyHeroBanner: string; 
+  onSearch: (departure: string, arrival: string) => void;
+}) => {
+  const heroRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"]
+  });
+  
+  const y = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
+  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0.3]);
+  const scale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
+
+  return (
+    <section ref={heroRef} className="relative overflow-hidden">
+      {/* Hero Banner Image - Full Width with Parallax */}
+      <div className="relative w-full h-[200px] sm:h-[280px] md:h-[360px] lg:h-[400px] overflow-hidden">
+        <motion.div
+          style={{ y, scale }}
+          className="absolute inset-0"
+        >
+          <motion.img 
+            src={kiloflyHeroBanner} 
+            alt="KiloFly - Partagez vos kilos" 
+            style={{ opacity }}
+            className="w-full h-full object-cover object-center"
+          />
+        </motion.div>
+        {/* Gradient overlay at bottom for smooth transition */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background via-background/70 to-transparent" />
+      </div>
+      
+      <div className="relative container px-4 sm:px-6 py-6 md:py-10">
+        {/* Headline Text */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="max-w-3xl mx-auto text-center space-y-4"
+        >
+          <h1 className="text-2xl md:text-4xl font-bold tracking-tight">
+            Partagez vos kilos,{" "}
+            <span className="bg-gradient-sky bg-clip-text text-transparent">
+              chaque kilo compte
+            </span>
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground">
+            Connectez-vous avec des voyageurs pour utiliser leurs kilos disponibles
+          </p>
+
+          {/* Search Flow */}
+          <div className="mt-4 max-w-lg mx-auto">
+            <SearchFlow onSearch={onSearch} />
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
 
 const Home = () => {
   const [listings, setListings] = useState<Listing[]>([]);
@@ -226,39 +292,11 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Hero Section */}
-        <section className="relative overflow-hidden">
-          {/* Hero Banner Image - Full Width with Mobile Optimization */}
-          <div className="relative w-full">
-            <img 
-              src={kiloflyHeroBanner} 
-              alt="KiloFly - Partagez vos kilos" 
-              className="w-full h-[200px] sm:h-[280px] md:h-[360px] lg:h-auto object-cover object-center animate-fade-in"
-            />
-            {/* Gradient overlay at bottom for smooth transition */}
-            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
-          </div>
-          
-          <div className="relative container px-4 sm:px-6 py-6 md:py-10">
-            {/* Headline Text */}
-            <div className="max-w-3xl mx-auto text-center space-y-4 animate-fade-in">
-              <h1 className="text-2xl md:text-4xl font-bold tracking-tight">
-                Partagez vos kilos,{" "}
-                <span className="bg-gradient-sky bg-clip-text text-transparent">
-                  chaque kilo compte
-                </span>
-              </h1>
-              <p className="text-sm md:text-base text-muted-foreground">
-                Connectez-vous avec des voyageurs pour utiliser leurs kilos disponibles
-              </p>
-
-              {/* Search Flow */}
-              <div className="mt-4 max-w-lg mx-auto">
-                <SearchFlow onSearch={handleSearch} />
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Hero Section with Parallax */}
+        <HeroSection 
+          kiloflyHeroBanner={kiloflyHeroBanner} 
+          onSearch={handleSearch} 
+        />
 
         {/* Trust Badges */}
         <section className="container px-4 sm:px-6 py-6 -mt-4">
