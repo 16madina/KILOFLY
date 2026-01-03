@@ -1,6 +1,14 @@
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useMemo } from "react";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Check, ChevronsUpDown, Globe } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { WORLD_COUNTRIES, getCitiesByCountry } from "@/data/worldCities";
 
+// Re-export for backward compatibility
 export interface CountryData {
   code: string;
   name: string;
@@ -9,78 +17,42 @@ export interface CountryData {
   cities: string[];
 }
 
-export const COUNTRIES: CountryData[] = [
-  {
-    code: "FR",
-    name: "France",
-    dial_code: "+33",
-    flag: "🇫🇷",
-    cities: ["Paris", "Lyon", "Marseille", "Toulouse", "Nice", "Nantes", "Strasbourg", "Montpellier", "Bordeaux", "Lille"]
-  },
-  {
-    code: "CI",
-    name: "Côte d'Ivoire",
-    dial_code: "+225",
-    flag: "🇨🇮",
-    cities: ["Abidjan", "Bouaké", "Daloa", "Yamoussoukro", "San-Pédro", "Korhogo", "Man", "Divo", "Gagnoa", "Abengourou"]
-  },
-  {
-    code: "SN",
-    name: "Sénégal",
-    dial_code: "+221",
-    flag: "🇸🇳",
-    cities: ["Dakar", "Thiès", "Saint-Louis", "Kaolack", "Ziguinchor", "Touba", "Mbour", "Rufisque", "Louga", "Tambacounda"]
-  },
-  {
-    code: "CA",
-    name: "Canada",
-    dial_code: "+1",
-    flag: "🇨🇦",
-    cities: ["Montréal", "Toronto", "Vancouver", "Ottawa", "Calgary", "Edmonton", "Québec", "Winnipeg", "Hamilton", "Gatineau"]
-  },
-  {
-    code: "TG",
-    name: "Togo",
-    dial_code: "+228",
-    flag: "🇹🇬",
-    cities: ["Lomé", "Sokodé", "Kara", "Atakpamé", "Kpalimé", "Dapaong", "Tsévié", "Aného", "Bassar", "Mango"]
-  },
-  {
-    code: "BJ",
-    name: "Bénin",
-    dial_code: "+229",
-    flag: "🇧🇯",
-    cities: ["Cotonou", "Porto-Novo", "Parakou", "Djougou", "Bohicon", "Kandi", "Lokossa", "Ouidah", "Abomey", "Natitingou"]
-  },
-  {
-    code: "CM",
-    name: "Cameroun",
-    dial_code: "+237",
-    flag: "🇨🇲",
-    cities: ["Douala", "Yaoundé", "Garoua", "Bamenda", "Bafoussam", "Maroua", "Ngaoundéré", "Bertoua", "Limbe", "Ebolowa"]
-  },
-  {
-    code: "MA",
-    name: "Maroc",
-    dial_code: "+212",
-    flag: "🇲🇦",
-    cities: ["Casablanca", "Rabat", "Marrakech", "Fès", "Tanger", "Agadir", "Meknès", "Oujda", "Kénitra", "Tétouan"]
-  },
-  {
-    code: "CD",
-    name: "RD Congo",
-    dial_code: "+243",
-    flag: "🇨🇩",
-    cities: ["Kinshasa", "Lubumbashi", "Mbuji-Mayi", "Kisangani", "Kananga", "Likasi", "Kolwezi", "Goma", "Bukavu", "Matadi"]
-  },
-  {
-    code: "BE",
-    name: "Belgique",
-    dial_code: "+32",
-    flag: "🇧🇪",
-    cities: ["Bruxelles", "Anvers", "Gand", "Charleroi", "Liège", "Bruges", "Namur", "Louvain", "Mons", "Malines"]
-  }
-];
+function getDialCode(countryCode: string): string {
+  const dialCodes: Record<string, string> = {
+    "FR": "+33", "CI": "+225", "SN": "+221", "CA": "+1", "TG": "+228",
+    "BJ": "+229", "CM": "+237", "MA": "+212", "CD": "+243", "BE": "+32",
+    "CH": "+41", "DE": "+49", "GB": "+44", "ES": "+34", "PT": "+351",
+    "IT": "+39", "NL": "+31", "PL": "+48", "AT": "+43", "SE": "+46",
+    "NO": "+47", "DK": "+45", "FI": "+358", "GR": "+30", "CZ": "+420",
+    "HU": "+36", "IE": "+353", "RO": "+40", "BG": "+359", "HR": "+385",
+    "RS": "+381", "UA": "+380", "RU": "+7", "US": "+1", "MX": "+52",
+    "BR": "+55", "AR": "+54", "CO": "+57", "PE": "+51", "CL": "+56",
+    "VE": "+58", "EC": "+593", "BO": "+591", "UY": "+598", "PY": "+595",
+    "CN": "+86", "JP": "+81", "KR": "+82", "IN": "+91", "TH": "+66",
+    "VN": "+84", "SG": "+65", "MY": "+60", "ID": "+62", "PH": "+63",
+    "AE": "+971", "SA": "+966", "QA": "+974", "KW": "+965", "BH": "+973",
+    "OM": "+968", "LB": "+961", "JO": "+962", "IL": "+972", "TR": "+90",
+    "PK": "+92", "BD": "+880", "LK": "+94", "NP": "+977", "KH": "+855",
+    "MM": "+95", "AU": "+61", "NZ": "+64", "DZ": "+213", "TN": "+216",
+    "EG": "+20", "ZA": "+27", "KE": "+254", "ET": "+251", "TZ": "+255",
+    "GH": "+233", "NG": "+234", "GA": "+241", "CG": "+242", "ML": "+223",
+    "BF": "+226", "NE": "+227", "GN": "+224", "RW": "+250", "MR": "+222",
+    "MG": "+261", "MU": "+230", "RE": "+262", "HT": "+509", "DO": "+1",
+    "CU": "+53", "JM": "+1", "PA": "+507", "CR": "+506", "MQ": "+596",
+    "GP": "+590", "GF": "+594", "NC": "+687", "PF": "+689", "FJ": "+679",
+    "HK": "+852"
+  };
+  return dialCodes[countryCode] || "+00";
+}
+
+// Legacy COUNTRIES export for backward compatibility
+export const COUNTRIES: CountryData[] = WORLD_COUNTRIES.map(c => ({
+  code: c.code,
+  name: c.name,
+  dial_code: getDialCode(c.code),
+  flag: c.flag,
+  cities: getCitiesByCountry(c.code).map(city => city.city)
+}));
 
 interface CountrySelectProps {
   value: string;
@@ -89,53 +61,107 @@ interface CountrySelectProps {
 }
 
 export const CountrySelect = ({ value, onChange, required }: CountrySelectProps) => {
-  const handleChange = (countryCode: string) => {
-    const country = COUNTRIES.find(c => c.code === countryCode);
-    if (country) {
-      onChange(country.name, country.dial_code);
-    }
-  };
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const selectedCountry = COUNTRIES.find(c => c.name === value);
+  const selectedCountry = WORLD_COUNTRIES.find(c => c.name === value);
+
+  // Filter countries based on search with accent-insensitive matching
+  const filteredCountries = useMemo(() => {
+    if (!searchQuery) {
+      // Show popular countries first when no search
+      const popularCodes = ["FR", "CI", "CA", "SN", "TG", "BJ", "CM", "MA", "CD", "BE", "US", "GB"];
+      const popular = WORLD_COUNTRIES.filter(c => popularCodes.includes(c.code));
+      const others = WORLD_COUNTRIES.filter(c => !popularCodes.includes(c.code));
+      return [...popular, ...others];
+    }
+    
+    const query = searchQuery.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return WORLD_COUNTRIES.filter(c => 
+      c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(query)
+    );
+  }, [searchQuery]);
+
+  const handleSelect = (country: typeof WORLD_COUNTRIES[0]) => {
+    onChange(country.name, getDialCode(country.code));
+    setOpen(false);
+    setSearchQuery("");
+  };
 
   return (
     <div className="space-y-2">
       <Label htmlFor="country-select">Pays *</Label>
-      <Select 
-        value={selectedCountry?.code || ""} 
-        onValueChange={handleChange}
-        required={required}
-      >
-        <SelectTrigger id="country-select" className="w-full">
-          <SelectValue placeholder="Sélectionnez un pays">
-            {selectedCountry && (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between h-12"
+          >
+            {selectedCountry ? (
               <span className="flex items-center gap-2">
                 <span className="text-xl">{selectedCountry.flag}</span>
                 <span>{selectedCountry.name}</span>
               </span>
+            ) : (
+              <span className="text-muted-foreground flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                Sélectionnez un pays
+              </span>
             )}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent className="bg-background border-border z-50 max-h-[300px]">
-          <SelectGroup>
-            {COUNTRIES.map((country) => (
-              <SelectItem 
-                key={country.code} 
-                value={country.code}
-                className="cursor-pointer hover:bg-accent"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{country.flag}</span>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{country.name}</span>
-                    <span className="text-xs text-muted-foreground">{country.dial_code}</span>
-                  </div>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0 bg-background border-border z-50" align="start">
+          <div className="p-2 border-b">
+            <Input
+              placeholder="Rechercher un pays..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-9"
+              autoFocus
+            />
+          </div>
+          <ScrollArea className="h-[300px]">
+            <div className="p-1">
+              {!searchQuery && (
+                <p className="px-2 py-1 text-xs text-muted-foreground font-medium">
+                  Pays populaires
+                </p>
+              )}
+              {filteredCountries.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">
+                  Aucun pays trouvé
+                </p>
+              ) : (
+                filteredCountries.map((country, index) => (
+                  <button
+                    key={country.code}
+                    onClick={() => handleSelect(country)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-2 py-2.5 rounded-md",
+                      "hover:bg-accent transition-colors text-left",
+                      value === country.name && "bg-accent"
+                    )}
+                  >
+                    <span className="text-2xl">{country.flag}</span>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{country.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {getDialCode(country.code)}
+                      </span>
+                    </div>
+                    {value === country.name && (
+                      <Check className="ml-auto h-4 w-4 text-primary" />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 };
