@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -89,23 +88,23 @@ const PrivacySettings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-32">
-      <Navbar />
-      
-      <div className="container px-4 sm:px-6 py-6 sm:py-8 max-w-4xl animate-fade-in">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
+    <div className="min-h-screen bg-background pb-32 mb-safe">
+      {/* Header with safe area */}
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe">
+        <div className="container px-4 sm:px-6 py-4 flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/account-security')}
-            className="rounded-full"
+            onClick={() => navigate('/settings')}
+            className="h-9 w-9 transition-all duration-200 hover:scale-110"
           >
-            <ChevronLeft className="h-6 w-6" />
+            <ChevronLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold">Paramètres de confidentialité</h1>
+          <h1 className="text-xl font-bold">Paramètres de confidentialité</h1>
         </div>
-
+      </header>
+      
+      <div className="container px-4 sm:px-6 py-6 sm:py-8 max-w-4xl animate-fade-in">
         <div className="space-y-6">
           {/* Profile Visibility */}
           <Card>

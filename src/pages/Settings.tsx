@@ -35,20 +35,21 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
-        <div className="container flex items-center gap-4 py-4 max-w-2xl mx-auto">
+    <div className="min-h-screen bg-background pb-32 mb-safe">
+      {/* Header with safe area */}
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe">
+        <div className="container flex items-center gap-4 py-4 max-w-2xl mx-auto px-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate('/profile')}
+            className="h-9 w-9 transition-all duration-200 hover:scale-110"
           >
-            <ChevronLeft className="h-6 w-6" />
+            <ChevronLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-xl font-bold">Paramètres</h1>
         </div>
-      </div>
+      </header>
 
       <div className="container px-4 py-6 max-w-2xl mx-auto space-y-6">
         {/* Security */}

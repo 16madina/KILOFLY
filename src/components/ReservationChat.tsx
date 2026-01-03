@@ -165,7 +165,7 @@ const ReservationChat = ({
   }
 
   return (
-    <div className="flex flex-col h-[500px] border rounded-lg overflow-hidden">
+    <div className="flex flex-col h-full min-h-0 border rounded-lg overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-sky p-4 text-primary-foreground">
         <div className="flex items-center gap-3">

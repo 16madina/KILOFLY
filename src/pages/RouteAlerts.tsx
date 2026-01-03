@@ -118,9 +118,9 @@ export default function RouteAlerts() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 pb-20">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
+    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 pb-32 mb-safe">
+      {/* Header with safe area */}
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <Button
@@ -139,7 +139,7 @@ export default function RouteAlerts() {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       <div className="container mx-auto px-4 py-6 space-y-4">
         {/* Add Alert Button */}
