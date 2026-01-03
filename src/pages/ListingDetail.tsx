@@ -48,6 +48,8 @@ import { TrustScore } from "@/components/TrustScore";
 import PinchZoomImage from "@/components/mobile/PinchZoomImage";
 import { motion } from "framer-motion";
 import { useAvailableKg } from "@/hooks/useAvailableKg";
+import { ReportListingDialog } from "@/components/ReportListingDialog";
+import { BlockUserDialog } from "@/components/BlockUserDialog";
 
 interface Listing {
   id: string;
@@ -368,6 +370,35 @@ const ListingDetail = () => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+          </motion.div>
+        )}
+
+        {/* Report & Block Buttons - Floating (for non-owners) */}
+        {user && listing && user.id !== listing.user_id && (
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="absolute top-4 right-4 z-50 pt-safe flex gap-2"
+          >
+            <ReportListingDialog
+              listingId={listing.id}
+              listingRoute={`${listing.departure} → ${listing.arrival}`}
+              ownerId={listing.user_id}
+              ownerName={listing.profiles.full_name}
+              trigger={
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="h-10 w-10 rounded-full bg-background/80 backdrop-blur-md shadow-lg hover:bg-background border-0"
+                >
+                  <AlertCircle className="h-5 w-5" />
+                </Button>
+              }
+            />
+            <BlockUserDialog
+              userId={listing.user_id}
+              userName={listing.profiles.full_name}
+            />
           </motion.div>
         )}
 

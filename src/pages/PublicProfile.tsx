@@ -18,7 +18,8 @@ import {
   Plane,
   MessageCircle,
   TrendingUp,
-  ArrowRight
+  ArrowRight,
+  MoreVertical
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -26,6 +27,15 @@ import VerifiedBadge from "@/components/VerifiedBadge";
 import { TrustScore } from "@/components/TrustScore";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { ReportDialog } from "@/components/ReportDialog";
+import { BlockUserDialog } from "@/components/BlockUserDialog";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Profile {
   id: string;
@@ -72,6 +82,7 @@ interface Review {
 const PublicProfile = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const [profile, setProfile] = useState<Profile | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
@@ -79,6 +90,7 @@ const PublicProfile = () => {
   const [loading, setLoading] = useState(true);
   const [trustScore, setTrustScore] = useState(0);
   const [averageRating, setAverageRating] = useState(0);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -194,16 +206,45 @@ const PublicProfile = () => {
     <div className="min-h-screen bg-background pb-32">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe">
-        <div className="container px-4 sm:px-6 py-4 flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-            className="h-9 w-9 transition-all duration-200 hover:scale-110"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-xl font-bold">Profil public</h1>
+        <div className="container px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="h-9 w-9 transition-all duration-200 hover:scale-110"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-xl font-bold">Profil public</h1>
+          </div>
+          
+          {/* Report/Block Menu - only show if not viewing own profile */}
+          {user && id && user.id !== id && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <ReportDialog
+                    reportedUserId={id}
+                    reportedUserName={profile?.full_name || "Utilisateur"}
+                  />
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <BlockUserDialog
+                    userId={id}
+                    userName={profile?.full_name || "Utilisateur"}
+                    isBlocked={isBlocked}
+                    onBlockChange={() => setIsBlocked(!isBlocked)}
+                  />
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </header>
 
