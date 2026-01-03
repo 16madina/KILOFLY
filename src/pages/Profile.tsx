@@ -106,7 +106,7 @@ const PublicListingsView = ({ onNavigateToAuth }: { onNavigateToAuth: () => void
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b">
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b pt-safe">
         <div className="container flex items-center justify-between py-4 max-w-2xl mx-auto px-4">
           <Button
             variant="ghost"
@@ -410,7 +410,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm">
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm pt-safe">
         <div className="container flex items-center justify-between py-4 max-w-2xl mx-auto px-4">
           <Button
             variant="ghost"
