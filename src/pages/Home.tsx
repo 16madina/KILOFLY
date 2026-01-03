@@ -385,30 +385,33 @@ const Home = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {listings.slice(0, 6).map((listing, index) => (
-                    <AnimatedListingCard
-                      key={listing.id}
-                      id={listing.id}
-                      userId={listing.user_id}
-                      userName={listing.profiles.full_name}
-                      userAvatar={listing.profiles.avatar_url}
-                      departure={listing.departure}
-                      arrival={listing.arrival}
-                      departureDate={formatDate(listing.departure_date)}
-                      arrivalDate={formatDate(listing.arrival_date)}
-                      availableKg={listing.real_available_kg ?? listing.available_kg}
-                      originalKg={listing.available_kg}
-                      pricePerKg={listing.price_per_kg}
-                      currency={listing.currency}
-                      destinationImage={listing.destination_image || getDestinationImage(listing.arrival)}
-                      isFavorited={favorites.has(listing.id)}
-                      onFavoriteToggle={() => handleToggleFavorite(listing.id)}
-                      allowedItems={listing.allowed_items as string[] || []}
-                      prohibitedItems={listing.prohibited_items as string[] || []}
-                      description={listing.description || undefined}
-                      index={index}
-                    />
-                  ))}
+                  {listings
+                    .filter(listing => listing.profiles !== null)
+                    .slice(0, 6)
+                    .map((listing, index) => (
+                      <AnimatedListingCard
+                        key={listing.id}
+                        id={listing.id}
+                        userId={listing.user_id}
+                        userName={listing.profiles?.full_name || 'Utilisateur'}
+                        userAvatar={listing.profiles?.avatar_url || ''}
+                        departure={listing.departure}
+                        arrival={listing.arrival}
+                        departureDate={formatDate(listing.departure_date)}
+                        arrivalDate={formatDate(listing.arrival_date)}
+                        availableKg={listing.real_available_kg ?? listing.available_kg}
+                        originalKg={listing.available_kg}
+                        pricePerKg={listing.price_per_kg}
+                        currency={listing.currency}
+                        destinationImage={listing.destination_image || getDestinationImage(listing.arrival)}
+                        isFavorited={favorites.has(listing.id)}
+                        onFavoriteToggle={() => handleToggleFavorite(listing.id)}
+                        allowedItems={listing.allowed_items as string[] || []}
+                        prohibitedItems={listing.prohibited_items as string[] || []}
+                        description={listing.description || undefined}
+                        index={index}
+                      />
+                    ))}
                 </div>
               )}
               
