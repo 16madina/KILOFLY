@@ -18,6 +18,8 @@ import { CitySelect } from "@/components/CitySelect";
 import { UserTypeSelect } from "@/components/UserTypeSelect";
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
+import { useBiometricAuth } from "@/hooks/useBiometricAuth";
+import { Fingerprint } from "lucide-react";
 
 // Validation schema - avatar validation removed since upload happens after signup
 const signupSchema = z.object({
@@ -55,12 +57,64 @@ const Auth = () => {
   
   const { user, signIn } = useAuth();
   const navigate = useNavigate();
+  const { 
+    isAvailable: biometricAvailable, 
+    isEnabled: biometricEnabled, 
+    biometryType,
+    authenticate: biometricAuthenticate,
+    getCredentials,
+    saveCredentials,
+    enableBiometric
+  } = useBiometricAuth();
 
   useEffect(() => {
     if (user) {
       navigate('/');
     }
   }, [user, navigate]);
+
+  // Try biometric login on mount if enabled
+  useEffect(() => {
+    const tryBiometricLogin = async () => {
+      if (biometricAvailable && biometricEnabled && !user) {
+        const credentials = await getCredentials();
+        if (credentials) {
+          const success = await biometricAuthenticate();
+          if (success) {
+            setIsLoading(true);
+            const { error } = await signIn(credentials.email, credentials.password);
+            if (error) {
+              toast.error("Échec de la connexion biométrique");
+            } else {
+              toast.success("Connexion biométrique réussie!");
+            }
+            setIsLoading(false);
+          }
+        }
+      }
+    };
+    tryBiometricLogin();
+  }, [biometricAvailable, biometricEnabled, user]);
+
+  const handleBiometricLogin = async () => {
+    const credentials = await getCredentials();
+    if (!credentials) {
+      toast.error("Aucune identification enregistrée. Connectez-vous d'abord avec email/mot de passe.");
+      return;
+    }
+
+    const success = await biometricAuthenticate();
+    if (success) {
+      setIsLoading(true);
+      const { error } = await signIn(credentials.email, credentials.password);
+      if (error) {
+        toast.error("Échec de la connexion");
+      } else {
+        toast.success("Connexion réussie!");
+      }
+      setIsLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +126,20 @@ const Auth = () => {
       toast.error(error.message || "Erreur lors de la connexion");
     } else {
       toast.success("Connexion réussie!");
+      
+      // Offer to save credentials for biometric login
+      if (biometricAvailable && !biometricEnabled) {
+        try {
+          await saveCredentials({ email: loginEmail, password: loginPassword });
+          enableBiometric();
+          toast.success(`${biometryType} activé pour les prochaines connexions`);
+        } catch (err) {
+          console.log('Could not save biometric credentials');
+        }
+      } else if (biometricAvailable && biometricEnabled) {
+        // Update credentials
+        await saveCredentials({ email: loginEmail, password: loginPassword });
+      }
     }
     
     setIsLoading(false);
@@ -243,6 +311,19 @@ const Auth = () => {
                     >
                       {isLoading ? "Connexion..." : "Se connecter"}
                     </Button>
+
+                    {biometricAvailable && biometricEnabled && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full mt-3 flex items-center justify-center gap-2"
+                        onClick={handleBiometricLogin}
+                        disabled={isLoading}
+                      >
+                        <Fingerprint className="h-5 w-5" />
+                        Connexion avec {biometryType}
+                      </Button>
+                    )}
                   </form>
                 </TabsContent>
 
