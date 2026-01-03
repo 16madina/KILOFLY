@@ -4,10 +4,6 @@ const config: CapacitorConfig = {
   appId: 'com.kilofly.app',
   appName: 'KiloFly',
   webDir: 'dist',
-  server: {
-    url: 'https://2b7a5f77-5ecc-4622-bc5b-450979c265cc.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
