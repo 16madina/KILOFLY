@@ -6,7 +6,6 @@ import { Search, ShieldCheck, CreditCard, Package, Users, TrendingUp, Plus, Plan
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
-import heroImage from "@/assets/hero-travel.jpg";
 import kiloflyHeroBanner from "@/assets/kilofly-hero-banner.png";
 import montrealImg from "@/assets/destinations/montreal.jpg";
 import abidjanImg from "@/assets/destinations/abidjan.jpg";
@@ -229,23 +228,18 @@ const Home = () => {
 
         {/* Hero Section */}
         <section className="relative overflow-hidden">
-          <div 
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${heroImage})` }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
+          {/* Hero Banner Image - Full Width */}
+          <div className="relative w-full">
+            <img 
+              src={kiloflyHeroBanner} 
+              alt="KiloFly - Partagez vos kilos" 
+              className="w-full h-auto object-cover animate-fade-in"
+            />
+            {/* Gradient overlay at bottom for smooth transition */}
+            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background to-transparent" />
           </div>
           
-          <div className="relative container px-4 sm:px-6 py-8 md:py-16">
-            {/* Hero Banner Image */}
-            <div className="flex justify-center mb-6 animate-fade-in">
-              <img 
-                src={kiloflyHeroBanner} 
-                alt="KiloFly - Partagez vos kilos" 
-                className="w-full max-w-2xl h-auto object-contain rounded-2xl shadow-2xl"
-              />
-            </div>
-
+          <div className="relative container px-4 sm:px-6 py-6 md:py-10">
             {/* Post Listing Button */}
             <div className="flex justify-center mb-6">
               <Button
