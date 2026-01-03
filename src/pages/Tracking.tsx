@@ -2,15 +2,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { PackageTracker } from "@/components/tracking/PackageTracker";
-import { Package, Loader2, MapPin, ArrowRight, ChevronRight } from "lucide-react";
+import { TrackingCard } from "@/components/tracking/TrackingCard";
+import { Package, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const IN_TRANSIT_STATUSES = [
   "approved",
@@ -34,6 +34,7 @@ const Tracking = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState("all");
+  const [selectedReservation, setSelectedReservation] = useState<any | null>(null);
 
   const { data: reservations, isLoading, refetch } = useQuery({
     queryKey: ["tracking-reservations", user?.id],
@@ -258,7 +259,7 @@ const Tracking = () => {
             </motion.div>
           ) : (
             <AnimatePresence mode="popLayout">
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {filteredReservations.map((reservation, index) => {
                   const listing = reservation.listing as {
                     departure: string;
@@ -266,87 +267,50 @@ const Tracking = () => {
                     departure_date: string;
                     arrival_date: string;
                   } | null;
-                  
-                  const isBuyer = reservation.buyer_id === user.id;
-                  const otherParty = isBuyer 
-                    ? reservation.seller as { full_name: string; avatar_url: string } | null
-                    : reservation.buyer as { full_name: string; avatar_url: string } | null;
+
+                  if (!listing) return null;
 
                   return (
-                    <motion.div
+                    <TrackingCard
                       key={reservation.id}
-                      layout
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="bg-card rounded-xl border border-border overflow-hidden"
-                    >
-                      {/* Reservation Header */}
-                      <div className="p-4 border-b border-border">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            {/* Route */}
-                            <div className="flex items-center gap-2 text-sm font-medium mb-2">
-                              <MapPin className="h-4 w-4 text-primary shrink-0" />
-                              <span className="truncate">{listing?.departure}</span>
-                              <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
-                              <span className="truncate">{listing?.arrival}</span>
-                            </div>
-
-                            {/* Item description */}
-                            <p className="text-sm text-muted-foreground line-clamp-1 mb-2">
-                              {reservation.item_description}
-                            </p>
-
-                            {/* Party info */}
-                            <p className="text-xs text-muted-foreground">
-                              {isBuyer ? "Voyageur" : "Client"}: {otherParty?.full_name || "Inconnu"}
-                            </p>
-                          </div>
-
-                          {/* Status badge */}
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${getStatusColor(reservation.status)}`}>
-                            {getStatusLabel(reservation.status)}
-                          </span>
-                        </div>
-
-                        {/* Date info + Details link */}
-                        <div className="flex items-center justify-between mt-2">
-                          {listing?.arrival_date && (
-                            <p className="text-xs text-muted-foreground">
-                              Arrivée prévue: {format(new Date(listing.arrival_date), "d MMMM yyyy", { locale: fr })}
-                            </p>
-                          )}
-                          <button
-                            onClick={() => navigate("/profile?tab=rdv")}
-                            className="flex items-center gap-1 text-xs text-primary hover:underline ml-auto"
-                          >
-                            Voir détails
-                            <ChevronRight className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Package Tracker */}
-                      {listing && (
-                        <PackageTracker
-                          reservationId={reservation.id}
-                          departure={listing.departure}
-                          arrival={listing.arrival}
-                          initialStatus={reservation.status}
-                          sellerId={reservation.seller_id}
-                          buyerId={reservation.buyer_id}
-                          compact={true}
-                        />
-                      )}
-                    </motion.div>
+                      id={reservation.id}
+                      departure={listing.departure}
+                      arrival={listing.arrival}
+                      status={reservation.status}
+                      requestedKg={reservation.requested_kg}
+                      arrivalDate={listing.arrival_date}
+                      index={index}
+                      onClick={() => setSelectedReservation(reservation)}
+                    />
                   );
                 })}
               </div>
             </AnimatePresence>
           )}
         </div>
+
+        {/* Detail Sheet */}
+        <Sheet open={!!selectedReservation} onOpenChange={() => setSelectedReservation(null)}>
+          <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
+            <SheetHeader className="pb-4">
+              <SheetTitle className="text-left">Suivi détaillé</SheetTitle>
+            </SheetHeader>
+            
+            {selectedReservation && selectedReservation.listing && (
+              <div className="overflow-y-auto max-h-[calc(85vh-80px)] pb-safe">
+                <PackageTracker
+                  reservationId={selectedReservation.id}
+                  departure={(selectedReservation.listing as any).departure}
+                  arrival={(selectedReservation.listing as any).arrival}
+                  initialStatus={selectedReservation.status}
+                  sellerId={selectedReservation.seller_id}
+                  buyerId={selectedReservation.buyer_id}
+                  compact={false}
+                />
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
       </div>
     </PullToRefresh>
   );
