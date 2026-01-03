@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { PackageTracker } from "@/components/tracking/PackageTracker";
 import { TrackingCard } from "@/components/tracking/TrackingCard";
-import { Package, Loader2 } from "lucide-react";
+import { Package, Loader2, MapPin, Shield, Bell, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,8 @@ import PullToRefresh from "@/components/mobile/PullToRefresh";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 const IN_TRANSIT_STATUSES = [
   "approved",
@@ -170,12 +172,104 @@ const Tracking = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4 pb-24">
-        <div className="text-center space-y-4">
-          <Package className="h-16 w-16 mx-auto text-muted-foreground" />
-          <p className="text-muted-foreground">
-            Connectez-vous pour voir vos colis en cours
-          </p>
+      <div className="min-h-screen bg-background pb-24">
+        {/* Header */}
+        <div className="bg-card border-b border-border sticky top-0 z-40">
+          <div className="px-4 py-4 pt-safe">
+            <h1 className="text-xl font-bold">Suivi des colis</h1>
+            <p className="text-sm text-muted-foreground">
+              Suivez vos envois en temps réel
+            </p>
+          </div>
+        </div>
+
+        <div className="container px-4 py-8 max-w-lg mx-auto">
+          {/* Hero CTA Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Card className="overflow-hidden border-0 shadow-xl">
+              {/* Gradient Header */}
+              <div className="bg-gradient-to-br from-primary via-primary/90 to-accent p-8 text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                  className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center"
+                >
+                  <Package className="h-10 w-10 text-white" />
+                </motion.div>
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  Suivez vos colis
+                </h2>
+                <p className="text-white/80 text-sm">
+                  Gardez un œil sur vos envois à chaque étape
+                </p>
+              </div>
+
+              {/* Features */}
+              <div className="p-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <MapPin className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Suivi en temps réel</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Localisez vos colis à chaque étape du voyage
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Bell className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Notifications</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Recevez des alertes à chaque mise à jour
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Shield className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Sécurisé</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Vos colis sont assurés pendant le transport
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* CTA Button */}
+              <div className="px-6 pb-6">
+                <Button
+                  onClick={() => navigate('/auth')}
+                  size="lg"
+                  className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 h-12 text-base font-semibold"
+                >
+                  Créer un compte gratuit
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </Button>
+                <p className="text-center text-xs text-muted-foreground mt-3">
+                  Déjà inscrit ?{" "}
+                  <button 
+                    onClick={() => navigate('/auth')}
+                    className="text-primary font-medium hover:underline"
+                  >
+                    Se connecter
+                  </button>
+                </p>
+              </div>
+            </Card>
+          </motion.div>
         </div>
       </div>
     );
