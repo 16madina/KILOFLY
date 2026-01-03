@@ -1,12 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, ChevronRight, Shield, Globe, DollarSign, Heart, MapPin, Eye, FileText, HelpCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shield, Globe, DollarSign, Heart, MapPin, Eye, FileText, HelpCircle, Fingerprint } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useBiometricAuth } from "@/hooks/useBiometricAuth";
+import { toast } from "sonner";
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { isAvailable: biometricAvailable, isEnabled: biometricEnabled, biometryType, enableBiometric, disableBiometric } = useBiometricAuth();
+  
   const [notifications, setNotifications] = useState({
     messages: true,
     responses: true,
@@ -14,6 +18,16 @@ const Settings = () => {
     promotions: false,
   });
   const [darkMode, setDarkMode] = useState(false);
+
+  const handleBiometricToggle = async (enabled: boolean) => {
+    if (enabled) {
+      await enableBiometric();
+      toast.success(`${biometryType} activé`);
+    } else {
+      await disableBiometric();
+      toast.success(`${biometryType} désactivé`);
+    }
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -45,6 +59,25 @@ const Settings = () => {
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
         </Link>
+
+        {/* Biometric Authentication */}
+        {biometricAvailable && (
+          <div className="flex items-center justify-between p-4 hover:bg-accent rounded-lg transition-colors">
+            <div className="flex items-center gap-3">
+              <Fingerprint className="w-5 h-5 text-green-500" />
+              <div className="flex flex-col">
+                <span className="font-medium">Connexion {biometryType}</span>
+                <span className="text-sm text-muted-foreground">
+                  Se connecter avec {biometryType}
+                </span>
+              </div>
+            </div>
+            <Switch 
+              checked={biometricEnabled}
+              onCheckedChange={handleBiometricToggle}
+            />
+          </div>
+        )}
 
         {/* Transactions */}
         <Link to="/user-transactions">
