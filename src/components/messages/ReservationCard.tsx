@@ -44,61 +44,66 @@ const ReservationCard = ({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 p-4 bg-card hover:bg-muted/50 rounded-xl transition-all duration-200 hover:scale-[0.98] active:scale-[0.96] text-left animate-fade-in relative border border-border/30"
+      className="w-full p-3 bg-card hover:bg-muted/50 rounded-xl transition-all duration-200 hover:scale-[0.98] active:scale-[0.96] text-left animate-fade-in border border-border/30"
     >
-      {/* ID + Status badge */}
-      <div className="absolute top-2 right-2 flex items-center gap-1.5">
-        <span className="text-[10px] text-muted-foreground font-mono">
-          #{id.slice(0, 6).toUpperCase()}
-        </span>
-        <Badge
-          variant="secondary"
-          className={`text-[10px] px-1.5 py-0.5 border ${statusInfo.className}`}
-        >
-          {statusInfo.label}
-        </Badge>
+      {/* Row 1: Avatar + Name/Badge + Ref/Status */}
+      <div className="flex items-center gap-3">
+        <Avatar className="h-11 w-11 border-2 border-primary/20 flex-shrink-0">
+          <AvatarImage src={otherUser.avatar_url || ""} />
+          <AvatarFallback className="bg-gradient-sky text-primary-foreground text-sm">
+            {otherUser.full_name.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h3 className="font-semibold truncate text-sm">{otherUser.full_name}</h3>
+              <VerifiedBadge verified={otherUser.id_verified || false} size="sm" />
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <span className="text-[10px] text-muted-foreground font-mono">
+                #{id.slice(0, 6).toUpperCase()}
+              </span>
+              <Badge
+                variant="secondary"
+                className={`text-[10px] px-1.5 py-0 h-5 border ${statusInfo.className}`}
+              >
+                {statusInfo.label}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Row 2: Date + Route */}
+          <div className="flex items-center justify-between gap-2 mt-0.5">
+            <span className="text-[11px] text-muted-foreground">
+              {new Date(updatedAt).toLocaleDateString("fr-FR", {
+                day: "numeric",
+                month: "short",
+              })} à {new Date(updatedAt).toLocaleTimeString("fr-FR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+            <div className="flex items-center gap-1">
+              <Package className="h-3 w-3 text-primary flex-shrink-0" />
+              <span className="text-[11px] text-primary font-medium">
+                {departure} → {arrival} • {requestedKg} kg
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Avatar */}
-      <Avatar className="h-12 w-12 border-2 border-primary/20">
-        <AvatarImage src={otherUser.avatar_url || ""} />
-        <AvatarFallback className="bg-gradient-sky text-primary-foreground">
-          {otherUser.full_name.charAt(0).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0 pr-24">
-        <div className="flex items-center gap-2 mb-1">
-          <h3 className="font-semibold truncate">{otherUser.full_name}</h3>
-          <VerifiedBadge verified={otherUser.id_verified || false} size="sm" />
-          <span className="text-xs text-muted-foreground whitespace-nowrap ml-auto">
-            {new Date(updatedAt).toLocaleDateString("fr-FR", {
-              day: "numeric",
-              month: "short",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </span>
-        </div>
-
-        {/* Route info */}
-        <div className="flex items-center gap-2 mb-1">
-          <Package className="h-3 w-3 text-primary flex-shrink-0" />
-          <p className="text-xs text-primary truncate">
-            {departure} → {arrival} • {requestedKg} kg
-          </p>
-        </div>
-
-        <p className="text-sm text-muted-foreground truncate">{lastMessage}</p>
+      {/* Row 3: Last message + Unread */}
+      <div className="flex items-center justify-between gap-2 mt-2 pl-14">
+        <p className="text-sm text-muted-foreground truncate flex-1">{lastMessage}</p>
+        {unreadCount > 0 && (
+          <Badge className="bg-primary text-primary-foreground text-xs h-5 min-w-5 flex items-center justify-center animate-scale-in">
+            {unreadCount}
+          </Badge>
+        )}
       </div>
-
-      {/* Unread badge */}
-      {unreadCount > 0 && (
-        <Badge className="bg-primary text-primary-foreground animate-scale-in absolute bottom-3 right-3">
-          {unreadCount}
-        </Badge>
-      )}
     </button>
   );
 };
