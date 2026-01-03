@@ -59,6 +59,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { useExchangeRates } from "./hooks/useExchangeRates";
 import { useCurrencyWelcome } from "./hooks/useCurrencyWelcome";
 import { useTransportOfferNotifications } from "./hooks/useTransportOfferNotifications";
+import { useKeyboardScroll } from "./hooks/useKeyboardScroll";
 
 const queryClient = new QueryClient();
 
@@ -171,6 +172,7 @@ const AnimatedRoutes = () => {
 const AppContent = () => {
   useCurrencyWelcome();
   useTransportOfferNotifications();
+  useKeyboardScroll();
   
   return (
     <div className="relative">
