@@ -3,12 +3,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MapPin, Calendar, Package, ArrowRight } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Package, ArrowRight, MoreVertical } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import ReservationChat from "@/components/ReservationChat";
-
+import { ReportDialog } from "@/components/ReportDialog";
+import { BlockUserDialog } from "@/components/BlockUserDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 interface ReservationDetails {
   id: string;
   requested_kg: number;
@@ -107,16 +114,43 @@ const ReservationChatPage = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe flex-shrink-0">
         <div className="container px-4 sm:px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-              className="transition-all duration-200 hover:scale-110"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-lg font-semibold">Chat de la réservation</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate(-1)}
+                className="transition-all duration-200 hover:scale-110"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <h1 className="text-lg font-semibold">Chat de la réservation</h1>
+            </div>
+            
+            {/* Report/Block Menu */}
+            {otherUser && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <ReportDialog
+                      reportedUserId={otherUser.id}
+                      reportedUserName={otherUser.full_name}
+                    />
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <BlockUserDialog
+                      userId={otherUser.id}
+                      userName={otherUser.full_name}
+                    />
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </header>
