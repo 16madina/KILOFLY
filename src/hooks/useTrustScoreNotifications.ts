@@ -20,23 +20,32 @@ const getTrustLevel = (score: number): TrustScoreLevel | null => {
 };
 
 const LAST_NOTIFIED_SCORE_KEY = 'kilofly_last_notified_score';
+const NOTIFICATION_SHOWN_KEY = 'kilofly_notification_shown_session';
 
 export const useTrustScoreNotifications = (currentScore: number) => {
-  const hasInitialized = useRef(false);
+  const hasNotifiedThisSession = useRef(false);
 
   useEffect(() => {
-    // Skip first render to avoid showing notification on page load
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-      // Store current score as baseline
-      localStorage.setItem(LAST_NOTIFIED_SCORE_KEY, currentScore.toString());
+    // Skip if already notified this session or score is 0
+    if (hasNotifiedThisSession.current || currentScore === 0) {
       return;
     }
 
     const lastNotifiedScore = parseInt(localStorage.getItem(LAST_NOTIFIED_SCORE_KEY) || '0', 10);
+    const sessionNotified = sessionStorage.getItem(NOTIFICATION_SHOWN_KEY);
     
+    // If we've already shown a notification this session, skip
+    if (sessionNotified === 'true') {
+      hasNotifiedThisSession.current = true;
+      return;
+    }
+
     // Only show notification if score actually increased since last notification
     if (currentScore <= lastNotifiedScore) {
+      // Store current score as baseline without notification
+      localStorage.setItem(LAST_NOTIFIED_SCORE_KEY, currentScore.toString());
+      sessionStorage.setItem(NOTIFICATION_SHOWN_KEY, 'true');
+      hasNotifiedThisSession.current = true;
       return;
     }
 
@@ -54,6 +63,8 @@ export const useTrustScoreNotifications = (currentScore: number) => {
         }
       );
       localStorage.setItem(LAST_NOTIFIED_SCORE_KEY, currentScore.toString());
+      sessionStorage.setItem(NOTIFICATION_SHOWN_KEY, 'true');
+      hasNotifiedThisSession.current = true;
     }
     // Only notify for significant point gains (5+ points) without level change
     else if (scoreDiff >= 5) {
@@ -65,6 +76,13 @@ export const useTrustScoreNotifications = (currentScore: number) => {
         }
       );
       localStorage.setItem(LAST_NOTIFIED_SCORE_KEY, currentScore.toString());
+      sessionStorage.setItem(NOTIFICATION_SHOWN_KEY, 'true');
+      hasNotifiedThisSession.current = true;
+    } else {
+      // No notification needed, but update baseline
+      localStorage.setItem(LAST_NOTIFIED_SCORE_KEY, currentScore.toString());
+      sessionStorage.setItem(NOTIFICATION_SHOWN_KEY, 'true');
+      hasNotifiedThisSession.current = true;
     }
   }, [currentScore]);
 };
