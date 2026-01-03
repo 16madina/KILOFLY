@@ -12,12 +12,14 @@ const corsHeaders = {
 const getEmailTemplate = (type: string, email: string, confirmationUrl: string) => {
   const currentYear = new Date().getFullYear();
   
-  // Logo as styled text with icon for better email compatibility
+  // Logo hosted on project for emails
+  const logoUrl = "https://yuhbvzjniylkruaylxzz.supabase.co/storage/v1/object/public/assets/kilofly-logo-v2.png";
+  
   const logoHtml = `
     <table cellpadding="0" cellspacing="0" style="margin: 0 auto 20px auto;">
       <tr>
-        <td style="background: linear-gradient(135deg, #3b82f6, #60a5fa); padding: 12px 20px; border-radius: 12px;">
-          <span style="font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -1px;">✈️ KiloFly</span>
+        <td style="padding: 12px 20px; border-radius: 12px;">
+          <img src="${logoUrl}" alt="KiloFly" style="height: 60px; width: auto;" />
         </td>
       </tr>
     </table>

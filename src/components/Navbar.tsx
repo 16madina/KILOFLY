@@ -4,7 +4,7 @@ import { Plus, User, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import kiloFlyLogo from "@/assets/kilofly-logo-new.png";
+import kiloFlyLogo from "@/assets/kilofly-logo-v2.png";
 import {
   DropdownMenu,
   DropdownMenuContent,

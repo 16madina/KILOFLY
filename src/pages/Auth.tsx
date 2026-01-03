@@ -12,7 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AvatarUpload from "@/components/AvatarUpload";
 import { z } from "zod";
-import kiloFlyLogo from "@/assets/kilofly-logo.png";
+import kiloFlyLogo from "@/assets/kilofly-logo-v2.png";
 import { CountrySelect } from "@/components/CountrySelect";
 import { CitySelect } from "@/components/CitySelect";
 import { UserTypeSelect } from "@/components/UserTypeSelect";

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import kiloFlyLogo from "@/assets/kilofly-logo.png";
+import kiloFlyLogo from "@/assets/kilofly-logo-v2.png";
 
 const SplashScreen = ({ onFinish }: { onFinish: () => void }) => {
   const [isVisible, setIsVisible] = useState(true);
