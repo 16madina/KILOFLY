@@ -44,30 +44,30 @@ const ReservationCard = ({
   return (
     <button
       onClick={onClick}
-      className="w-full p-3 bg-card hover:bg-muted/50 rounded-xl transition-all duration-200 hover:scale-[0.98] active:scale-[0.96] text-left animate-fade-in border border-border/30"
+      className="w-full p-2.5 bg-card hover:bg-muted/50 rounded-lg transition-all duration-200 hover:scale-[0.98] active:scale-[0.96] text-left animate-fade-in border border-border/30"
     >
       {/* Row 1: Avatar + Name/Badge + Ref/Status */}
-      <div className="flex items-center gap-3">
-        <Avatar className="h-11 w-11 border-2 border-primary/20 flex-shrink-0">
+      <div className="flex items-center gap-2.5">
+        <Avatar className="h-9 w-9 border border-primary/20 flex-shrink-0">
           <AvatarImage src={otherUser.avatar_url || ""} />
-          <AvatarFallback className="bg-gradient-sky text-primary-foreground text-sm">
+          <AvatarFallback className="bg-gradient-sky text-primary-foreground text-xs">
             {otherUser.full_name.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <h3 className="font-semibold truncate text-sm">{otherUser.full_name}</h3>
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="flex items-center gap-1 min-w-0">
+              <h3 className="font-medium truncate text-xs">{otherUser.full_name}</h3>
               <VerifiedBadge verified={otherUser.id_verified || false} size="sm" />
             </div>
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              <span className="text-[10px] text-muted-foreground font-mono">
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <span className="text-[9px] text-muted-foreground font-mono">
                 #{id.slice(0, 6).toUpperCase()}
               </span>
               <Badge
                 variant="secondary"
-                className={`text-[10px] px-1.5 py-0 h-5 border ${statusInfo.className}`}
+                className={`text-[9px] px-1 py-0 h-4 border ${statusInfo.className}`}
               >
                 {statusInfo.label}
               </Badge>
@@ -75,8 +75,8 @@ const ReservationCard = ({
           </div>
 
           {/* Row 2: Date + Route */}
-          <div className="flex items-center justify-between gap-2 mt-0.5">
-            <span className="text-[11px] text-muted-foreground">
+          <div className="flex items-center justify-between gap-1.5 mt-0.5">
+            <span className="text-[10px] text-muted-foreground">
               {new Date(updatedAt).toLocaleDateString("fr-FR", {
                 day: "numeric",
                 month: "short",
@@ -85,9 +85,9 @@ const ReservationCard = ({
                 minute: "2-digit",
               })}
             </span>
-            <div className="flex items-center gap-1">
-              <Package className="h-3 w-3 text-primary flex-shrink-0" />
-              <span className="text-[11px] text-primary font-medium">
+            <div className="flex items-center gap-0.5">
+              <Package className="h-2.5 w-2.5 text-primary flex-shrink-0" />
+              <span className="text-[10px] text-primary font-medium">
                 {departure} → {arrival} • {requestedKg} kg
               </span>
             </div>
@@ -96,10 +96,10 @@ const ReservationCard = ({
       </div>
 
       {/* Row 3: Last message + Unread */}
-      <div className="flex items-center justify-between gap-2 mt-2 pl-14">
-        <p className="text-sm text-muted-foreground truncate flex-1">{lastMessage}</p>
+      <div className="flex items-center justify-between gap-2 mt-1.5 pl-[46px]">
+        <p className="text-[11px] text-muted-foreground truncate flex-1">{lastMessage}</p>
         {unreadCount > 0 && (
-          <Badge className="bg-primary text-primary-foreground text-xs h-5 min-w-5 flex items-center justify-center animate-scale-in">
+          <Badge className="bg-primary text-primary-foreground text-[10px] h-4 min-w-4 px-1 flex items-center justify-center animate-scale-in">
             {unreadCount}
           </Badge>
         )}
