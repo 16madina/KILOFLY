@@ -110,7 +110,7 @@ const ReservationChatPage = () => {
   const otherUser = reservation?.buyer_id === user.id ? reservation?.seller : reservation?.buyer;
 
   return (
-    <div className="h-screen bg-background flex flex-col pb-20">
+    <div className="h-screen bg-background flex flex-col pb-24 mb-safe">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe flex-shrink-0">
         <div className="container px-4 sm:px-6 py-4">

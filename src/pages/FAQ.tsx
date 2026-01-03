@@ -1,4 +1,3 @@
-import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, AlertCircle, Shield, Flag } from "lucide-react";
@@ -14,19 +13,23 @@ const FAQ = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <Navbar />
+    <div className="min-h-screen bg-background pb-32 mb-safe">
+      {/* Header with safe area */}
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe">
+        <div className="container px-4 sm:px-6 py-4 flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/settings')}
+            className="h-9 w-9 transition-all duration-200 hover:scale-110"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold">FAQ</h1>
+        </div>
+      </header>
       
-      <div className="container py-8 max-w-4xl px-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(-1)}
-          className="mb-4 rounded-full"
-        >
-          <ChevronLeft className="h-6 w-6" />
-        </Button>
-
+      <div className="container py-6 max-w-4xl px-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl">Questions Fréquentes (FAQ)</CardTitle>

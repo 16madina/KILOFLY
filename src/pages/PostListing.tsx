@@ -11,10 +11,11 @@ import { toast } from "sonner";
 import { MapPin, Calendar, Weight, DollarSign, ArrowLeft, AlertCircle, X, Plus, ExternalLink, Truck } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { Currency, CURRENCY_NAMES, CURRENCY_SYMBOLS } from "@/lib/currency";
+import { CityAutocomplete } from "@/components/CityAutocomplete";
 
 // Validation schema
 const listingSchema = z.object({
@@ -329,30 +330,24 @@ const PostListing = () => {
                 </h3>
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="departure">Ville de départ</Label>
-                    <Input
-                      id="departure"
-                      name="departure"
+                    <CityAutocomplete
+                      value={formData.departure}
+                      onChange={(city) => setFormData(prev => ({ ...prev, departure: city }))}
+                      label="Ville de départ"
                       placeholder="ex: Montréal"
                       required
-                      maxLength={100}
-                      value={formData.departure}
-                      onChange={(e) => setFormData(prev => ({ ...prev, departure: e.target.value }))}
-                      className="transition-all duration-200 focus:scale-[1.02]"
+                      excludeCity={formData.arrival}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="arrival">Ville d'arrivée</Label>
-                    <Input
-                      id="arrival"
-                      name="arrival"
+                    <CityAutocomplete
+                      value={formData.arrival}
+                      onChange={(city) => setFormData(prev => ({ ...prev, arrival: city }))}
+                      label="Ville d'arrivée"
                       placeholder="ex: Abidjan"
                       required
-                      maxLength={100}
-                      value={formData.arrival}
-                      onChange={(e) => setFormData(prev => ({ ...prev, arrival: e.target.value }))}
-                      className="transition-all duration-200 focus:scale-[1.02]"
+                      excludeCity={formData.departure}
                     />
                   </div>
                 </div>

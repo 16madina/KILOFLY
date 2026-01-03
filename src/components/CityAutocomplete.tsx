@@ -63,6 +63,8 @@ export const CityAutocomplete = ({
     onChange(city.city, city.country);
     setIsOpen(false);
     setHighlightedIndex(0);
+    // Blur input to dismiss keyboard on mobile
+    inputRef.current?.blur();
   };
 
   const handleClear = () => {
@@ -159,7 +161,8 @@ export const CityAutocomplete = ({
       {isOpen && filteredCities.length > 0 && (
         <div 
           ref={listRef}
-          className="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-lg overflow-hidden"
+          className="absolute z-[100] w-full mt-1 bg-background border border-border rounded-lg shadow-xl overflow-hidden"
+          style={{ maxHeight: '60vh' }}
         >
           <ScrollArea className="max-h-[300px]">
             <div className="p-1">
@@ -197,7 +200,7 @@ export const CityAutocomplete = ({
       )}
 
       {isOpen && query && filteredCities.length === 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-lg p-4 text-center">
+        <div className="absolute z-[100] w-full mt-1 bg-background border border-border rounded-lg shadow-xl p-4 text-center">
           <p className="text-sm text-muted-foreground">
             Aucune ville trouvée pour "{query}"
           </p>

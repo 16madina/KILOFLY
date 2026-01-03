@@ -42,7 +42,7 @@ const Messages = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background pb-32 mb-safe">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe">
         <div className="container px-4 sm:px-6 py-4">
