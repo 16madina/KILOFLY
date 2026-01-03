@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import heroImage from "@/assets/hero-travel.jpg";
+import kiloflyHeroBanner from "@/assets/kilofly-hero-banner.png";
 import montrealImg from "@/assets/destinations/montreal.jpg";
 import abidjanImg from "@/assets/destinations/abidjan.jpg";
 import parisImg from "@/assets/destinations/paris.jpg";
@@ -235,9 +236,18 @@ const Home = () => {
             <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
           </div>
           
-          <div className="relative container px-4 sm:px-6 py-12 md:py-20">
+          <div className="relative container px-4 sm:px-6 py-8 md:py-16">
+            {/* Hero Banner Image */}
+            <div className="flex justify-center mb-6 animate-fade-in">
+              <img 
+                src={kiloflyHeroBanner} 
+                alt="KiloFly - Partagez vos kilos" 
+                className="w-full max-w-2xl h-auto object-contain rounded-2xl shadow-2xl"
+              />
+            </div>
+
             {/* Post Listing Button */}
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-center mb-6">
               <Button
                 onClick={() => navigate('/post-listing')}
                 className="bg-gradient-sky hover:opacity-90 transition-all duration-200 hover:scale-105"
@@ -249,18 +259,18 @@ const Home = () => {
             </div>
 
             <div className="max-w-3xl mx-auto text-center space-y-4 animate-fade-in">
-              <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
+              <h1 className="text-2xl md:text-4xl font-bold tracking-tight">
                 Partagez vos kilos,{" "}
                 <span className="bg-gradient-sky bg-clip-text text-transparent">
                   voyagez léger
                 </span>
               </h1>
-              <p className="text-base md:text-lg text-muted-foreground">
+              <p className="text-sm md:text-base text-muted-foreground">
                 Connectez-vous avec des voyageurs pour utiliser leurs kilos disponibles
               </p>
 
               {/* Search Flow */}
-              <div className="mt-6 max-w-lg mx-auto">
+              <div className="mt-4 max-w-lg mx-auto">
                 <SearchFlow onSearch={handleSearch} />
               </div>
             </div>
