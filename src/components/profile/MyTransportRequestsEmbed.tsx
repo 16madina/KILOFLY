@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Package, Wallet, Trash2, Pencil, Plus, Search, Check, Clock } from "lucide-react";
+import { MapPin, Calendar, Package, Wallet, Trash2, Pencil, Plus, Search, Check, Clock, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CURRENCY_SYMBOLS, Currency } from "@/lib/currency";
 import { EditTransportRequestDialog } from "@/components/transport-requests/EditTransportRequestDialog";
+import { useTransportOfferRealtime } from "@/hooks/useTransportOfferRealtime";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,7 @@ interface TransportRequest {
   description: string | null;
   status: string;
   created_at: string;
+  offers_count?: number;
 }
 
 export const MyTransportRequestsEmbed = () => {
@@ -45,18 +47,16 @@ export const MyTransportRequestsEmbed = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [requestToEdit, setRequestToEdit] = useState<TransportRequest | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchRequests();
-    }
-  }, [user]);
-
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     if (!user) return;
 
+    // Get requests with pending offers count
     const { data, error } = await supabase
       .from('transport_requests')
-      .select('*')
+      .select(`
+        *,
+        transport_offers(count)
+      `)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(10);
@@ -64,10 +64,23 @@ export const MyTransportRequestsEmbed = () => {
     if (error) {
       console.error(error);
     } else {
-      setRequests(data || []);
+      const requestsWithCount = (data || []).map(req => ({
+        ...req,
+        offers_count: req.transport_offers?.[0]?.count || 0
+      }));
+      setRequests(requestsWithCount);
     }
     setLoading(false);
-  };
+  }, [user]);
+
+  // Real-time updates for offers
+  useTransportOfferRealtime(fetchRequests);
+
+  useEffect(() => {
+    if (user) {
+      fetchRequests();
+    }
+  }, [user, fetchRequests]);
 
   const handleDeleteRequest = async () => {
     if (!requestToDelete) return;
@@ -164,10 +177,18 @@ export const MyTransportRequestsEmbed = () => {
                       )}
                     </div>
                   </div>
-                  <Badge variant="outline" className={`text-xs ${statusInfo.className}`}>
-                    <StatusIcon className="w-3 h-3 mr-1" />
-                    {statusInfo.label}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {request.offers_count > 0 && request.status === 'active' && (
+                      <Badge variant="secondary" className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/20">
+                        <Bell className="w-3 h-3 mr-1" />
+                        {request.offers_count} offre{request.offers_count > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className={`text-xs ${statusInfo.className}`}>
+                      <StatusIcon className="w-3 h-3 mr-1" />
+                      {statusInfo.label}
+                    </Badge>
+                  </div>
                 </div>
 
                 {request.status === 'active' && (
