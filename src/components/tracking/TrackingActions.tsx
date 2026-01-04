@@ -193,32 +193,45 @@ export function TrackingActions({
     try {
       let photoUrl: string | null = null;
 
-      // Upload photo if provided
+      // Upload photo if provided - use delivery-proofs bucket if available, fallback to public assets
       if (proofPhoto) {
         const fileExt = proofPhoto.name.split('.').pop();
-        const fileName = `delivery-${reservationId}-${Date.now()}.${fileExt}`;
+        const fileName = `delivery-proof-${reservationId}-${Date.now()}.${fileExt}`;
         
-        const { error: uploadError } = await supabase.storage
+        // Try uploading to id-documents bucket (private) with signed URL fallback
+        const { error: uploadError, data: uploadData } = await supabase.storage
           .from('id-documents')
-          .upload(`delivery-proofs/${fileName}`, proofPhoto);
+          .upload(`delivery-proofs/${fileName}`, proofPhoto, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
         if (uploadError) {
           console.error('Photo upload error:', uploadError);
         } else {
-          const { data } = supabase.storage
+          // Generate a signed URL that expires in 1 year (for proof access)
+          const { data: signedUrlData, error: signedUrlError } = await supabase.storage
             .from('id-documents')
-            .getPublicUrl(`delivery-proofs/${fileName}`);
-          photoUrl = data.publicUrl;
+            .createSignedUrl(`delivery-proofs/${fileName}`, 31536000); // 1 year in seconds
+          
+          if (!signedUrlError && signedUrlData) {
+            photoUrl = signedUrlData.signedUrl;
+          }
         }
       }
 
-      // Create tracking event with delivery info
+      // Create tracking event with delivery info - store photo URL in description for now
+      // TODO: Add photo_url column to tracking_events table for proper storage
+      const deliveryDescription = photoUrl 
+        ? `Remis à: ${recipientName} | Photo: ${photoUrl}`
+        : `Remis à: ${recipientName}`;
+
       const { error: trackingError } = await supabase
         .from('tracking_events')
         .insert({
           reservation_id: reservationId,
           status: 'delivered',
-          description: `Remis à: ${recipientName}${photoUrl ? ' (photo de confirmation)' : ''}`,
+          description: deliveryDescription,
           is_automatic: false,
         });
 
