@@ -178,68 +178,63 @@ const Auth = () => {
         return;
       }
 
-      // Create user account first
-      const redirectUrl = `${window.location.origin}/profile`;
+      // First, upload avatar to storage (using anon key, will be linked after user creation)
+      const fileExt = signupAvatarFile.name.split('.').pop();
+      const tempFilePath = `temp/${crypto.randomUUID()}.${fileExt}`;
       
-      const { error: signUpError, data } = await supabase.auth.signUp({
-        email: signupEmail,
-        password: signupPassword,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: signupFullName,
+      const { error: uploadError, data: uploadData } = await supabase.storage
+        .from('avatars')
+        .upload(tempFilePath, signupAvatarFile, { upsert: true });
+
+      let avatarUrl = '';
+      if (!uploadError && uploadData) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(tempFilePath);
+        avatarUrl = publicUrl;
+      }
+
+      // Call our custom edge function for signup with branded confirmation email
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-welcome-confirmation`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            email: signupEmail,
+            password: signupPassword,
+            fullName: signupFullName,
             phone: signupPhone,
             country: signupCountry,
             city: signupCity,
-            avatar_url: '', // Will be updated after upload
-            user_type: signupUserType,
-            terms_accepted: true
-          }
+            userType: signupUserType,
+            avatarUrl: avatarUrl,
+          }),
         }
-      });
+      );
 
-      if (signUpError) {
-        toast.error(signUpError.message || "Erreur lors de l'inscription");
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || "Erreur lors de l'inscription");
         setIsLoading(false);
         return;
       }
 
-      // Now upload avatar with authenticated user
-      if (data.user && signupAvatarFile) {
-        const fileExt = signupAvatarFile.name.split('.').pop();
-        const filePath = `${data.user.id}/${crypto.randomUUID()}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, signupAvatarFile, { upsert: true });
-
-        if (uploadError) {
-          console.error('Avatar upload error:', uploadError);
-          toast.warning('Compte créé mais erreur lors de l\'upload de la photo');
-        } else {
-          const { data: { publicUrl } } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(filePath);
-
-          // Update profile with avatar URL and user type
-          await supabase
-            .from('profiles')
-            .update({ 
-              avatar_url: publicUrl,
-              user_type: signupUserType
-            })
-            .eq('id', data.user.id);
-        }
-      }
-
-      toast.success("Compte créé avec succès! Redirection vers la page de vérification...");
+      toast.success("Compte créé ! Vérifiez votre email pour confirmer votre inscription.", {
+        duration: 6000,
+      });
       
-      // Wait a bit for the profile to be created
+      // Navigate back to auth page to show login tab
       setTimeout(() => {
-        navigate('/onboarding');
-      }, 1500);
+        navigate('/auth');
+      }, 2000);
 
     } catch (error: any) {
+      console.error("Signup error:", error);
       toast.error(error.message || "Erreur lors de l'inscription");
     } finally {
       setIsLoading(false);
