@@ -9,10 +9,13 @@ import {
   Truck, 
   PartyPopper,
   Circle,
-  Navigation
+  Navigation,
+  Camera,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface TrackingEvent {
   id: string;
@@ -51,9 +54,22 @@ const STATUS_MAP: Record<string, string> = {
   'delivered': 'delivered',
 };
 
+// Helper to parse delivery photo from description
+const parseDeliveryInfo = (description: string | null) => {
+  if (!description) return { text: null, photoUrl: null };
+  
+  const photoMatch = description.match(/\| Photo: (.+)$/);
+  if (photoMatch) {
+    const text = description.replace(/ \| Photo: .+$/, '');
+    return { text, photoUrl: photoMatch[1] };
+  }
+  return { text: description, photoUrl: null };
+};
+
 export function TrackingTimeline({ reservationId, currentStatus }: TrackingTimelineProps) {
   const [events, setEvents] = useState<TrackingEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     fetchEvents();
@@ -203,11 +219,43 @@ export function TrackingTimeline({ reservationId, currentStatus }: TrackingTimel
                   )}
                 </div>
                 
-                {event?.description && (
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {event.description}
-                  </p>
-                )}
+                {event?.description && (() => {
+                  const { text, photoUrl } = parseDeliveryInfo(event.description);
+                  return (
+                    <>
+                      {text && (
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          {text}
+                        </p>
+                      )}
+                      {photoUrl && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="mt-3"
+                        >
+                          <button
+                            onClick={() => setPreviewPhoto(photoUrl)}
+                            className="group relative overflow-hidden rounded-lg border border-border hover:border-primary transition-colors"
+                          >
+                            <img
+                              src={photoUrl}
+                              alt="Preuve de livraison"
+                              className="w-32 h-24 object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                              <Camera className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          </button>
+                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                            <Camera className="w-3 h-3" />
+                            Photo de confirmation
+                          </p>
+                        </motion.div>
+                      )}
+                    </>
+                  );
+                })()}
                 
                 {event?.location_name && (
                   <div className="flex items-center gap-1 mt-1 text-xs text-primary">
@@ -236,6 +284,33 @@ export function TrackingTimeline({ reservationId, currentStatus }: TrackingTimel
           );
         })}
       </div>
+
+      {/* Photo Preview Modal */}
+      <Dialog open={!!previewPhoto} onOpenChange={() => setPreviewPhoto(null)}>
+        <DialogContent className="max-w-lg p-0 overflow-hidden">
+          <div className="relative">
+            <button
+              onClick={() => setPreviewPhoto(null)}
+              className="absolute top-2 right-2 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            {previewPhoto && (
+              <img
+                src={previewPhoto}
+                alt="Preuve de livraison"
+                className="w-full h-auto max-h-[80vh] object-contain"
+              />
+            )}
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
+              <p className="text-white text-sm font-medium flex items-center gap-2">
+                <Camera className="w-4 h-4" />
+                Preuve de livraison
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
