@@ -95,6 +95,9 @@ const ListingDetail = () => {
   const [trustScore, setTrustScore] = useState(0);
   const [requestedKg, setRequestedKg] = useState<number>(1);
   const [itemDescription, setItemDescription] = useState<string>("");
+  const [pickupAddress, setPickupAddress] = useState<string>("");
+  const [pickupNotes, setPickupNotes] = useState<string>("");
+  const [recipientPhone, setRecipientPhone] = useState<string>("");
   const [regulationsAccepted, setRegulationsAccepted] = useState(false);
   const [avgRating, setAvgRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
@@ -212,6 +215,16 @@ const ListingDetail = () => {
       return;
     }
 
+    if (!pickupAddress.trim()) {
+      toast.error("Veuillez indiquer votre adresse ou point de récupération");
+      return;
+    }
+
+    if (!recipientPhone.trim()) {
+      toast.error("Veuillez indiquer un numéro de téléphone pour vous contacter");
+      return;
+    }
+
     setContactLoading(true);
 
     try {
@@ -224,6 +237,9 @@ const ListingDetail = () => {
           buyer_id: user.id,
           seller_id: listing.user_id,
           requested_kg: requestedKg,
+          pickup_address: pickupAddress.trim(),
+          pickup_notes: pickupNotes.trim() || null,
+          recipient_phone: recipientPhone.trim(),
           total_price: totalPrice,
           item_description: itemDescription,
         });
@@ -755,6 +771,50 @@ const ListingDetail = () => {
                   />
                 </div>
 
+                {/* Pickup Address */}
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">
+                    Adresse / Point de récupération <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    placeholder="Ex: 12 rue de Paris, 75001 Paris ou Aéroport CDG Terminal 2E"
+                    value={pickupAddress}
+                    onChange={(e) => setPickupAddress(e.target.value)}
+                    className="rounded-xl"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Où le voyageur pourra vous retrouver pour récupérer le colis
+                  </p>
+                </div>
+
+                {/* Recipient Phone */}
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">
+                    Téléphone de contact <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    type="tel"
+                    placeholder="Ex: +33 6 12 34 56 78"
+                    value={recipientPhone}
+                    onChange={(e) => setRecipientPhone(e.target.value)}
+                    className="rounded-xl"
+                  />
+                </div>
+
+                {/* Pickup Notes (optional) */}
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">
+                    Instructions supplémentaires <span className="text-muted-foreground">(optionnel)</span>
+                  </Label>
+                  <Textarea
+                    placeholder="Ex: Digicode 1234, bâtiment B, horaires de disponibilité..."
+                    value={pickupNotes}
+                    onChange={(e) => setPickupNotes(e.target.value)}
+                    rows={2}
+                    className="resize-none rounded-xl"
+                  />
+                </div>
+
                 {/* Price Summary - Premium */}
                 <div className="bg-background/50 rounded-2xl p-4 space-y-2">
                   <div className="flex justify-between text-sm">
@@ -794,7 +854,7 @@ const ListingDetail = () => {
                 <Button 
                   className="w-full h-14 text-base font-semibold rounded-xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 gap-2" 
                   onClick={handleReservation}
-                  disabled={contactLoading || !itemDescription.trim() || !regulationsAccepted || displayAvailableKg === 0}
+                  disabled={contactLoading || !itemDescription.trim() || !regulationsAccepted || displayAvailableKg === 0 || !pickupAddress.trim() || !recipientPhone.trim()}
                 >
                   {contactLoading ? (
                     <>
