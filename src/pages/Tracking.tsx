@@ -128,6 +128,16 @@ const Tracking = () => {
     toast.success("Données actualisées");
   }, [refetch]);
 
+  // Resync selectedReservation when reservations data updates
+  useEffect(() => {
+    if (selectedReservation && reservations) {
+      const updated = reservations.find((r: any) => r.id === selectedReservation.id);
+      if (updated && updated !== selectedReservation) {
+        setSelectedReservation(updated);
+      }
+    }
+  }, [reservations, selectedReservation]);
+
   // Real-time subscription for reservation updates
   useEffect(() => {
     if (!user) return;
@@ -415,7 +425,7 @@ const Tracking = () => {
                   reservationId={selectedReservation.id}
                   departure={(selectedReservation.listing as any).departure}
                   arrival={(selectedReservation.listing as any).arrival}
-                  initialStatus={selectedReservation.status}
+                  initialStatus={(selectedReservation as any).latest_tracking_status || selectedReservation.status}
                   sellerId={selectedReservation.seller_id}
                   buyerId={selectedReservation.buyer_id}
                   compact={false}
