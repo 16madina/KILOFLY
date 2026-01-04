@@ -49,6 +49,7 @@ import MyTransportRequests from "./pages/MyTransportRequests";
 import TransportRequestDetail from "./pages/TransportRequestDetail";
 import Tracking from "./pages/Tracking";
 import EmailConfirmed from "./pages/EmailConfirmed";
+import ResetPassword from "./pages/ResetPassword";
 import MyRewards from "./pages/MyRewards";
 import Wallet from "./pages/Wallet";
 import ReservationChatPage from "./pages/ReservationChatPage";
@@ -155,6 +156,7 @@ const AnimatedRoutes = () => {
                   <Route path="/route-alerts" element={<RouteAlerts />} />
           <Route path="/verify-identity" element={<VerifyIdentity />} />
           <Route path="/email-confirmed" element={<EmailConfirmed />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/faq" element={<FAQ />} />
                   <Route path="/payment" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Payment /></motion.div>} />
                   <Route path="/payment-success" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><PaymentSuccess /></motion.div>} />

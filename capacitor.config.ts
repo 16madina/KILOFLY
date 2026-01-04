@@ -20,6 +20,10 @@ const config: CapacitorConfig = {
       resizeOnFullScreen: true,
     },
   },
+  // Deep links configuration
+  // iOS: Add URL scheme in Info.plist: CFBundleURLSchemes = ["kilofly"]
+  // Android: Add intent-filter in AndroidManifest.xml for scheme "kilofly"
+  // Universal Links: Configure apple-app-site-association and assetlinks.json
 };
 
 export default config;

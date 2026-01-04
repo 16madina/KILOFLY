@@ -28,6 +28,19 @@ const EmailConfirmed = () => {
     }
   }, [searchParams]);
 
+  const handleOpenApp = () => {
+    // Deep link for Capacitor app
+    const deepLink = "kilofly://email-confirmed";
+    
+    // Try to open the app via deep link
+    window.location.href = deepLink;
+    
+    // Fallback to onboarding after a short delay if app doesn't open
+    setTimeout(() => {
+      navigate('/onboarding');
+    }, 1500);
+  };
+
   const handleContinue = () => {
     navigate('/onboarding');
   };
@@ -150,18 +163,26 @@ const EmailConfirmed = () => {
                 </div>
               </motion.div>
 
-              {/* CTA Button */}
+              {/* CTA Buttons */}
               <motion.div
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.7 }}
+                className="space-y-3"
               >
                 <Button 
-                  onClick={handleContinue}
+                  onClick={handleOpenApp}
                   className="w-full gap-2 h-12 text-base"
                   size="lg"
                 >
-                  Continuer
+                  📱 Ouvrir l'application
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={handleContinue}
+                  className="w-full gap-2"
+                >
+                  Continuer sur le web
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               </motion.div>
