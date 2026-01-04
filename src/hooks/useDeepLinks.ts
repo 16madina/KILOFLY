@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { App, type URLOpenListenerEvent } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 
 export const useDeepLinks = () => {
@@ -15,8 +14,11 @@ export const useDeepLinks = () => {
     let listenerHandle: { remove: () => Promise<void> } | null = null;
 
     const setupListener = async () => {
+      // Dynamic import to avoid build issues on web
+      const { App } = await import('@capacitor/app');
+      
       // Handle deep links when app is opened via URL
-      listenerHandle = await App.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
+      listenerHandle = await App.addListener('appUrlOpen', (event) => {
         console.log('Deep link received:', event.url);
         
         try {
