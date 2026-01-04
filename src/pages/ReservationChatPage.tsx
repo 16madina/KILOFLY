@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MapPin, Calendar, Package, ArrowRight, MoreVertical } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Package, ArrowRight, MoreVertical, Phone, Home, Info } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,6 +24,9 @@ interface ReservationDetails {
   status: string;
   buyer_id: string;
   seller_id: string;
+  pickup_address: string | null;
+  pickup_notes: string | null;
+  recipient_phone: string | null;
   listing?: {
     departure: string;
     arrival: string;
@@ -163,7 +166,8 @@ const ReservationChatPage = () => {
       ) : reservation ? (
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Reservation Context - compact */}
-          <div className="container px-4 sm:px-6 py-3 flex-shrink-0">
+          <div className="container px-4 sm:px-6 py-3 flex-shrink-0 space-y-3">
+            {/* Route and Status */}
             <Card className="p-3 bg-muted/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm">
@@ -188,6 +192,39 @@ const ReservationChatPage = () => {
                 </span>
               </div>
             </Card>
+
+            {/* Pickup Information - Only show if address exists */}
+            {reservation.pickup_address && (
+              <Card className="p-3 bg-primary/5 border-primary/20">
+                <h4 className="text-xs font-semibold text-primary mb-2 flex items-center gap-1.5">
+                  <Home className="h-3.5 w-3.5" />
+                  Informations de récupération
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <span>{reservation.pickup_address}</span>
+                  </div>
+                  {reservation.recipient_phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                      <a 
+                        href={`tel:${reservation.recipient_phone}`}
+                        className="text-primary hover:underline"
+                      >
+                        {reservation.recipient_phone}
+                      </a>
+                    </div>
+                  )}
+                  {reservation.pickup_notes && (
+                    <div className="flex items-start gap-2 text-muted-foreground">
+                      <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                      <span className="text-xs italic">{reservation.pickup_notes}</span>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
           </div>
 
           {/* Chat - takes remaining space */}

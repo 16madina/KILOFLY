@@ -805,6 +805,9 @@ export type Database = {
           id: string
           item_description: string
           listing_id: string
+          pickup_address: string | null
+          pickup_notes: string | null
+          recipient_phone: string | null
           requested_kg: number
           seller_id: string
           status: string
@@ -818,6 +821,9 @@ export type Database = {
           id?: string
           item_description: string
           listing_id: string
+          pickup_address?: string | null
+          pickup_notes?: string | null
+          recipient_phone?: string | null
           requested_kg: number
           seller_id: string
           status?: string
@@ -831,6 +837,9 @@ export type Database = {
           id?: string
           item_description?: string
           listing_id?: string
+          pickup_address?: string | null
+          pickup_notes?: string | null
+          recipient_phone?: string | null
           requested_kg?: number
           seller_id?: string
           status?: string
