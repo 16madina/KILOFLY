@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appIDs": ["YOUR_TEAM_ID.com.kilofly.app"],
+        "appIDs": ["6XW2XM3NDF.com.kilofly.app"],
         "components": [
           { "/": "/email-confirmed*" },
           { "/": "/reset-password*" },
@@ -15,6 +15,6 @@
     ]
   },
   "webcredentials": {
-    "apps": ["YOUR_TEAM_ID.com.kilofly.app"]
+    "apps": ["6XW2XM3NDF.com.kilofly.app"]
   }
 }
