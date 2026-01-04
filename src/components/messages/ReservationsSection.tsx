@@ -72,6 +72,10 @@ const ReservationsSection = ({
     return res.messages.filter((msg) => msg.sender_id !== currentUserId && !msg.read).length;
   };
 
+  // Calculate total unread for each tab
+  const receivedUnreadCount = receivedReservations.reduce((acc, res) => acc + getUnreadCount(res), 0);
+  const sentUnreadCount = sentReservations.reduce((acc, res) => acc + getUnreadCount(res), 0);
+
   const filteredReservations = displayedReservations.filter((res) => {
     const otherUser = getOtherUser(res);
     return otherUser.full_name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -92,24 +96,42 @@ const ReservationsSection = ({
         <button
           type="button"
           onClick={() => onTabChange("received")}
-          className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+          className={`relative flex-1 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
             activeTab === "received" 
               ? "bg-primary text-primary-foreground shadow-sm" 
               : "text-muted-foreground hover:text-foreground hover:bg-muted"
           }`}
         >
           Reçues ({receivedReservations.length})
+          {receivedUnreadCount > 0 && (
+            <span className={`absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center px-1.5 text-xs font-bold rounded-full ${
+              activeTab === "received" 
+                ? "bg-destructive text-destructive-foreground" 
+                : "bg-primary text-primary-foreground"
+            }`}>
+              {receivedUnreadCount > 99 ? "99+" : receivedUnreadCount}
+            </span>
+          )}
         </button>
         <button
           type="button"
           onClick={() => onTabChange("sent")}
-          className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+          className={`relative flex-1 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
             activeTab === "sent" 
               ? "bg-primary text-primary-foreground shadow-sm" 
               : "text-muted-foreground hover:text-foreground hover:bg-muted"
           }`}
         >
           Envoyées ({sentReservations.length})
+          {sentUnreadCount > 0 && (
+            <span className={`absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center px-1.5 text-xs font-bold rounded-full ${
+              activeTab === "sent" 
+                ? "bg-destructive text-destructive-foreground" 
+                : "bg-primary text-primary-foreground"
+            }`}>
+              {sentUnreadCount > 99 ? "99+" : sentUnreadCount}
+            </span>
+          )}
         </button>
       </div>
 
