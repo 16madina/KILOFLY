@@ -61,34 +61,53 @@ const Tracking = () => {
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Fetch latest tracking_event for each reservation
+      const reservationsWithTracking = await Promise.all(
+        (data || []).map(async (res) => {
+          const { data: latestEvent } = await supabase
+            .from("tracking_events")
+            .select("status")
+            .eq("reservation_id", res.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          
+          return {
+            ...res,
+            latest_tracking_status: latestEvent?.status || res.status,
+          };
+        })
+      );
+      
+      return reservationsWithTracking;
     },
     enabled: !!user,
   });
 
-  // Filter reservations based on active filter
+  // Filter reservations based on active filter (using latest_tracking_status)
   const filteredReservations = useMemo(() => {
     if (!reservations) return [];
     if (activeFilter === "all") return reservations;
     
     // Group similar statuses
     const statusGroups: Record<string, string[]> = {
-      picked_up: ["approved", "pickup_scheduled", "picked_up"],
+      picked_up: ["approved", "payment_received", "pickup_scheduled", "picked_up"],
       in_transit: ["in_progress", "in_transit"],
       arrived: ["arrived"],
       out_for_delivery: ["out_for_delivery"],
     };
     
     const targetStatuses = statusGroups[activeFilter] || [activeFilter];
-    return reservations.filter(r => targetStatuses.includes(r.status));
+    return reservations.filter(r => targetStatuses.includes(r.latest_tracking_status || r.status));
   }, [reservations, activeFilter]);
 
-  // Count per filter
+  // Count per filter (using latest_tracking_status)
   const filterCounts = useMemo(() => {
     if (!reservations) return {};
     
     const statusGroups: Record<string, string[]> = {
-      picked_up: ["approved", "pickup_scheduled", "picked_up"],
+      picked_up: ["approved", "payment_received", "pickup_scheduled", "picked_up"],
       in_transit: ["in_progress", "in_transit"],
       arrived: ["arrived"],
       out_for_delivery: ["out_for_delivery"],
@@ -97,7 +116,7 @@ const Tracking = () => {
     const counts: Record<string, number> = { all: reservations.length };
     
     Object.entries(statusGroups).forEach(([key, statuses]) => {
-      counts[key] = reservations.filter(r => statuses.includes(r.status)).length;
+      counts[key] = reservations.filter(r => statuses.includes(r.latest_tracking_status || r.status)).length;
     });
     
     return counts;
@@ -364,19 +383,19 @@ const Tracking = () => {
 
                   if (!listing) return null;
 
-                  return (
-                    <TrackingCard
-                      key={reservation.id}
-                      id={reservation.id}
-                      departure={listing.departure}
-                      arrival={listing.arrival}
-                      status={reservation.status}
-                      requestedKg={reservation.requested_kg}
-                      arrivalDate={listing.arrival_date}
-                      index={index}
-                      onClick={() => setSelectedReservation(reservation)}
-                    />
-                  );
+                    return (
+                      <TrackingCard
+                        key={reservation.id}
+                        id={reservation.id}
+                        departure={listing.departure}
+                        arrival={listing.arrival}
+                        status={(reservation as any).latest_tracking_status || reservation.status}
+                        requestedKg={reservation.requested_kg}
+                        arrivalDate={listing.arrival_date}
+                        index={index}
+                        onClick={() => setSelectedReservation(reservation)}
+                      />
+                    );
                 })}
               </div>
             </AnimatePresence>

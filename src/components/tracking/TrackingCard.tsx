@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Package, Plane, MapPin, Clock, CheckCircle, Loader2 } from "lucide-react";
+import { Package, Plane, MapPin, Clock, CheckCircle, Loader2, CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -27,6 +27,12 @@ const STATUS_CONFIG: Record<string, {
     icon: Clock,
     color: "bg-amber-500/10 text-amber-500 border-amber-500/30",
     progress: 10
+  },
+  payment_received: { 
+    label: "Paiement reçu", 
+    icon: CreditCard,
+    color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30",
+    progress: 15
   },
   pickup_scheduled: { 
     label: "Prévu", 
