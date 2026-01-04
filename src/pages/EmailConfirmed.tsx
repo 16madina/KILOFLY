@@ -29,16 +29,26 @@ const EmailConfirmed = () => {
   }, [searchParams]);
 
   const handleOpenApp = () => {
-    // Deep link for Capacitor app
-    const deepLink = "kilofly://email-confirmed";
+    // Try Universal Link first (https), then custom scheme, then fallback
+    const universalLink = "https://kiloflyapp.com/onboarding";
+    const customScheme = "kilofly://onboarding";
     
-    // Try to open the app via deep link
-    window.location.href = deepLink;
+    // First try Universal Link (works if app is installed with proper entitlements)
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = customScheme;
+    document.body.appendChild(iframe);
     
-    // Fallback to onboarding after a short delay if app doesn't open
+    // After a short delay, try the universal link as backup
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+      window.location.href = universalLink;
+    }, 500);
+    
+    // Final fallback to web onboarding
     setTimeout(() => {
       navigate('/onboarding');
-    }, 1500);
+    }, 2000);
   };
 
   const handleContinue = () => {

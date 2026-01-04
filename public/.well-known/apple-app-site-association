@@ -1,0 +1,20 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["YOUR_TEAM_ID.com.kilofly.app"],
+        "components": [
+          { "/": "/email-confirmed*" },
+          { "/": "/reset-password*" },
+          { "/": "/listing/*" },
+          { "/": "/profile/*" },
+          { "/": "/onboarding*" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["YOUR_TEAM_ID.com.kilofly.app"]
+  }
+}

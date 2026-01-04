@@ -64,17 +64,26 @@ const ResetPassword = () => {
   };
 
   const handleOpenApp = () => {
-    // Try deep link first, fallback to web
-    const deepLink = "kilofly://auth";
-    const webUrl = "/";
+    // Try Universal Link first (https), then custom scheme, then fallback
+    const universalLink = "https://kiloflyapp.com/";
+    const customScheme = "kilofly://";
     
-    // Try to open the app
-    window.location.href = deepLink;
+    // First try custom scheme via hidden iframe
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = customScheme;
+    document.body.appendChild(iframe);
     
-    // Fallback to web after a short delay
+    // After a short delay, try the universal link as backup
     setTimeout(() => {
-      navigate(webUrl);
-    }, 1500);
+      document.body.removeChild(iframe);
+      window.location.href = universalLink;
+    }, 500);
+    
+    // Final fallback to web
+    setTimeout(() => {
+      navigate("/");
+    }, 2000);
   };
 
   if (isSuccess) {
