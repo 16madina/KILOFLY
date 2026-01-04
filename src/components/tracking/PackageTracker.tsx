@@ -83,7 +83,7 @@ export function PackageTracker({
             .from('transactions')
             .select('id, payment_status')
             .eq('listing_id', reservationData.listing_id)
-            .in('payment_status', ['completed', 'captured', 'authorized'])
+            .in('payment_status', ['completed', 'captured', 'authorized', 'paid'])
             .limit(1)
             .maybeSingle();
 
@@ -111,7 +111,7 @@ export function PackageTracker({
         (payload) => {
           const transaction = payload.new as any;
           if (transaction && listingId && transaction.listing_id === listingId) {
-            if (['completed', 'captured', 'authorized'].includes(transaction.payment_status)) {
+            if (['completed', 'captured', 'authorized', 'paid'].includes(transaction.payment_status)) {
               setIsPaid(true);
             }
           }
@@ -262,6 +262,7 @@ export function PackageTracker({
     const labels: Record<string, string> = {
       'pending': 'En attente',
       'approved': 'Approuvée',
+      'payment_received': 'Paiement confirmé',
       'payment_completed': 'Paiement reçu',
       'pickup_scheduled': 'Récupération prévue',
       'picked_up': 'Colis récupéré',
@@ -270,6 +271,7 @@ export function PackageTracker({
       'arrived': 'Arrivé',
       'out_for_delivery': 'Livraison en cours',
       'delivered': 'Livré',
+      'cancelled': 'Annulée',
     };
     return labels[status] || status;
   };
@@ -330,12 +332,22 @@ export function PackageTracker({
             currentLocation={currentLocation || undefined}
           />
 
-          {/* Payment warning for seller if not paid */}
-          {isSeller && !isPaid && !checkingPayment && currentStatus === 'approved' && (
+          {/* Payment status messages for seller */}
+          {isSeller && !checkingPayment && currentStatus === 'approved' && !isPaid && (
             <Alert className="bg-amber-500/10 border-amber-500/20">
               <CreditCard className="h-4 w-4 text-amber-500" />
               <AlertDescription className="text-amber-600 dark:text-amber-400">
                 En attente du paiement de l'expéditeur. Vous pourrez récupérer le colis une fois le paiement effectué.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Seller sees payment received - needs to confirm */}
+          {isSeller && isPaid && currentStatus === 'approved' && (
+            <Alert className="bg-emerald-500/10 border-emerald-500/20">
+              <CreditCard className="h-4 w-4 text-emerald-500" />
+              <AlertDescription className="text-emerald-600 dark:text-emerald-400 font-medium">
+                💰 Paiement reçu ! Confirmez la réception pour passer à l'étape suivante.
               </AlertDescription>
             </Alert>
           )}
@@ -398,6 +410,16 @@ export function PackageTracker({
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Buyer sees payment confirmation pending */}
+          {isBuyer && isPaid && currentStatus === 'approved' && (
+            <Alert className="bg-blue-500/10 border-blue-500/20">
+              <CreditCard className="h-4 w-4 text-blue-500" />
+              <AlertDescription className="text-blue-600 dark:text-blue-400">
+                ✅ Paiement effectué ! En attente de confirmation du voyageur.
               </AlertDescription>
             </Alert>
           )}
