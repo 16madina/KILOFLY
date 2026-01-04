@@ -41,6 +41,9 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
   
   // Signup form state
   const [signupFullName, setSignupFullName] = useState("");
@@ -143,6 +146,41 @@ const Auth = () => {
     }
     
     setIsLoading(false);
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotLoading(true);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-password-reset`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ email: forgotEmail }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Email de réinitialisation envoyé ! Vérifiez votre boîte mail.", {
+          duration: 6000,
+        });
+        setShowForgotPassword(false);
+        setForgotEmail("");
+      } else {
+        toast.error(data.error || "Erreur lors de l'envoi");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de l'envoi");
+    } finally {
+      setForgotLoading(false);
+    }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -298,6 +336,13 @@ const Auth = () => {
                         required
                         className="transition-all duration-200 focus:scale-[1.02]"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotPassword(true)}
+                        className="text-sm text-primary hover:underline mt-1"
+                      >
+                        Mot de passe oublié ?
+                      </button>
                     </div>
                     <Button
                       type="submit"
@@ -446,6 +491,52 @@ const Auth = () => {
               </Tabs>
             </CardContent>
           </Card>
+
+          {/* Forgot Password Modal */}
+          {showForgotPassword && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <Card className="w-full max-w-md animate-scale-in">
+                <CardHeader>
+                  <CardTitle>Mot de passe oublié</CardTitle>
+                  <CardDescription>
+                    Entrez votre adresse email pour recevoir un lien de réinitialisation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="forgot-email">Email</Label>
+                      <Input
+                        id="forgot-email"
+                        type="email"
+                        placeholder="votre@email.com"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowForgotPassword(false)}
+                        className="flex-1"
+                      >
+                        Annuler
+                      </Button>
+                      <Button
+                        type="submit"
+                        className="flex-1"
+                        disabled={forgotLoading}
+                      >
+                        {forgotLoading ? "Envoi..." : "Envoyer"}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     </div>
