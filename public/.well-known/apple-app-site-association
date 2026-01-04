@@ -9,7 +9,13 @@
           { "/": "/reset-password*" },
           { "/": "/listing/*" },
           { "/": "/profile/*" },
-          { "/": "/onboarding*" }
+          { "/": "/onboarding*" },
+          { "/": "/messages*" },
+          { "/": "/wallet*" },
+          { "/": "/tracking/*" },
+          { "/": "/reservation/*" },
+          { "/": "/favorites*" },
+          { "/": "/settings*" }
         ]
       }
     ]
