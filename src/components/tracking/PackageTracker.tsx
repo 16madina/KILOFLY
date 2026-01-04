@@ -199,28 +199,32 @@ export function PackageTracker({
   };
 
   useEffect(() => {
-    // Fetch latest tracking event with location
-    const fetchLatestLocation = async () => {
+    // Fetch latest tracking event (even without location)
+    const fetchLatestTracking = async () => {
       const { data } = await supabase
         .from('tracking_events')
-        .select('location_lat, location_lng, location_name, status')
+        .select('location_lat, location_lng, location_name, status, created_at')
         .eq('reservation_id', reservationId)
-        .not('location_lat', 'is', null)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (data && data.location_lat && data.location_lng) {
-        setCurrentLocation({
-          lat: Number(data.location_lat),
-          lng: Number(data.location_lng),
-          name: data.location_name || undefined,
-        });
+      if (data) {
         setCurrentStatus(data.status);
+        if (data.location_lat && data.location_lng) {
+          setCurrentLocation({
+            lat: Number(data.location_lat),
+            lng: Number(data.location_lng),
+            name: data.location_name || undefined,
+          });
+        }
       }
     };
 
-    fetchLatestLocation();
+    fetchLatestTracking();
+
+    // Polling fallback (some in-app browsers block realtime websockets)
+    const pollId = window.setInterval(fetchLatestTracking, 8000);
 
     // Subscribe to realtime updates
     const channel = supabase
@@ -228,28 +232,27 @@ export function PackageTracker({
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'tracking_events',
           filter: `reservation_id=eq.${reservationId}`,
         },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const newEvent = payload.new as any;
-            setCurrentStatus(newEvent.status);
-            if (newEvent.location_lat && newEvent.location_lng) {
-              setCurrentLocation({
-                lat: Number(newEvent.location_lat),
-                lng: Number(newEvent.location_lng),
-                name: newEvent.location_name || undefined,
-              });
-            }
+          const newEvent = payload.new as any;
+          setCurrentStatus(newEvent.status);
+          if (newEvent.location_lat && newEvent.location_lng) {
+            setCurrentLocation({
+              lat: Number(newEvent.location_lat),
+              lng: Number(newEvent.location_lng),
+              name: newEvent.location_name || undefined,
+            });
           }
         }
       )
       .subscribe();
 
     return () => {
+      window.clearInterval(pollId);
       supabase.removeChannel(channel);
     };
   }, [reservationId]);
