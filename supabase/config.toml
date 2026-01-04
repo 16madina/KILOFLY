@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.cancel-reservation]
 verify_jwt = true
+
+[functions.send-welcome-confirmation]
+verify_jwt = false

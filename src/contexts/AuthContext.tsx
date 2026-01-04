@@ -40,25 +40,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/email-confirmed`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        }
-      }
-    });
-    
-    if (!error) {
-      navigate('/');
+  const signUp = async (
+    email: string, 
+    password: string, 
+    fullName: string,
+    options?: {
+      phone?: string;
+      country?: string;
+      city?: string;
+      userType?: string;
+      avatarUrl?: string;
     }
-    
-    return { error };
+  ) => {
+    try {
+      // Call our custom edge function for signup with branded email
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-welcome-confirmation`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            fullName,
+            phone: options?.phone || "",
+            country: options?.country || "",
+            city: options?.city || "",
+            userType: options?.userType || "traveler",
+            avatarUrl: options?.avatarUrl || "",
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: { message: data.error || "Erreur lors de l'inscription" } };
+      }
+
+      // Success - navigate to home with message to check email
+      navigate('/');
+      return { error: null };
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      return { error: { message: error.message || "Erreur lors de l'inscription" } };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
