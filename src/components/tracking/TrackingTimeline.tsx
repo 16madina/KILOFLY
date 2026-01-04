@@ -33,7 +33,7 @@ interface TrackingTimelineProps {
 const TRACKING_STEPS = [
   { status: 'pending', label: 'Demande envoyée', icon: Clock, color: 'text-amber-500' },
   { status: 'approved', label: 'Approuvée', icon: CheckCircle2, color: 'text-green-500' },
-  { status: 'payment_completed', label: 'Paiement reçu', icon: Package, color: 'text-blue-500' },
+  { status: 'payment_received', label: 'Paiement reçu', icon: CheckCircle2, color: 'text-emerald-500' },
   { status: 'pickup_scheduled', label: 'Récupération prévue', icon: MapPin, color: 'text-purple-500' },
   { status: 'picked_up', label: 'Colis récupéré', icon: Package, color: 'text-indigo-500' },
   { status: 'in_transit', label: 'En vol', icon: Plane, color: 'text-sky-500' },
@@ -46,6 +46,7 @@ const TRACKING_STEPS = [
 const STATUS_MAP: Record<string, string> = {
   'pending': 'pending',
   'approved': 'approved',
+  'payment_completed': 'payment_received',
   'in_progress': 'in_transit',
   'delivered': 'delivered',
 };

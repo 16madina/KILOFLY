@@ -33,6 +33,14 @@ interface TrackingActionsProps {
 const SELLER_ACTIONS = [
   { 
     fromStatus: 'approved', 
+    toStatus: 'payment_received', 
+    label: 'Paiement reçu',
+    description: 'Confirmer la réception du paiement',
+    icon: CheckCircle2,
+    color: 'bg-emerald-500'
+  },
+  { 
+    fromStatus: 'payment_received', 
     toStatus: 'pickup_scheduled', 
     label: 'Récupération prévue',
     description: 'Indiquer que la récupération du colis est programmée',
