@@ -62,8 +62,9 @@ export function PackageTracker({
 
   // Check if payment has been made and subscribe to realtime updates
   useEffect(() => {
+    let pollId: number | undefined;
+
     const checkPaymentStatus = async () => {
-      setCheckingPayment(true);
       try {
         // First get the listing_id and total_price from the reservation
         const { data: reservationData } = await supabase
@@ -79,26 +80,50 @@ export function PackageTracker({
             setCurrency((reservationData.listing as any).currency || 'EUR');
           }
           
-          const { data: txByListing } = await supabase
+          // Query by reservation_id (most reliable) with multiple payment_status checks
+          const { data: txByReservation } = await supabase
             .from('transactions')
-            .select('id, payment_status')
-            .eq('listing_id', reservationData.listing_id)
-            .in('payment_status', ['completed', 'captured', 'authorized', 'paid'])
+            .select('id, payment_status, status')
+            .eq('reservation_id', reservationId)
+            .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
 
-          setIsPaid(!!txByListing);
+          const paid = txByReservation && (
+            ['completed', 'captured', 'authorized', 'paid'].includes(txByReservation.payment_status || '') ||
+            txByReservation.status === 'completed'
+          );
+          
+          setIsPaid(!!paid);
+          return !!paid;
         }
+        return false;
       } catch (error) {
         console.error('Error checking payment status:', error);
-      } finally {
-        setCheckingPayment(false);
+        return false;
       }
     };
 
-    checkPaymentStatus();
+    const init = async () => {
+      setCheckingPayment(true);
+      const paid = await checkPaymentStatus();
+      setCheckingPayment(false);
 
-    // Subscribe to realtime transaction updates
+      // Start polling if not paid and status is approved (fallback for websocket issues)
+      if (!paid && (currentStatus === 'approved' || initialStatus === 'approved')) {
+        pollId = window.setInterval(async () => {
+          const nowPaid = await checkPaymentStatus();
+          if (nowPaid && pollId) {
+            window.clearInterval(pollId);
+            pollId = undefined;
+          }
+        }, 6000);
+      }
+    };
+
+    init();
+
+    // Subscribe to realtime transaction updates (reservation_id filter)
     const transactionChannel = supabase
       .channel(`payment-status-${reservationId}`)
       .on(
@@ -107,12 +132,20 @@ export function PackageTracker({
           event: '*',
           schema: 'public',
           table: 'transactions',
+          filter: `reservation_id=eq.${reservationId}`,
         },
         (payload) => {
           const transaction = payload.new as any;
-          if (transaction && listingId && transaction.listing_id === listingId) {
-            if (['completed', 'captured', 'authorized', 'paid'].includes(transaction.payment_status)) {
+          if (transaction) {
+            const paid = 
+              ['completed', 'captured', 'authorized', 'paid'].includes(transaction.payment_status || '') ||
+              transaction.status === 'completed';
+            if (paid) {
               setIsPaid(true);
+              if (pollId) {
+                window.clearInterval(pollId);
+                pollId = undefined;
+              }
             }
           }
         }
@@ -120,9 +153,10 @@ export function PackageTracker({
       .subscribe();
 
     return () => {
+      if (pollId) window.clearInterval(pollId);
       supabase.removeChannel(transactionChannel);
     };
-  }, [reservationId, listingId]);
+  }, [reservationId, initialStatus, currentStatus]);
 
   const handlePayNow = () => {
     navigate(`/payment?reservation=${reservationId}`);
