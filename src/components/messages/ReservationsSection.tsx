@@ -88,12 +88,14 @@ const ReservationsSection = ({
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-card rounded-xl border border-border/50 overflow-hidden">
+      <div className="flex bg-muted/50 rounded-xl p-1 gap-1">
         <button
           type="button"
           onClick={() => onTabChange("received")}
-          className={`flex-1 py-3 text-sm font-medium transition-colors ${
-            activeTab === "received" ? "text-primary bg-primary/5" : "text-muted-foreground"
+          className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+            activeTab === "received" 
+              ? "bg-primary text-primary-foreground shadow-sm" 
+              : "text-muted-foreground hover:text-foreground hover:bg-muted"
           }`}
         >
           Reçues ({receivedReservations.length})
@@ -101,8 +103,10 @@ const ReservationsSection = ({
         <button
           type="button"
           onClick={() => onTabChange("sent")}
-          className={`flex-1 py-3 text-sm font-medium transition-colors ${
-            activeTab === "sent" ? "text-primary bg-primary/5" : "text-muted-foreground"
+          className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+            activeTab === "sent" 
+              ? "bg-primary text-primary-foreground shadow-sm" 
+              : "text-muted-foreground hover:text-foreground hover:bg-muted"
           }`}
         >
           Envoyées ({sentReservations.length})
