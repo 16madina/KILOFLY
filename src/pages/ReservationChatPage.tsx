@@ -123,19 +123,16 @@ const ReservationChatPage = () => {
     <div className="h-screen bg-background flex flex-col pb-24 mb-safe">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/50 pt-safe flex-shrink-0">
-        <div className="container px-4 sm:px-6 py-4">
+        <div className="container px-4 sm:px-6 py-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate(-1)}
-                className="transition-all duration-200 hover:scale-110"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <h1 className="text-lg font-semibold">Chat de la réservation</h1>
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="transition-all duration-200 hover:scale-110"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             
             {/* Report/Block Menu */}
             {otherUser && (
