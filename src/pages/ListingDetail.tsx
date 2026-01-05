@@ -334,6 +334,19 @@ const ListingDetail = () => {
     }
   };
 
+  // Calculate days until departure - must be before early returns
+  const daysUntilDeparture = useMemo(() => {
+    if (!listing) return 0;
+    return differenceInDays(new Date(listing.departure_date), new Date());
+  }, [listing?.departure_date]);
+
+  // Get hero image - priority: destination_image > matched city image > gradient fallback
+  const heroImage = useMemo(() => {
+    if (!listing) return null;
+    if (listing.destination_image) return listing.destination_image;
+    return getDestinationImage(listing.arrival) || getDestinationImage(listing.departure);
+  }, [listing?.destination_image, listing?.arrival, listing?.departure]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -373,17 +386,6 @@ const ListingDetail = () => {
     day: 'numeric',
     month: 'long'
   });
-
-  // Calculate days until departure
-  const daysUntilDeparture = useMemo(() => {
-    return differenceInDays(new Date(listing.departure_date), new Date());
-  }, [listing.departure_date]);
-
-  // Get hero image - priority: destination_image > matched city image > gradient fallback
-  const heroImage = useMemo(() => {
-    if (listing.destination_image) return listing.destination_image;
-    return getDestinationImage(listing.arrival) || getDestinationImage(listing.departure);
-  }, [listing.destination_image, listing.arrival, listing.departure]);
 
   // Short date format for hero
   const shortDepartureDate = format(new Date(listing.departure_date), "d MMM", { locale: fr });
