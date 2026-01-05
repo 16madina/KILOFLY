@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { 
   MapPin, 
   Calendar, 
@@ -38,7 +39,9 @@ import {
   ChevronRight,
   Send,
   Edit,
-  Trash2
+  Trash2,
+  HandHeart,
+  PackageCheck
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -98,6 +101,7 @@ const ListingDetail = () => {
   const [pickupAddress, setPickupAddress] = useState<string>("");
   const [pickupNotes, setPickupNotes] = useState<string>("");
   const [recipientPhone, setRecipientPhone] = useState<string>("");
+  const [deliveryMethod, setDeliveryMethod] = useState<"handover" | "shipping">("handover");
   const [regulationsAccepted, setRegulationsAccepted] = useState(false);
   const [avgRating, setAvgRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
@@ -215,8 +219,9 @@ const ListingDetail = () => {
       return;
     }
 
-    if (!pickupAddress.trim()) {
-      toast.error("Veuillez indiquer votre adresse ou point de récupération");
+    // Validation conditionnelle selon le mode de remise
+    if (deliveryMethod === "handover" && !pickupAddress.trim()) {
+      toast.error("Veuillez indiquer le lieu de remise en main propre");
       return;
     }
 
@@ -237,11 +242,12 @@ const ListingDetail = () => {
           buyer_id: user.id,
           seller_id: listing.user_id,
           requested_kg: requestedKg,
-          pickup_address: pickupAddress.trim(),
+          pickup_address: deliveryMethod === "handover" ? pickupAddress.trim() : null,
           pickup_notes: pickupNotes.trim() || null,
           recipient_phone: recipientPhone.trim(),
           total_price: totalPrice,
           item_description: itemDescription,
+          delivery_method: deliveryMethod,
         });
 
       if (reservationError) throw reservationError;
@@ -771,21 +777,102 @@ const ListingDetail = () => {
                   />
                 </div>
 
-                {/* Pickup Address */}
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">
-                    Adresse / Point de récupération <span className="text-destructive">*</span>
+                {/* Delivery Method Choice */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <PackageCheck className="h-4 w-4 text-primary" />
+                    Comment le colis sera remis ? <span className="text-destructive">*</span>
                   </Label>
-                  <Input
-                    placeholder="Ex: 12 rue de Paris, 75001 Paris ou Aéroport CDG Terminal 2E"
-                    value={pickupAddress}
-                    onChange={(e) => setPickupAddress(e.target.value)}
-                    className="rounded-xl"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Où le voyageur pourra vous retrouver pour récupérer le colis
-                  </p>
+                  <RadioGroup
+                    value={deliveryMethod}
+                    onValueChange={(value) => setDeliveryMethod(value as "handover" | "shipping")}
+                    className="space-y-3"
+                  >
+                    <div className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                      deliveryMethod === "handover" 
+                        ? "border-primary bg-primary/5" 
+                        : "border-muted hover:border-primary/50"
+                    }`}>
+                      <RadioGroupItem value="handover" id="handover" className="mt-0.5" />
+                      <Label htmlFor="handover" className="cursor-pointer flex-1">
+                        <div className="flex items-center gap-2 font-medium mb-1">
+                          <HandHeart className="h-4 w-4 text-primary" />
+                          Remise en main propre
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Je remettrai le colis directement au voyageur
+                        </p>
+                      </Label>
+                    </div>
+                    
+                    <div className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                      deliveryMethod === "shipping" 
+                        ? "border-primary bg-primary/5" 
+                        : "border-muted hover:border-primary/50"
+                    }`}>
+                      <RadioGroupItem value="shipping" id="shipping" className="mt-0.5" />
+                      <Label htmlFor="shipping" className="cursor-pointer flex-1">
+                        <div className="flex items-center gap-2 font-medium mb-1">
+                          <Truck className="h-4 w-4 text-primary" />
+                          Envoi par transporteur
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Je gère l'expédition du colis vers le voyageur
+                        </p>
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
+
+                {/* Conditional fields based on delivery method */}
+                {deliveryMethod === "handover" && (
+                  <div className="space-y-4 p-4 rounded-xl bg-muted/30 border border-muted">
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">
+                        Lieu de remise <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        placeholder="Ex: Cocody Deux Plateaux, proche centre commercial"
+                        value={pickupAddress}
+                        onChange={(e) => setPickupAddress(e.target.value)}
+                        className="rounded-xl"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Où le voyageur pourra vous retrouver pour récupérer le colis
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">
+                        Instructions supplémentaires <span className="text-muted-foreground">(optionnel)</span>
+                      </Label>
+                      <Textarea
+                        placeholder="Ex: Digicode 1234, bâtiment B, horaires de disponibilité..."
+                        value={pickupNotes}
+                        onChange={(e) => setPickupNotes(e.target.value)}
+                        rows={2}
+                        className="resize-none rounded-xl"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {deliveryMethod === "shipping" && (
+                  <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                    <div className="flex items-start gap-3">
+                      <Truck className="h-5 w-5 text-amber-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-800 dark:text-amber-400">
+                          Vous gérez l'expédition
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Vous devrez envoyer le colis au voyageur par transporteur. 
+                          Les détails d'envoi seront convenus après acceptation de la demande.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Recipient Phone */}
                 <div>
@@ -798,20 +885,6 @@ const ListingDetail = () => {
                     value={recipientPhone}
                     onChange={(e) => setRecipientPhone(e.target.value)}
                     className="rounded-xl"
-                  />
-                </div>
-
-                {/* Pickup Notes (optional) */}
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">
-                    Instructions supplémentaires <span className="text-muted-foreground">(optionnel)</span>
-                  </Label>
-                  <Textarea
-                    placeholder="Ex: Digicode 1234, bâtiment B, horaires de disponibilité..."
-                    value={pickupNotes}
-                    onChange={(e) => setPickupNotes(e.target.value)}
-                    rows={2}
-                    className="resize-none rounded-xl"
                   />
                 </div>
 
@@ -854,7 +927,7 @@ const ListingDetail = () => {
                 <Button 
                   className="w-full h-14 text-base font-semibold rounded-xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 gap-2" 
                   onClick={handleReservation}
-                  disabled={contactLoading || !itemDescription.trim() || !regulationsAccepted || displayAvailableKg === 0 || !pickupAddress.trim() || !recipientPhone.trim()}
+                  disabled={contactLoading || !itemDescription.trim() || !regulationsAccepted || displayAvailableKg === 0 || !recipientPhone.trim() || (deliveryMethod === "handover" && !pickupAddress.trim())}
                 >
                   {contactLoading ? (
                     <>
