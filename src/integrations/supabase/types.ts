@@ -800,6 +800,8 @@ export type Database = {
       }
       reservations: {
         Row: {
+          archived_by_buyer_at: string | null
+          archived_by_seller_at: string | null
           buyer_id: string
           created_at: string
           delivery_method: string | null
@@ -817,6 +819,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_by_buyer_at?: string | null
+          archived_by_seller_at?: string | null
           buyer_id: string
           created_at?: string
           delivery_method?: string | null
@@ -834,6 +838,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_by_buyer_at?: string | null
+          archived_by_seller_at?: string | null
           buyer_id?: string
           created_at?: string
           delivery_method?: string | null

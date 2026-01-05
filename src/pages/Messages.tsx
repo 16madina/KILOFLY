@@ -11,9 +11,9 @@ const Messages = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [reservationTab, setReservationTab] = useState<"received" | "sent">("received");
+  const [reservationTab, setReservationTab] = useState<"messages" | "archived">("messages");
 
-  const { reservations, conversations, loading, deleteConversation } = useMessages(user?.id);
+  const { reservations, conversations, loading, deleteConversation, archiveReservation } = useMessages(user?.id);
 
   useEffect(() => {
     if (!user) {
@@ -77,6 +77,7 @@ const Messages = () => {
           loading={loading}
           searchQuery={searchQuery}
           onReservationClick={(id) => navigate(`/reservation-chat/${id}`)}
+          onArchiveReservation={archiveReservation}
         />
 
         {/* Conversations */}
