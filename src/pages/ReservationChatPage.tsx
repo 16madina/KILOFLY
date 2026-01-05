@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MapPin, Calendar, Package, ArrowRight, MoreVertical, Phone, Home, Info, Truck, HandHeart } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Package, ArrowRight, MoreVertical, Phone, Info, Truck, HandHeart, ChevronDown, ChevronUp, User } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +16,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 interface ReservationDetails {
   id: string;
   requested_kg: number;
@@ -52,6 +57,7 @@ const ReservationChatPage = () => {
   const { user } = useAuth();
   const [reservation, setReservation] = useState<ReservationDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deliveryDetailsOpen, setDeliveryDetailsOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -192,71 +198,87 @@ const ReservationChatPage = () => {
                   {reservation.total_price} {reservation.listing?.currency}
                 </span>
               </div>
-              {/* Delivery method inline */}
-              <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
-                {reservation.delivery_method === "shipping" ? (
-                  <>
-                    <Truck className="h-3 w-3" />
-                    <span>Envoi par transporteur</span>
-                  </>
-                ) : (
-                  <>
-                    <HandHeart className="h-3 w-3" />
-                    <span>Remise en main propre</span>
-                  </>
-                )}
-              </div>
-            </Card>
-
-            {/* Pickup/Shipping details - only show if there's relevant info */}
-            {(reservation.pickup_address || reservation.recipient_phone || reservation.pickup_notes || reservation.delivery_method === "shipping") && (
-              <Card className="p-3 bg-muted/30">
-                <div className="space-y-2 text-sm">
-                  {/* Show pickup address only for handover */}
-                  {reservation.delivery_method !== "shipping" && reservation.pickup_address && (
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <span className="text-xs">{reservation.pickup_address}</span>
-                    </div>
+              {/* Delivery method - clickable collapsible */}
+              <Collapsible open={deliveryDetailsOpen} onOpenChange={setDeliveryDetailsOpen}>
+                <CollapsibleTrigger className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full">
+                  {reservation.delivery_method === "shipping" ? (
+                    <>
+                      <Truck className="h-3 w-3" />
+                      <span>Envoi par transporteur</span>
+                    </>
+                  ) : (
+                    <>
+                      <HandHeart className="h-3 w-3" />
+                      <span>Remise en main propre</span>
+                    </>
                   )}
-                  
-                  {/* Always show phone - but masked if not paid */}
-                  {reservation.recipient_phone && (
+                  {deliveryDetailsOpen ? (
+                    <ChevronUp className="h-3 w-3 ml-auto" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3 ml-auto" />
+                  )}
+                </CollapsibleTrigger>
+                
+                <CollapsibleContent className="mt-2 pt-2 border-t border-border/50">
+                  <div className="space-y-2 text-xs">
+                    {/* Buyer name */}
                     <div className="flex items-center gap-2">
-                      <Phone className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                      {['paid', 'completed', 'delivered', 'payment_received', 'picked_up', 'in_transit', 'in_progress', 'arrived', 'out_for_delivery'].includes(reservation.status) ? (
-                        <a 
-                          href={`tel:${reservation.recipient_phone}`}
-                          className="text-primary text-xs hover:underline"
-                        >
-                          {reservation.recipient_phone}
-                        </a>
-                      ) : (
-                        <span className="text-muted-foreground text-xs italic">
-                          Visible après paiement
-                        </span>
-                      )}
+                      <User className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium">{reservation.buyer?.full_name}</span>
                     </div>
-                  )}
-                  
-                  {/* Show pickup notes for handover */}
-                  {reservation.delivery_method !== "shipping" && reservation.pickup_notes && (
-                    <div className="flex items-start gap-2 text-muted-foreground">
-                      <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                      <span className="text-xs italic">{reservation.pickup_notes}</span>
+                    
+                    {/* Requested kg */}
+                    <div className="flex items-center gap-2">
+                      <Package className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                      <span>{reservation.requested_kg} kg demandés</span>
                     </div>
-                  )}
-                  
-                  {/* Shipping notice */}
-                  {reservation.delivery_method === "shipping" && (
-                    <p className="text-xs text-muted-foreground p-2 bg-amber-500/10 rounded-lg">
-                      <Truck className="h-3 w-3 inline mr-1" />
-                      Convenez des détails d'envoi dans le chat.
-                    </p>
-                  )}
-                </div>
-              </Card>
-            )}
+                    
+                    {/* Phone - masked if not paid */}
+                    {reservation.recipient_phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                        {['paid', 'completed', 'delivered', 'payment_received', 'picked_up', 'in_transit', 'in_progress', 'arrived', 'out_for_delivery'].includes(reservation.status) ? (
+                          <a 
+                            href={`tel:${reservation.recipient_phone}`}
+                            className="text-primary hover:underline"
+                          >
+                            {reservation.recipient_phone}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground italic">
+                            Visible après paiement
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Pickup address for handover */}
+                    {reservation.delivery_method !== "shipping" && reservation.pickup_address && (
+                      <div className="flex items-start gap-2">
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <span>{reservation.pickup_address}</span>
+                      </div>
+                    )}
+                    
+                    {/* Pickup notes for handover */}
+                    {reservation.delivery_method !== "shipping" && reservation.pickup_notes && (
+                      <div className="flex items-start gap-2 text-muted-foreground">
+                        <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                        <span className="italic">{reservation.pickup_notes}</span>
+                      </div>
+                    )}
+                    
+                    {/* Shipping notice */}
+                    {reservation.delivery_method === "shipping" && (
+                      <p className="text-muted-foreground p-2 bg-amber-500/10 rounded-lg">
+                        <Truck className="h-3 w-3 inline mr-1" />
+                        Convenez des détails d'envoi dans le chat.
+                      </p>
+                    )}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </Card>
           </div>
 
           {/* Chat - takes remaining space */}
