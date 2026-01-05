@@ -12,6 +12,7 @@ interface TrackingCardProps {
   status: string;
   requestedKg: number;
   arrivalDate: string;
+  otherUserName?: string;
   index: number;
   onClick: () => void;
 }
@@ -85,6 +86,7 @@ export function TrackingCard({
   status,
   requestedKg,
   arrivalDate,
+  otherUserName,
   index,
   onClick,
 }: TrackingCardProps) {
@@ -109,7 +111,9 @@ export function TrackingCard({
             <Package className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Colis</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
+              {otherUserName ? `Pour ${otherUserName}` : "Colis"}
+            </p>
             <p className="font-bold text-sm">{refCode}</p>
           </div>
         </div>
