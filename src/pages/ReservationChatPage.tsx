@@ -192,78 +192,71 @@ const ReservationChatPage = () => {
                   {reservation.total_price} {reservation.listing?.currency}
                 </span>
               </div>
-            </Card>
-
-            {/* Delivery Method & Pickup Information */}
-            <Card className="p-3 bg-primary/5 border-primary/20">
-              <h4 className="text-xs font-semibold text-primary mb-2 flex items-center gap-1.5">
+              {/* Delivery method inline */}
+              <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
                 {reservation.delivery_method === "shipping" ? (
-                  <Truck className="h-3.5 w-3.5" />
+                  <>
+                    <Truck className="h-3 w-3" />
+                    <span>Envoi par transporteur</span>
+                  </>
                 ) : (
-                  <HandHeart className="h-3.5 w-3.5" />
-                )}
-                Mode de remise du colis
-              </h4>
-              
-              {/* Delivery Method Badge */}
-              <div className="mb-3">
-                {reservation.delivery_method === "shipping" ? (
-                  <Badge variant="secondary" className="bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30">
-                    <Truck className="h-3 w-3 mr-1" />
-                    Envoi par transporteur
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
-                    <HandHeart className="h-3 w-3 mr-1" />
-                    Remise en main propre
-                  </Badge>
-                )}
-              </div>
-
-              <div className="space-y-2 text-sm">
-                {/* Show pickup address only for handover */}
-                {reservation.delivery_method !== "shipping" && reservation.pickup_address && (
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                    <span>{reservation.pickup_address}</span>
-                  </div>
-                )}
-                
-                {/* Always show phone - but masked if not paid */}
-                {reservation.recipient_phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                    {['paid', 'completed', 'delivered', 'payment_received', 'picked_up', 'in_transit', 'in_progress', 'arrived', 'out_for_delivery'].includes(reservation.status) ? (
-                      <a 
-                        href={`tel:${reservation.recipient_phone}`}
-                        className="text-primary hover:underline"
-                      >
-                        {reservation.recipient_phone}
-                      </a>
-                    ) : (
-                      <span className="text-muted-foreground text-xs italic">
-                        Visible après paiement
-                      </span>
-                    )}
-                  </div>
-                )}
-                
-                {/* Show pickup notes for handover */}
-                {reservation.delivery_method !== "shipping" && reservation.pickup_notes && (
-                  <div className="flex items-start gap-2 text-muted-foreground">
-                    <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                    <span className="text-xs italic">{reservation.pickup_notes}</span>
-                  </div>
-                )}
-                
-                {/* Shipping notice */}
-                {reservation.delivery_method === "shipping" && (
-                  <p className="text-xs text-muted-foreground mt-2 p-2 bg-amber-500/10 rounded-lg">
-                    L'expéditeur enverra le colis par transporteur. Convenez des détails d'envoi dans le chat.
-                  </p>
+                  <>
+                    <HandHeart className="h-3 w-3" />
+                    <span>Remise en main propre</span>
+                  </>
                 )}
               </div>
             </Card>
+
+            {/* Pickup/Shipping details - only show if there's relevant info */}
+            {(reservation.pickup_address || reservation.recipient_phone || reservation.pickup_notes || reservation.delivery_method === "shipping") && (
+              <Card className="p-3 bg-muted/30">
+                <div className="space-y-2 text-sm">
+                  {/* Show pickup address only for handover */}
+                  {reservation.delivery_method !== "shipping" && reservation.pickup_address && (
+                    <div className="flex items-start gap-2">
+                      <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <span className="text-xs">{reservation.pickup_address}</span>
+                    </div>
+                  )}
+                  
+                  {/* Always show phone - but masked if not paid */}
+                  {reservation.recipient_phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                      {['paid', 'completed', 'delivered', 'payment_received', 'picked_up', 'in_transit', 'in_progress', 'arrived', 'out_for_delivery'].includes(reservation.status) ? (
+                        <a 
+                          href={`tel:${reservation.recipient_phone}`}
+                          className="text-primary text-xs hover:underline"
+                        >
+                          {reservation.recipient_phone}
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground text-xs italic">
+                          Visible après paiement
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Show pickup notes for handover */}
+                  {reservation.delivery_method !== "shipping" && reservation.pickup_notes && (
+                    <div className="flex items-start gap-2 text-muted-foreground">
+                      <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                      <span className="text-xs italic">{reservation.pickup_notes}</span>
+                    </div>
+                  )}
+                  
+                  {/* Shipping notice */}
+                  {reservation.delivery_method === "shipping" && (
+                    <p className="text-xs text-muted-foreground p-2 bg-amber-500/10 rounded-lg">
+                      <Truck className="h-3 w-3 inline mr-1" />
+                      Convenez des détails d'envoi dans le chat.
+                    </p>
+                  )}
+                </div>
+              </Card>
+            )}
           </div>
 
           {/* Chat - takes remaining space */}
