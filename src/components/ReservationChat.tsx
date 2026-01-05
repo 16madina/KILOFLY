@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Send, Loader2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { maskSensitiveContent, containsSensitiveContent } from "@/lib/contentFilter";
 
 interface Message {
   id: string;
@@ -25,6 +27,7 @@ interface ReservationChatProps {
   otherUserId: string;
   otherUserName: string;
   otherUserAvatar?: string;
+  reservationStatus?: string;
 }
 
 const ReservationChat = ({
@@ -32,13 +35,18 @@ const ReservationChat = ({
   otherUserId,
   otherUserName,
   otherUserAvatar,
+  reservationStatus,
 }: ReservationChatProps) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [sensitiveWarning, setSensitiveWarning] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Check if payment is completed (phone numbers should be visible)
+  const isPaymentCompleted = ['paid', 'completed', 'delivered', 'payment_received', 'picked_up', 'in_transit', 'in_progress', 'arrived', 'out_for_delivery'].includes(reservationStatus || '');
 
   useEffect(() => {
     if (!reservationId) return;
@@ -134,7 +142,17 @@ const ReservationChat = ({
 
     if (!newMessage.trim() || !user) return;
 
+    // Check for sensitive content if payment not completed
+    if (!isPaymentCompleted && containsSensitiveContent(newMessage)) {
+      setSensitiveWarning(true);
+      toast.warning("Information sensible détectée", {
+        description: "Le partage de numéros de téléphone ou emails n'est pas autorisé avant le paiement.",
+      });
+      return;
+    }
+
     setSending(true);
+    setSensitiveWarning(false);
 
     try {
       const { error } = await supabase
@@ -185,6 +203,16 @@ const ReservationChat = ({
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-4">
+          {/* Warning about content filtering before payment */}
+          {!isPaymentCompleted && (
+            <Alert className="bg-amber-500/10 border-amber-500/30">
+              <ShieldAlert className="h-4 w-4 text-amber-500" />
+              <AlertDescription className="text-xs text-amber-600 dark:text-amber-400">
+                Les numéros de téléphone et emails sont masqués avant le paiement pour votre sécurité.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {messages.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">Aucun message pour le moment</p>
@@ -195,6 +223,12 @@ const ReservationChat = ({
           ) : (
             messages.map((message) => {
               const isOwn = message.sender_id === user?.id;
+              // Mask sensitive content in displayed messages if payment not completed
+              const displayContent = isPaymentCompleted 
+                ? message.content 
+                : maskSensitiveContent(message.content);
+              const hasHiddenContent = !isPaymentCompleted && displayContent !== message.content;
+              
               return (
                 <div
                   key={message.id}
@@ -217,12 +251,18 @@ const ReservationChat = ({
                         "rounded-2xl px-4 py-2",
                         isOwn
                           ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
+                          : "bg-muted",
+                        hasHiddenContent && "border border-amber-500/30"
                       )}
                     >
                       <p className="text-sm whitespace-pre-wrap break-words">
-                        {message.content}
+                        {displayContent}
                       </p>
+                      {hasHiddenContent && (
+                        <p className="text-[10px] opacity-70 mt-1 italic">
+                          Contenu masqué
+                        </p>
+                      )}
                     </div>
                     <span className="text-xs text-muted-foreground mt-1">
                       {new Date(message.created_at).toLocaleTimeString("fr-FR", {
@@ -238,6 +278,16 @@ const ReservationChat = ({
         </div>
       </ScrollArea>
 
+      {/* Sensitive content warning */}
+      {sensitiveWarning && (
+        <div className="px-4 py-2 bg-amber-500/10 border-t border-amber-500/30">
+          <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+            <ShieldAlert className="h-3.5 w-3.5" />
+            Le partage d'infos de contact est interdit avant le paiement
+          </p>
+        </div>
+      )}
+
       {/* Input */}
       <form
         onSubmit={handleSendMessage}
@@ -245,10 +295,13 @@ const ReservationChat = ({
       >
         <Input
           value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
+          onChange={(e) => {
+            setNewMessage(e.target.value);
+            if (sensitiveWarning) setSensitiveWarning(false);
+          }}
           placeholder="Tapez votre message..."
           disabled={sending}
-          className="flex-1"
+          className={cn("flex-1", sensitiveWarning && "border-amber-500")}
         />
         <Button type="submit" disabled={sending || !newMessage.trim()} size="icon">
           {sending ? (
