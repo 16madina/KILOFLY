@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
-import { Package, Plane, MapPin, Clock, CheckCircle, Loader2, CreditCard } from "lucide-react";
+import { Package, Plane, MapPin, Clock, CheckCircle, Loader2, CreditCard, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -13,6 +14,7 @@ interface TrackingCardProps {
   requestedKg: number;
   arrivalDate: string;
   otherUserName?: string;
+  otherUserAvatar?: string;
   index: number;
   onClick: () => void;
 }
@@ -87,6 +89,7 @@ export function TrackingCard({
   requestedKg,
   arrivalDate,
   otherUserName,
+  otherUserAvatar,
   index,
   onClick,
 }: TrackingCardProps) {
@@ -107,12 +110,15 @@ export function TrackingCard({
       {/* Header: Icon + Ref + Status */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <Package className="w-5 h-5 text-primary" />
-          </div>
+          <Avatar className="w-11 h-11 border-2 border-primary/20">
+            <AvatarImage src={otherUserAvatar} alt={otherUserName || "Utilisateur"} />
+            <AvatarFallback className="bg-primary/10 text-primary">
+              {otherUserName ? otherUserName.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+            </AvatarFallback>
+          </Avatar>
           <div>
             <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
-              {otherUserName ? `Pour ${otherUserName}` : "Colis"}
+              {otherUserName ? `Pour ${otherUserName.split(' ')[0]}` : "Colis"}
             </p>
             <p className="font-bold text-sm">{refCode}</p>
           </div>
