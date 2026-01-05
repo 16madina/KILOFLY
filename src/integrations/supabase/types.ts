@@ -1601,6 +1601,7 @@ export type Database = {
       }
     }
     Functions: {
+      archive_expired_listings: { Args: never; Returns: undefined }
       get_available_kg: { Args: { listing_id_param: string }; Returns: number }
       has_role: {
         Args: {
