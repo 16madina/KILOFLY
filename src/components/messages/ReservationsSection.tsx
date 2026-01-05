@@ -57,14 +57,16 @@ const ReservationsSection = ({
   onArchiveReservation,
 }: ReservationsSectionProps) => {
   
-  // Check if reservation is archived for current user
+  // Check if reservation is archived for current user (including cancelled status)
   const isArchivedForUser = (res: Reservation) => {
+    // Cancelled reservations are automatically treated as archived
+    if (res.reservation.status === 'cancelled') return true;
     if (res.buyer_id === currentUserId && res.archived_by_buyer_at) return true;
     if (res.seller_id === currentUserId && res.archived_by_seller_at) return true;
     return false;
   };
 
-  // Split reservations into active and archived
+  // Split reservations into active and archived (cancelled goes to archived)
   const activeReservations = reservations.filter((r) => !isArchivedForUser(r));
   const archivedReservations = reservations.filter((r) => isArchivedForUser(r));
   
