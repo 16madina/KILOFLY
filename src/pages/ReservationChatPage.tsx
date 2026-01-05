@@ -233,7 +233,7 @@ const ReservationChatPage = () => {
                 {reservation.recipient_phone && (
                   <div className="flex items-center gap-2">
                     <Phone className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                    {reservation.status === "paid" || reservation.status === "completed" || reservation.status === "delivered" ? (
+                    {['paid', 'completed', 'delivered', 'payment_received', 'picked_up', 'in_transit', 'in_progress', 'arrived', 'out_for_delivery'].includes(reservation.status) ? (
                       <a 
                         href={`tel:${reservation.recipient_phone}`}
                         className="text-primary hover:underline"
@@ -275,6 +275,7 @@ const ReservationChatPage = () => {
                 otherUserId={otherUser.id}
                 otherUserName={otherUser.full_name}
                 otherUserAvatar={otherUser.avatar_url}
+                reservationStatus={reservation.status}
               />
             </div>
           )}
