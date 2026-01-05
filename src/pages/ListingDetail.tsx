@@ -63,6 +63,10 @@ import abidjanImg from "@/assets/destinations/abidjan.jpg";
 import lomeImg from "@/assets/destinations/lome.jpg";
 import montrealImg from "@/assets/destinations/montreal.jpg";
 import torontoImg from "@/assets/destinations/toronto.jpg";
+import lagosImg from "@/assets/destinations/lagos.jpg";
+import casablancaImg from "@/assets/destinations/casablanca.jpg";
+import conakryImg from "@/assets/destinations/conakry.jpg";
+import bamakoImg from "@/assets/destinations/bamako.jpg";
 
 const DESTINATION_IMAGES: Record<string, string> = {
   paris: parisImg,
@@ -73,6 +77,10 @@ const DESTINATION_IMAGES: Record<string, string> = {
   montreal: montrealImg,
   montréal: montrealImg,
   toronto: torontoImg,
+  lagos: lagosImg,
+  casablanca: casablancaImg,
+  conakry: conakryImg,
+  bamako: bamakoImg,
 };
 
 const getDestinationImage = (city: string): string | null => {
@@ -340,6 +348,12 @@ const ListingDetail = () => {
     return differenceInDays(new Date(listing.departure_date), new Date());
   }, [listing?.departure_date]);
 
+  // Check if listing is expired (departure date has passed)
+  const isExpired = useMemo(() => {
+    if (!listing) return false;
+    return daysUntilDeparture < 0;
+  }, [listing, daysUntilDeparture]);
+
   // Get hero image - priority: destination_image > matched city image > gradient fallback
   const heroImage = useMemo(() => {
     if (!listing) return null;
@@ -514,8 +528,8 @@ const ListingDetail = () => {
           {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
           
-          {/* Urgency Badge - Top Right */}
-          {daysUntilDeparture >= 0 && daysUntilDeparture <= 7 && (
+          {/* Urgency/Expired Badge - Top Right */}
+          {(isExpired || (daysUntilDeparture >= 0 && daysUntilDeparture <= 7)) && (
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -525,18 +539,22 @@ const ListingDetail = () => {
               <Badge 
                 className={`
                   px-3 py-1.5 text-xs font-semibold shadow-lg backdrop-blur-md
-                  ${daysUntilDeparture <= 2 
-                    ? 'bg-destructive/90 text-destructive-foreground animate-pulse' 
-                    : 'bg-amber-500/90 text-white'
+                  ${isExpired 
+                    ? 'bg-muted text-muted-foreground' 
+                    : daysUntilDeparture <= 2 
+                      ? 'bg-destructive/90 text-destructive-foreground animate-pulse' 
+                      : 'bg-amber-500/90 text-white'
                   }
                 `}
               >
                 <Clock className="h-3 w-3 mr-1.5" />
-                {daysUntilDeparture === 0 
-                  ? "Part aujourd'hui !" 
-                  : daysUntilDeparture === 1 
-                    ? "Part demain" 
-                    : `Part dans ${daysUntilDeparture} jours`
+                {isExpired 
+                  ? "Voyage terminé"
+                  : daysUntilDeparture === 0 
+                    ? "Part aujourd'hui !" 
+                    : daysUntilDeparture === 1 
+                      ? "Part demain" 
+                      : `Part dans ${daysUntilDeparture} jours`
                 }
               </Badge>
             </motion.div>
