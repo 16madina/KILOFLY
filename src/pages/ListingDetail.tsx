@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,37 @@ import { motion } from "framer-motion";
 import { useAvailableKg } from "@/hooks/useAvailableKg";
 import { ReportListingDialog } from "@/components/ReportListingDialog";
 import { BlockUserDialog } from "@/components/BlockUserDialog";
+import { differenceInDays, format } from "date-fns";
+import { fr } from "date-fns/locale";
+
+// Destination images mapping
+import parisImg from "@/assets/destinations/paris.jpg";
+import dakarImg from "@/assets/destinations/dakar.jpg";
+import abidjanImg from "@/assets/destinations/abidjan.jpg";
+import lomeImg from "@/assets/destinations/lome.jpg";
+import montrealImg from "@/assets/destinations/montreal.jpg";
+import torontoImg from "@/assets/destinations/toronto.jpg";
+
+const DESTINATION_IMAGES: Record<string, string> = {
+  paris: parisImg,
+  dakar: dakarImg,
+  abidjan: abidjanImg,
+  lomé: lomeImg,
+  lome: lomeImg,
+  montreal: montrealImg,
+  montréal: montrealImg,
+  toronto: torontoImg,
+};
+
+const getDestinationImage = (city: string): string | null => {
+  const normalized = city.toLowerCase().trim();
+  for (const [key, value] of Object.entries(DESTINATION_IMAGES)) {
+    if (normalized.includes(key) || key.includes(normalized)) {
+      return value;
+    }
+  }
+  return null;
+};
 
 interface Listing {
   id: string;
@@ -343,6 +374,21 @@ const ListingDetail = () => {
     month: 'long'
   });
 
+  // Calculate days until departure
+  const daysUntilDeparture = useMemo(() => {
+    return differenceInDays(new Date(listing.departure_date), new Date());
+  }, [listing.departure_date]);
+
+  // Get hero image - priority: destination_image > matched city image > gradient fallback
+  const heroImage = useMemo(() => {
+    if (listing.destination_image) return listing.destination_image;
+    return getDestinationImage(listing.arrival) || getDestinationImage(listing.departure);
+  }, [listing.destination_image, listing.arrival, listing.departure]);
+
+  // Short date format for hero
+  const shortDepartureDate = format(new Date(listing.departure_date), "d MMM", { locale: fr });
+  const shortArrivalDate = format(new Date(listing.arrival_date), "d MMM", { locale: fr });
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section with Image */}
@@ -441,37 +487,91 @@ const ListingDetail = () => {
         )}
 
         {/* Hero Image */}
-        <div className="relative h-72 sm:h-80 md:h-96 overflow-hidden">
-          {listing.destination_image ? (
-            <img
-              src={listing.destination_image}
+        <div className="relative h-64 sm:h-72 md:h-80 overflow-hidden">
+          {heroImage ? (
+            <motion.img
+              initial={{ scale: 1.1, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              src={heroImage}
               alt={listing.arrival}
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary/20 via-accent/10 to-primary/5 flex items-center justify-center">
-              <Plane className="h-24 w-24 text-primary/30" />
+            <div className="w-full h-full bg-gradient-to-br from-primary/30 via-accent/20 to-primary/10 flex items-center justify-center">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Plane className="h-20 w-20 text-primary/40" />
+              </motion.div>
             </div>
           )}
           
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
           
-          {/* Route Badge on Image */}
+          {/* Urgency Badge - Top Right */}
+          {daysUntilDeparture >= 0 && daysUntilDeparture <= 7 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 }}
+              className="absolute top-20 right-4 z-40 pt-safe"
+            >
+              <Badge 
+                className={`
+                  px-3 py-1.5 text-xs font-semibold shadow-lg backdrop-blur-md
+                  ${daysUntilDeparture <= 2 
+                    ? 'bg-destructive/90 text-destructive-foreground animate-pulse' 
+                    : 'bg-amber-500/90 text-white'
+                  }
+                `}
+              >
+                <Clock className="h-3 w-3 mr-1.5" />
+                {daysUntilDeparture === 0 
+                  ? "Part aujourd'hui !" 
+                  : daysUntilDeparture === 1 
+                    ? "Part demain" 
+                    : `Part dans ${daysUntilDeparture} jours`
+                }
+              </Badge>
+            </motion.div>
+          )}
+          
+          {/* Route + Dates Badge on Image */}
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="absolute bottom-6 left-4 right-4"
+            transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
+            className="absolute bottom-4 left-4 right-4"
           >
-            <div className="inline-flex items-center gap-2 bg-background/90 backdrop-blur-md rounded-2xl px-4 py-3 shadow-xl">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Plane className="h-5 w-5 text-primary" />
+            <div className="bg-background/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl border border-white/10">
+              {/* Route */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/30">
+                  <Plane className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className="font-bold text-lg truncate">{listing.departure}</span>
+                  <ArrowRight className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span className="font-bold text-lg truncate">{listing.arrival}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-lg">{listing.departure}</span>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                <span className="font-bold text-lg">{listing.arrival}</span>
+              
+              {/* Dates Row */}
+              <div className="flex items-center gap-3 pl-1">
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <span className="text-muted-foreground">Départ</span>
+                  <span className="font-semibold capitalize">{shortDepartureDate}</span>
+                </div>
+                <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">Arrivée</span>
+                  <span className="font-semibold capitalize">{shortArrivalDate}</span>
+                </div>
               </div>
             </div>
           </motion.div>
