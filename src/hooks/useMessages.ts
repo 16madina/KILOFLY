@@ -114,9 +114,8 @@ export const useMessages = (userId: string | undefined) => {
         })
       );
 
-      // Transform reservations - ONLY include those with messages
+      // Transform reservations - include ALL reservations (with or without messages)
       const transformedReservations: ReservationData[] = (reservationsData || [])
-        .filter((res: any) => res.reservation_messages && res.reservation_messages.length > 0)
         .map((res: any) => ({
           id: res.id,
           buyer_id: res.buyer_id,
