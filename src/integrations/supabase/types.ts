@@ -1625,6 +1625,10 @@ export type Database = {
         }
         Returns: string
       }
+      upsert_push_token: {
+        Args: { p_platform: string; p_token: string; p_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
