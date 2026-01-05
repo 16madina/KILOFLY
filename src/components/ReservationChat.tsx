@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Send, Loader2, ShieldAlert } from "lucide-react";
+import { Send, Loader2, ShieldAlert, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { maskSensitiveContent, containsSensitiveContent } from "@/lib/contentFilter";
@@ -30,6 +30,8 @@ interface ReservationChatProps {
   reservationStatus?: string;
 }
 
+const MAX_SENSITIVE_ATTEMPTS = 3;
+
 const ReservationChat = ({
   reservationId,
   otherUserId,
@@ -43,10 +45,39 @@ const ReservationChat = ({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [sensitiveWarning, setSensitiveWarning] = useState(false);
+  const [sensitiveAttempts, setSensitiveAttempts] = useState(0);
+  const [hasBeenReported, setHasBeenReported] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Check if payment is completed (phone numbers should be visible)
   const isPaymentCompleted = ['paid', 'completed', 'delivered', 'payment_received', 'picked_up', 'in_transit', 'in_progress', 'arrived', 'out_for_delivery'].includes(reservationStatus || '');
+
+  // Auto-report after max attempts
+  const createAutoReport = async () => {
+    if (!user || hasBeenReported) return;
+    
+    try {
+      const { error } = await supabase
+        .from("reports")
+        .insert({
+          reporter_id: user.id, // System report using user's own ID
+          reported_id: user.id, // Self-report for anti-fraud
+          reason: "tentative_fraude_contact",
+          description: `Signalement automatique : L'utilisateur a tenté ${MAX_SENSITIVE_ATTEMPTS} fois de partager des informations de contact (téléphone/email) avant paiement dans la réservation ${reservationId}.`,
+          status: "pending"
+        });
+
+      if (!error) {
+        setHasBeenReported(true);
+        toast.error("Signalement automatique", {
+          description: "Vos tentatives répétées de partage d'informations de contact ont été signalées aux administrateurs.",
+          duration: 8000,
+        });
+      }
+    } catch (error) {
+      console.error("Error creating auto-report:", error);
+    }
+  };
 
   useEffect(() => {
     if (!reservationId) return;
@@ -144,10 +175,28 @@ const ReservationChat = ({
 
     // Check for sensitive content if payment not completed
     if (!isPaymentCompleted && containsSensitiveContent(newMessage)) {
+      const newAttempts = sensitiveAttempts + 1;
+      setSensitiveAttempts(newAttempts);
       setSensitiveWarning(true);
-      toast.warning("Information sensible détectée", {
-        description: "Le partage de numéros de téléphone ou emails n'est pas autorisé avant le paiement.",
-      });
+
+      if (newAttempts >= MAX_SENSITIVE_ATTEMPTS && !hasBeenReported) {
+        // Auto-report after max attempts
+        await createAutoReport();
+        toast.error("Compte signalé", {
+          description: `Vous avez tenté ${newAttempts} fois de partager des informations de contact. Votre compte a été signalé.`,
+          duration: 8000,
+        });
+      } else if (newAttempts === MAX_SENSITIVE_ATTEMPTS - 1) {
+        // Warning before final attempt
+        toast.warning("Dernier avertissement", {
+          description: "Une nouvelle tentative entraînera un signalement automatique de votre compte.",
+          duration: 6000,
+        });
+      } else {
+        toast.warning("Information sensible détectée", {
+          description: `Le partage de numéros de téléphone ou emails n'est pas autorisé avant le paiement. (${newAttempts}/${MAX_SENSITIVE_ATTEMPTS} tentatives)`,
+        });
+      }
       return;
     }
 
@@ -280,10 +329,29 @@ const ReservationChat = ({
 
       {/* Sensitive content warning */}
       {sensitiveWarning && (
-        <div className="px-4 py-2 bg-amber-500/10 border-t border-amber-500/30">
-          <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-            <ShieldAlert className="h-3.5 w-3.5" />
-            Le partage d'infos de contact est interdit avant le paiement
+        <div className={cn(
+          "px-4 py-2 border-t",
+          hasBeenReported 
+            ? "bg-destructive/10 border-destructive/30" 
+            : "bg-amber-500/10 border-amber-500/30"
+        )}>
+          <p className={cn(
+            "text-xs flex items-center gap-1.5",
+            hasBeenReported 
+              ? "text-destructive" 
+              : "text-amber-600 dark:text-amber-400"
+          )}>
+            {hasBeenReported ? (
+              <>
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Votre compte a été signalé pour tentatives de fraude
+              </>
+            ) : (
+              <>
+                <ShieldAlert className="h-3.5 w-3.5" />
+                Le partage d'infos de contact est interdit avant le paiement ({sensitiveAttempts}/{MAX_SENSITIVE_ATTEMPTS})
+              </>
+            )}
           </p>
         </div>
       )}
