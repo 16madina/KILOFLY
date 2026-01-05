@@ -20,6 +20,8 @@ export interface ReservationData {
   buyer_id: string;
   seller_id: string;
   updated_at: string;
+  archived_by_buyer_at: string | null;
+  archived_by_seller_at: string | null;
   buyer: ProfileData;
   seller: ProfileData;
   messages: MessageData[];
@@ -73,7 +75,7 @@ export const useMessages = (userId: string | undefined) => {
 
       if (conversationsError) throw conversationsError;
 
-      // Fetch reservations
+      // Fetch reservations with archived columns
       const { data: reservationsData, error: reservationsError } = await supabase
         .from("reservations")
         .select(
@@ -84,6 +86,8 @@ export const useMessages = (userId: string | undefined) => {
           updated_at,
           requested_kg,
           status,
+          archived_by_buyer_at,
+          archived_by_seller_at,
           buyer:profiles!buyer_id(full_name, avatar_url, id_verified),
           seller:profiles!seller_id(full_name, avatar_url, id_verified),
           listing:listings!listing_id(departure, arrival),
@@ -118,6 +122,8 @@ export const useMessages = (userId: string | undefined) => {
           buyer_id: res.buyer_id,
           seller_id: res.seller_id,
           updated_at: res.updated_at,
+          archived_by_buyer_at: res.archived_by_buyer_at,
+          archived_by_seller_at: res.archived_by_seller_at,
           buyer: res.buyer,
           seller: res.seller,
           messages: res.reservation_messages || [],
@@ -135,6 +141,37 @@ export const useMessages = (userId: string | undefined) => {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const archiveReservation = async (reservationId: string) => {
+    if (!userId) return;
+
+    // Determine which column to update based on user role
+    const reservation = reservations.find((r) => r.id === reservationId);
+    if (!reservation) return;
+
+    const isBuyer = reservation.buyer_id === userId;
+    const column = isBuyer ? "archived_by_buyer_at" : "archived_by_seller_at";
+
+    const { error } = await supabase
+      .from("reservations")
+      .update({ [column]: new Date().toISOString() })
+      .eq("id", reservationId);
+
+    if (error) {
+      toast.error("Erreur lors de l'archivage");
+      console.error(error);
+    } else {
+      toast.success("Conversation archivée");
+      // Update local state
+      setReservations((prev) =>
+        prev.map((r) =>
+          r.id === reservationId
+            ? { ...r, [column]: new Date().toISOString() }
+            : r
+        )
+      );
     }
   };
 
@@ -178,6 +215,7 @@ export const useMessages = (userId: string | undefined) => {
     conversations,
     loading,
     deleteConversation,
+    archiveReservation,
     refetch: fetchData,
   };
 };
