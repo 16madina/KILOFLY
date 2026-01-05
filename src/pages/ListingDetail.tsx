@@ -116,6 +116,22 @@ const ListingDetail = () => {
     }
   }, [id]);
 
+  // Pré-remplir le téléphone depuis le profil utilisateur
+  useEffect(() => {
+    const fetchUserPhone = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('phone')
+        .eq('id', user.id)
+        .single();
+      if (data?.phone) {
+        setRecipientPhone(data.phone);
+      }
+    };
+    fetchUserPhone();
+  }, [user]);
+
   const fetchListing = async () => {
     if (!id) return;
 
