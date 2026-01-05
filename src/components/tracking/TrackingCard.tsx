@@ -5,6 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 interface TrackingCardProps {
   id: string;
@@ -15,6 +16,7 @@ interface TrackingCardProps {
   arrivalDate: string;
   otherUserName?: string;
   otherUserAvatar?: string;
+  otherUserId?: string;
   index: number;
   onClick: () => void;
 }
@@ -90,12 +92,21 @@ export function TrackingCard({
   arrivalDate,
   otherUserName,
   otherUserAvatar,
+  otherUserId,
   index,
   onClick,
 }: TrackingCardProps) {
+  const navigate = useNavigate();
   const config = STATUS_CONFIG[status] || STATUS_CONFIG.approved;
   const StatusIcon = config.icon;
   const refCode = `KF-${id.slice(0, 4).toUpperCase()}-${id.slice(4, 7).toUpperCase()}`;
+
+  const handleAvatarClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (otherUserId) {
+      navigate(`/user/${otherUserId}`);
+    }
+  };
 
   return (
     <motion.button
@@ -110,7 +121,13 @@ export function TrackingCard({
       {/* Header: Icon + Ref + Status */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
-          <Avatar className="w-11 h-11 border-2 border-primary/20">
+          <Avatar 
+            className={cn(
+              "w-11 h-11 border-2 border-primary/20",
+              otherUserId && "cursor-pointer hover:ring-2 hover:ring-primary/40 transition-all"
+            )}
+            onClick={handleAvatarClick}
+          >
             <AvatarImage src={otherUserAvatar} alt={otherUserName || "Utilisateur"} />
             <AvatarFallback className="bg-primary/10 text-primary">
               {otherUserName ? otherUserName.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
