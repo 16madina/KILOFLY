@@ -395,6 +395,7 @@ const Tracking = () => {
 
                   // Determine other user based on current user role
                   const isBuyer = reservation.buyer_id === user?.id;
+                  const otherUserId = isBuyer ? reservation.seller_id : reservation.buyer_id;
                   const otherUser = isBuyer 
                     ? (reservation.seller as { full_name: string; avatar_url: string } | null)
                     : (reservation.buyer as { full_name: string; avatar_url: string } | null);
@@ -410,6 +411,7 @@ const Tracking = () => {
                         arrivalDate={listing.arrival_date}
                         otherUserName={otherUser?.full_name}
                         otherUserAvatar={otherUser?.avatar_url}
+                        otherUserId={otherUserId}
                         index={index}
                         onClick={() => setSelectedReservation(reservation)}
                       />
