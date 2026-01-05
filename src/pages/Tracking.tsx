@@ -393,6 +393,12 @@ const Tracking = () => {
 
                   if (!listing) return null;
 
+                  // Determine other user based on current user role
+                  const isBuyer = reservation.buyer_id === user?.id;
+                  const otherUser = isBuyer 
+                    ? (reservation.seller as { full_name: string } | null)
+                    : (reservation.buyer as { full_name: string } | null);
+
                     return (
                       <TrackingCard
                         key={reservation.id}
@@ -402,6 +408,7 @@ const Tracking = () => {
                         status={(reservation as any).latest_tracking_status || reservation.status}
                         requestedKg={reservation.requested_kg}
                         arrivalDate={listing.arrival_date}
+                        otherUserName={otherUser?.full_name}
                         index={index}
                         onClick={() => setSelectedReservation(reservation)}
                       />
