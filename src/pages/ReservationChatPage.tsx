@@ -229,16 +229,22 @@ const ReservationChatPage = () => {
                   </div>
                 )}
                 
-                {/* Always show phone */}
+                {/* Always show phone - but masked if not paid */}
                 {reservation.recipient_phone && (
                   <div className="flex items-center gap-2">
                     <Phone className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                    <a 
-                      href={`tel:${reservation.recipient_phone}`}
-                      className="text-primary hover:underline"
-                    >
-                      {reservation.recipient_phone}
-                    </a>
+                    {reservation.status === "paid" || reservation.status === "completed" || reservation.status === "delivered" ? (
+                      <a 
+                        href={`tel:${reservation.recipient_phone}`}
+                        className="text-primary hover:underline"
+                      >
+                        {reservation.recipient_phone}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground text-xs italic">
+                        Visible après paiement
+                      </span>
+                    )}
                   </div>
                 )}
                 
