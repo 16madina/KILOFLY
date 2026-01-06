@@ -2,14 +2,41 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, ChevronRight, Shield, Globe, DollarSign, Heart, MapPin, Eye, FileText, HelpCircle, Fingerprint } from "lucide-react";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Shield, 
+  Globe, 
+  DollarSign, 
+  Heart, 
+  MapPin, 
+  Eye, 
+  FileText, 
+  HelpCircle, 
+  Fingerprint,
+  Bell,
+  Lock,
+  Database,
+  Trash2,
+  User,
+  Star,
+  MessageCircle,
+  Users,
+  AlertTriangle,
+  Headphones
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useBiometricAuth } from "@/hooks/useBiometricAuth";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Capacitor } from "@capacitor/core";
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { isAvailable: biometricAvailable, isEnabled: biometricEnabled, biometryType, enableBiometric, disableBiometric } = useBiometricAuth();
+  const { permission, requestPermission, isSupported: pushSupported } = usePushNotifications();
   
   const [notifications, setNotifications] = useState({
     messages: true,
@@ -18,6 +45,12 @@ const Settings = () => {
     promotions: false,
   });
   const [darkMode, setDarkMode] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(permission === 'granted');
+  const [clearingCache, setClearingCache] = useState(false);
+
+  useEffect(() => {
+    setPushEnabled(permission === 'granted');
+  }, [permission]);
 
   const handleBiometricToggle = async (enabled: boolean) => {
     if (enabled) {
@@ -26,6 +59,60 @@ const Settings = () => {
     } else {
       await disableBiometric();
       toast.success(`${biometryType} désactivé`);
+    }
+  };
+
+  const handlePushToggle = async (enabled: boolean) => {
+    if (enabled) {
+      await requestPermission();
+      toast.success("Notifications push activées");
+    } else {
+      setPushEnabled(false);
+      toast.info("Pour désactiver complètement, allez dans les paramètres de votre appareil");
+    }
+  };
+
+  const handleClearCache = async () => {
+    setClearingCache(true);
+    try {
+      // Clear localStorage except auth data
+      const authData = localStorage.getItem('sb-yuhbvzjniylkruaylxzz-auth-token');
+      localStorage.clear();
+      if (authData) {
+        localStorage.setItem('sb-yuhbvzjniylkruaylxzz-auth-token', authData);
+      }
+      
+      // Clear sessionStorage
+      sessionStorage.clear();
+      
+      // Clear caches if available
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+      
+      toast.success("Cache vidé avec succès");
+    } catch (error) {
+      toast.error("Erreur lors du vidage du cache");
+    } finally {
+      setClearingCache(false);
+    }
+  };
+
+  const handleRateApp = () => {
+    const isNative = Capacitor.isNativePlatform();
+    const platform = Capacitor.getPlatform();
+    
+    if (isNative) {
+      if (platform === 'ios') {
+        // iOS App Store URL
+        window.open('https://apps.apple.com/app/kilofly/id123456789', '_blank');
+      } else if (platform === 'android') {
+        // Google Play Store URL
+        window.open('https://play.google.com/store/apps/details?id=com.kilofly.app', '_blank');
+      }
+    } else {
+      toast.info("Téléchargez l'application pour la noter");
     }
   };
 
@@ -52,11 +139,42 @@ const Settings = () => {
       </header>
 
       <div className="container px-4 py-6 max-w-2xl mx-auto space-y-6">
+        {/* Notifications Push */}
+        {pushSupported && (
+          <div className="flex items-center justify-between p-4 hover:bg-accent rounded-lg transition-colors">
+            <div className="flex items-center gap-3">
+              <Bell className="w-5 h-5 text-primary" />
+              <div className="flex flex-col">
+                <span className="font-medium">Notifications push</span>
+                <span className="text-sm text-muted-foreground">
+                  Recevoir des alertes en temps réel
+                </span>
+              </div>
+            </div>
+            <Switch 
+              checked={pushEnabled}
+              onCheckedChange={handlePushToggle}
+            />
+          </div>
+        )}
+
         {/* Security */}
         <Link to="/account-security">
           <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
             <Shield className="w-5 h-5 text-primary" />
             <span className="flex-1 text-left font-medium">Sécurité</span>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </Link>
+
+        {/* Two Factor Authentication */}
+        <Link to="/account-security">
+          <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+            <Lock className="w-5 h-5 text-amber-500" />
+            <div className="flex-1 text-left">
+              <span className="font-medium">Authentification à deux facteurs</span>
+              <p className="text-sm text-muted-foreground">Sécurisez votre compte</p>
+            </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
         </Link>
@@ -78,6 +196,46 @@ const Settings = () => {
               onCheckedChange={handleBiometricToggle}
             />
           </div>
+        )}
+
+        {/* Storage Section */}
+        <div className="space-y-1">
+          <h3 className="font-semibold px-4 py-2 text-muted-foreground text-sm uppercase tracking-wide">Stockage et données</h3>
+          
+          <button 
+            className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors"
+            onClick={handleClearCache}
+            disabled={clearingCache}
+          >
+            <Trash2 className="w-5 h-5 text-red-500" />
+            <div className="flex-1 text-left">
+              <span className="font-medium">Vider le cache</span>
+              <p className="text-sm text-muted-foreground">Libérer de l'espace de stockage</p>
+            </div>
+            {clearingCache && <span className="text-sm text-muted-foreground">...</span>}
+          </button>
+          
+          <div className="flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+            <Database className="w-5 h-5 text-blue-500" />
+            <div className="flex-1 text-left">
+              <span className="font-medium">Gérer le stockage</span>
+              <p className="text-sm text-muted-foreground">Photos et fichiers téléchargés</p>
+            </div>
+          </div>
+        </div>
+
+        {/* My Public Page */}
+        {user && (
+          <Link to={`/user/${user.id}`}>
+            <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+              <User className="w-5 h-5 text-indigo-500" />
+              <div className="flex-1 text-left">
+                <span className="font-medium">Ma page publique</span>
+                <p className="text-sm text-muted-foreground">Voir mon profil voyageur</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </Link>
         )}
 
         {/* Transactions */}
@@ -125,32 +283,88 @@ const Settings = () => {
           </button>
         </Link>
 
-        {/* Privacy Policy */}
-        <Link to="/privacy">
-          <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-            <FileText className="w-5 h-5 text-blue-500" />
-            <span className="flex-1 text-left font-medium">Politique de confidentialité</span>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
-        </Link>
+        {/* Rate App */}
+        <button 
+          className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors"
+          onClick={handleRateApp}
+        >
+          <Star className="w-5 h-5 text-yellow-500" />
+          <div className="flex-1 text-left">
+            <span className="font-medium">Noter l'application</span>
+            <p className="text-sm text-muted-foreground">Donnez-nous votre avis</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        </button>
 
-        {/* Terms */}
-        <Link to="/terms">
-          <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-            <FileText className="w-5 h-5 text-cyan-500" />
-            <span className="flex-1 text-left font-medium">Conditions d'utilisation</span>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
-        </Link>
+        {/* Help Center Section */}
+        <div className="space-y-1">
+          <h3 className="font-semibold px-4 py-2 text-muted-foreground text-sm uppercase tracking-wide">Centre d'aide</h3>
+          
+          {/* FAQ */}
+          <Link to="/faq">
+            <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+              <HelpCircle className="w-5 h-5 text-orange-500" />
+              <span className="flex-1 text-left font-medium">Questions fréquentes (FAQ)</span>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </Link>
 
-        {/* FAQ */}
-        <Link to="/faq">
-          <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-            <HelpCircle className="w-5 h-5 text-orange-500" />
-            <span className="flex-1 text-left font-medium">Questions Fréquentes (FAQ)</span>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
-        </Link>
+          {/* Community Guidelines */}
+          <Link to="/terms">
+            <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+              <Users className="w-5 h-5 text-blue-500" />
+              <span className="flex-1 text-left font-medium">Règles de la communauté</span>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </Link>
+
+          {/* Report Problem */}
+          <a href="mailto:support@kilofly.com?subject=Signalement d'un problème">
+            <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+              <div className="flex-1 text-left">
+                <span className="font-medium">Signaler un problème</span>
+                <p className="text-sm text-muted-foreground">Nous contacter par email</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </a>
+
+          {/* Support */}
+          <a href="mailto:support@kilofly.com">
+            <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+              <Headphones className="w-5 h-5 text-green-500" />
+              <div className="flex-1 text-left">
+                <span className="font-medium">Contacter le support</span>
+                <p className="text-sm text-muted-foreground">support@kilofly.com</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </a>
+        </div>
+
+        {/* Legal Section */}
+        <div className="space-y-1">
+          <h3 className="font-semibold px-4 py-2 text-muted-foreground text-sm uppercase tracking-wide">Légal</h3>
+          
+          {/* Privacy Policy */}
+          <Link to="/privacy">
+            <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+              <FileText className="w-5 h-5 text-blue-500" />
+              <span className="flex-1 text-left font-medium">Politique de confidentialité</span>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </Link>
+
+          {/* Terms */}
+          <Link to="/terms">
+            <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
+              <FileText className="w-5 h-5 text-cyan-500" />
+              <span className="flex-1 text-left font-medium">Conditions d'utilisation</span>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </Link>
+        </div>
 
         {/* Language */}
         <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
@@ -162,7 +376,7 @@ const Settings = () => {
 
         {/* Notifications Section */}
         <div className="space-y-4">
-          <h3 className="font-semibold px-4">Notifications</h3>
+          <h3 className="font-semibold px-4">Préférences de notifications</h3>
           <div className="space-y-1">
             <div className="flex items-center justify-between p-4 hover:bg-accent rounded-lg transition-colors">
               <span>Nouveaux messages</span>
