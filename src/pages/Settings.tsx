@@ -30,7 +30,6 @@ import {
   AlertTriangle,
   Headphones,
   Palette,
-  UserCircle,
   BadgeCheck,
   ShieldCheck
 } from "lucide-react";
@@ -140,13 +139,8 @@ const Settings = () => {
       </header>
 
       <div className="container px-4 py-4 max-w-2xl mx-auto">
-        <Accordion
-          type="multiple"
-          defaultValue={["personal", "verification", "security", "notifications", "privacy", "storage", "help"]}
-          className="space-y-3"
-        >
-          
-          {/* Ma page publique - Direct link */}
+        <div className="space-y-3">
+          {/* Accès rapides */}
           {user && (
             <Link to={`/user/${user.id}`} className="block">
               <div className="border rounded-xl px-4 py-4 bg-card/50 flex items-center gap-3 hover:bg-accent transition-colors">
@@ -162,42 +156,49 @@ const Settings = () => {
             </Link>
           )}
 
-          {/* Préférences */}
-          <AccordionItem value="preferences" className="border rounded-xl px-4 bg-card/50">
-            <AccordionTrigger className="hover:no-underline py-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                  <UserCircle className="w-5 h-5 text-blue-500" />
-                </div>
-                <span className="font-medium">Préférences</span>
+          <Link to="/currency-settings" className="block">
+            <div className="border rounded-xl px-4 py-4 bg-card/50 flex items-center gap-3 hover:bg-accent transition-colors">
+              <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                <Globe className="w-5 h-5 text-orange-500" />
               </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-4 space-y-1">
-              <Link to="/currency-settings">
-                <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
-                  <Globe className="w-5 h-5 text-orange-500" />
-                  <span className="flex-1 text-left font-medium">Devise préférée</span>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                </button>
-              </Link>
-
-              <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
-                <Globe className="w-5 h-5 text-primary" />
-                <span className="flex-1 text-left font-medium">Langue</span>
-                <span className="text-muted-foreground mr-2">Français</span>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </button>
-
-              <div className="flex items-center justify-between p-3 hover:bg-accent rounded-lg transition-colors">
-                <div className="flex items-center gap-3">
-                  <Palette className="w-5 h-5 text-purple-500" />
-                  <span className="font-medium">Mode sombre</span>
-                </div>
-                <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+              <div className="flex-1">
+                <span className="font-medium">Devise préférée</span>
+                <p className="text-sm text-muted-foreground">Choisir la devise de référence</p>
               </div>
-            </AccordionContent>
-          </AccordionItem>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </div>
+          </Link>
 
+          <button className="w-full border rounded-xl px-4 py-4 bg-card/50 flex items-center gap-3 hover:bg-accent transition-colors">
+            <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <Globe className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 text-left">
+              <span className="font-medium">Langue</span>
+              <p className="text-sm text-muted-foreground">Français</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+
+          <div className="border rounded-xl px-4 py-4 bg-card/50 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                <Palette className="w-5 h-5 text-purple-500" />
+              </div>
+              <div>
+                <span className="font-medium">Mode sombre</span>
+                <p className="text-sm text-muted-foreground">Thème de l'application</p>
+              </div>
+            </div>
+            <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+          </div>
+
+          {/* Sections */}
+          <Accordion
+            type="multiple"
+            defaultValue={["verification", "security", "notifications", "privacy", "storage", "help"]}
+            className="space-y-3"
+          >
           {/* Vérification d'identité */}
           <AccordionItem value="verification" className="border rounded-xl px-4 bg-card/50">
             <AccordionTrigger className="hover:no-underline py-4">
@@ -479,17 +480,18 @@ const Settings = () => {
             </AccordionContent>
           </AccordionItem>
 
-        </Accordion>
+          </Accordion>
 
-        {/* Sign Out */}
-        <div className="pt-8">
-          <Button 
-            variant="ghost"
-            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={handleSignOut}
-          >
-            Déconnexion
-          </Button>
+          {/* Sign Out */}
+          <div className="pt-8">
+            <Button
+              variant="ghost"
+              className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={handleSignOut}
+            >
+              Déconnexion
+            </Button>
+          </div>
         </div>
       </div>
     </div>
