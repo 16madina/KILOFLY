@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,28 +76,33 @@ const Auth = () => {
     }
   }, [user, navigate]);
 
-  // Try biometric login on mount if enabled
+  // Try biometric login on mount if enabled - only once
+  const biometricTriedRef = useRef(false);
+  
   useEffect(() => {
     const tryBiometricLogin = async () => {
-      if (biometricAvailable && biometricEnabled && !user) {
-        const credentials = await getCredentials();
-        if (credentials) {
-          const success = await biometricAuthenticate();
-          if (success) {
-            setIsLoading(true);
-            const { error } = await signIn(credentials.email, credentials.password);
-            if (error) {
-              toast.error("Échec de la connexion biométrique");
-            } else {
-              toast.success("Connexion biométrique réussie!");
-            }
-            setIsLoading(false);
+      if (biometricTriedRef.current) return;
+      if (!biometricAvailable || !biometricEnabled || user) return;
+      
+      biometricTriedRef.current = true;
+      
+      const credentials = await getCredentials();
+      if (credentials) {
+        const success = await biometricAuthenticate();
+        if (success) {
+          setIsLoading(true);
+          const { error } = await signIn(credentials.email, credentials.password);
+          if (error) {
+            toast.error("Échec de la connexion biométrique");
+          } else {
+            toast.success("Connexion biométrique réussie!");
           }
+          setIsLoading(false);
         }
       }
     };
     tryBiometricLogin();
-  }, [biometricAvailable, biometricEnabled, user]);
+  }, [biometricAvailable, biometricEnabled, user, getCredentials, biometricAuthenticate, signIn]);
 
   const handleBiometricLogin = async () => {
     const credentials = await getCredentials();

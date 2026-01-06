@@ -12,6 +12,13 @@ export const usePushNotifications = () => {
   const [fcmToken, setFcmToken] = useState<string | null>(null);
   const tokenSavedRef = useRef(false);
   const pushNotificationsRef = useRef<typeof import('@capacitor/push-notifications').PushNotifications | null>(null);
+  const initDoneRef = useRef(false);
+  const userIdRef = useRef<string | null>(null);
+
+  // Keep userIdRef in sync
+  useEffect(() => {
+    userIdRef.current = user?.id || null;
+  }, [user?.id]);
 
   const getPlatform = (): Platform => {
     const platform = Capacitor.getPlatform();
@@ -22,26 +29,25 @@ export const usePushNotifications = () => {
 
   const isNative = Capacitor.isNativePlatform();
 
-  // Save token to database
+  // Save token to database - use ref to avoid dependency issues
   const saveTokenToDatabase = useCallback(async (token: string) => {
-    if (!user?.id || tokenSavedRef.current) return;
+    const userId = userIdRef.current;
+    if (!userId || tokenSavedRef.current) return;
     
     try {
       const platform = getPlatform();
       
-      // Use raw SQL approach for tables not in types yet
       const { error } = await supabase.rpc('upsert_push_token' as never, {
-        p_user_id: user.id,
+        p_user_id: userId,
         p_token: token,
         p_platform: platform
       } as never);
 
       if (error) {
-        // Fallback: try direct insert
         const { error: insertError } = await supabase
           .from('push_tokens' as never)
           .upsert(
-            { user_id: user.id, token, platform } as never,
+            { user_id: userId, token, platform } as never,
             { onConflict: 'user_id,token' }
           );
         
@@ -58,50 +64,54 @@ export const usePushNotifications = () => {
     } catch (error) {
       console.error('Error saving push token:', error);
     }
-  }, [user?.id]);
+  }, []);
 
   // Remove token from database
   const removeTokenFromDatabase = useCallback(async (token: string) => {
-    if (!user?.id) return;
+    const userId = userIdRef.current;
+    if (!userId) return;
     
     try {
       await supabase
         .from('push_tokens' as never)
         .delete()
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .eq('token', token);
       
       tokenSavedRef.current = false;
     } catch (error) {
       console.error('Error removing push token:', error);
     }
-  }, [user?.id]);
+  }, []);
 
-  // Initialize native push notifications
+  // Initialize native push notifications - only once
   useEffect(() => {
+    if (initDoneRef.current) return;
+    
     const initNativePush = async () => {
       if (!isNative) {
-        // Fallback to web notifications
         const supported = 'Notification' in window;
         setIsSupported(supported);
         if (supported) {
           setPermission(Notification.permission as 'granted' | 'denied' | 'default');
         }
+        initDoneRef.current = true;
         return;
       }
 
-      // Dynamically import to avoid errors on web
       try {
         const { PushNotifications } = await import('@capacitor/push-notifications');
         pushNotificationsRef.current = PushNotifications;
         
         setIsSupported(true);
+        initDoneRef.current = true;
 
-        // Check current permission status
         const permStatus = await PushNotifications.checkPermissions();
         setPermission(permStatus.receive === 'granted' ? 'granted' : 'default');
 
-        // Listen for registration success
+        // Set up listeners only once
+        await PushNotifications.removeAllListeners();
+
         PushNotifications.addListener('registration', async (token) => {
           console.log('Push registration success, token:', token.value);
           setFcmToken(token.value);
@@ -109,26 +119,17 @@ export const usePushNotifications = () => {
           await saveTokenToDatabase(token.value);
         });
 
-        // Listen for registration errors
         PushNotifications.addListener('registrationError', (error) => {
           console.error('Push registration error:', error);
           setPermission('denied');
         });
 
-        // Listen for push notifications received
         PushNotifications.addListener('pushNotificationReceived', (notification) => {
           console.log('Push notification received:', notification);
-          // Show local notification or update UI
-          showNotificationInternal(notification.title || 'KiloFly', {
-            body: notification.body,
-            data: notification.data,
-          });
         });
 
-        // Listen for notification actions
         PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
           console.log('Push notification action performed:', action);
-          // Handle notification tap - navigate to relevant screen
           const data = action.notification.data;
           if (data?.route) {
             window.location.href = data.route as string;
@@ -136,21 +137,19 @@ export const usePushNotifications = () => {
         });
       } catch (error) {
         console.error('Error initializing push notifications:', error);
-        // Fallback to web
         const supported = 'Notification' in window;
         setIsSupported(supported);
         if (supported) {
           setPermission(Notification.permission as 'granted' | 'denied' | 'default');
         }
+        initDoneRef.current = true;
       }
     };
 
     initNativePush();
 
     return () => {
-      if (pushNotificationsRef.current) {
-        pushNotificationsRef.current.removeAllListeners();
-      }
+      // Only cleanup on unmount, not on re-render
     };
   }, [isNative, saveTokenToDatabase]);
 
