@@ -146,30 +146,33 @@ const Settings = () => {
           className="space-y-3"
         >
           
-          {/* Informations personnelles */}
-          <AccordionItem value="personal" className="border rounded-xl px-4 bg-card/50">
+          {/* Ma page publique - Direct link */}
+          {user && (
+            <Link to={`/user/${user.id}`} className="block">
+              <div className="border rounded-xl px-4 py-4 bg-card/50 flex items-center gap-3 hover:bg-accent transition-colors">
+                <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center">
+                  <User className="w-5 h-5 text-indigo-500" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-medium">Ma page publique</span>
+                  <p className="text-sm text-muted-foreground">Voir mon profil voyageur</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </div>
+            </Link>
+          )}
+
+          {/* Préférences */}
+          <AccordionItem value="preferences" className="border rounded-xl px-4 bg-card/50">
             <AccordionTrigger className="hover:no-underline py-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
                   <UserCircle className="w-5 h-5 text-blue-500" />
                 </div>
-                <span className="font-medium">Informations personnelles</span>
+                <span className="font-medium">Préférences</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pb-4 space-y-1">
-              {user && (
-                <Link to={`/user/${user.id}`}>
-                  <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
-                    <User className="w-5 h-5 text-indigo-500" />
-                    <div className="flex-1 text-left">
-                      <span className="font-medium">Ma page publique</span>
-                      <p className="text-sm text-muted-foreground">Voir mon profil voyageur</p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  </button>
-                </Link>
-              )}
-              
               <Link to="/currency-settings">
                 <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
                   <Globe className="w-5 h-5 text-orange-500" />
