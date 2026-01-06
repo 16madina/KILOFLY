@@ -19,9 +19,15 @@ const NotificationSettings = () => {
 
   const handlePushToggle = async (enabled: boolean) => {
     if (enabled) {
-      await requestPermission();
-      await updatePreference('push_enabled', true);
-      toast.success("Notifications push activées");
+      const granted = await requestPermission();
+      if (granted) {
+        setPushEnabled(true);
+        await updatePreference('push_enabled', true);
+        toast.success("Notifications push activées");
+      } else {
+        setPushEnabled(false);
+        toast.error("Permission refusée. Activez les notifications dans les paramètres de votre navigateur.");
+      }
     } else {
       setPushEnabled(false);
       await updatePreference('push_enabled', false);
