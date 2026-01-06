@@ -1,8 +1,13 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -24,8 +29,10 @@ import {
   Users,
   AlertTriangle,
   Headphones,
-  Settings2,
-  Palette
+  Palette,
+  UserCircle,
+  BadgeCheck,
+  ShieldCheck
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useBiometricAuth } from "@/hooks/useBiometricAuth";
@@ -37,7 +44,6 @@ import { Capacitor } from "@capacitor/core";
 
 const Settings = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { isAvailable: biometricAvailable, isEnabled: biometricEnabled, biometryType, enableBiometric, disableBiometric } = useBiometricAuth();
   const { permission, requestPermission, isSupported: pushSupported } = usePushNotifications();
@@ -46,12 +52,6 @@ const Settings = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(permission === 'granted');
-
-  const activeTab = searchParams.get('tab') || 'general';
-
-  const setActiveTab = (tab: string) => {
-    setSearchParams({ tab });
-  };
 
   useEffect(() => {
     setPushEnabled(permission === 'granted');
@@ -140,247 +140,151 @@ const Settings = () => {
       </header>
 
       <div className="container px-4 py-4 max-w-2xl mx-auto">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full grid grid-cols-4 mb-6">
-            <TabsTrigger value="general" className="text-xs sm:text-sm">
-              <Settings2 className="w-4 h-4 sm:mr-1" />
-              <span className="hidden sm:inline">Général</span>
-            </TabsTrigger>
-            <TabsTrigger value="security" className="text-xs sm:text-sm">
-              <Shield className="w-4 h-4 sm:mr-1" />
-              <span className="hidden sm:inline">Sécurité</span>
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="text-xs sm:text-sm">
-              <Bell className="w-4 h-4 sm:mr-1" />
-              <span className="hidden sm:inline">Notifs</span>
-            </TabsTrigger>
-            <TabsTrigger value="help" className="text-xs sm:text-sm">
-              <HelpCircle className="w-4 h-4 sm:mr-1" />
-              <span className="hidden sm:inline">Aide</span>
-            </TabsTrigger>
-          </TabsList>
-
-          {/* General Tab */}
-          <TabsContent value="general" className="space-y-2 mt-0">
-            {/* My Public Page */}
-            {user && (
-              <Link to={`/user/${user.id}`}>
-                <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-                  <User className="w-5 h-5 text-indigo-500" />
-                  <div className="flex-1 text-left">
-                    <span className="font-medium">Ma page publique</span>
-                    <p className="text-sm text-muted-foreground">Voir mon profil voyageur</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                </button>
-              </Link>
-            )}
-
-            {/* Transactions */}
-            <Link to="/user-transactions">
-              <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-                <DollarSign className="w-5 h-5 text-primary" />
-                <span className="flex-1 text-left font-medium">Mes transactions</span>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </Link>
-
-            {/* Currency Settings */}
-            <Link to="/currency-settings">
-              <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-                <Globe className="w-5 h-5 text-orange-500" />
-                <span className="flex-1 text-left font-medium">Devise préférée</span>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </Link>
-
-            {/* Favorites */}
-            <Link to="/favorites">
-              <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-                <Heart className="w-5 h-5 text-red-500" />
-                <span className="flex-1 text-left font-medium">Mes Favoris</span>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </Link>
-
-            {/* Route Alerts */}
-            <Link to="/route-alerts">
-              <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-                <MapPin className="w-5 h-5 text-green-500" />
-                <span className="flex-1 text-left font-medium">Alertes de Routes</span>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </Link>
-
-            {/* Language */}
-            <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-              <Globe className="w-5 h-5 text-primary" />
-              <span className="flex-1 text-left font-medium">Langue</span>
-              <span className="text-muted-foreground mr-2">Français</span>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
-
-            {/* Dark Mode */}
-            <div className="flex items-center justify-between p-4 hover:bg-accent rounded-lg transition-colors">
+        <Accordion type="multiple" className="space-y-3">
+          
+          {/* Informations personnelles */}
+          <AccordionItem value="personal" className="border rounded-xl px-4 bg-card/50">
+            <AccordionTrigger className="hover:no-underline py-4">
               <div className="flex items-center gap-3">
-                <Palette className="w-5 h-5 text-purple-500" />
-                <span className="font-medium">Mode sombre</span>
+                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <UserCircle className="w-5 h-5 text-blue-500" />
+                </div>
+                <span className="font-medium">Informations personnelles</span>
               </div>
-              <Switch 
-                checked={darkMode}
-                onCheckedChange={setDarkMode}
-              />
-            </div>
-
-            {/* Rate App */}
-            <button 
-              className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors"
-              onClick={handleRateApp}
-            >
-              <Star className="w-5 h-5 text-yellow-500" />
-              <div className="flex-1 text-left">
-                <span className="font-medium">Noter l'application</span>
-                <p className="text-sm text-muted-foreground">Donnez-nous votre avis</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
-
-            {/* Storage Section */}
-            <div className="pt-4 space-y-2">
-              <h3 className="font-semibold px-4 py-2 text-muted-foreground text-sm uppercase tracking-wide">Stockage et données</h3>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 space-y-1">
+              {user && (
+                <Link to={`/user/${user.id}`}>
+                  <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                    <User className="w-5 h-5 text-indigo-500" />
+                    <div className="flex-1 text-left">
+                      <span className="font-medium">Ma page publique</span>
+                      <p className="text-sm text-muted-foreground">Voir mon profil voyageur</p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  </button>
+                </Link>
+              )}
               
-              <button 
-                className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors"
-                onClick={handleClearCache}
-                disabled={clearingCache}
-              >
-                <Trash2 className="w-5 h-5 text-red-500" />
-                <div className="flex-1 text-left">
-                  <span className="font-medium">Vider le cache</span>
-                  <p className="text-sm text-muted-foreground">Libérer de l'espace de stockage</p>
-                </div>
-                {clearingCache && <span className="text-sm text-muted-foreground">...</span>}
-              </button>
-              
-              <div className="flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-                <Database className="w-5 h-5 text-blue-500" />
-                <div className="flex-1 text-left">
-                  <span className="font-medium">Gérer le stockage</span>
-                  <p className="text-sm text-muted-foreground">Photos et fichiers téléchargés</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Sign Out */}
-            <div className="pt-6">
-              <Button 
-                variant="ghost"
-                className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={handleSignOut}
-              >
-                Déconnexion
-              </Button>
-            </div>
-          </TabsContent>
-
-          {/* Security Tab */}
-          <TabsContent value="security" className="space-y-2 mt-0">
-            {/* Security */}
-            <Link to="/account-security">
-              <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-                <Shield className="w-5 h-5 text-primary" />
-                <span className="flex-1 text-left font-medium">Sécurité du compte</span>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </Link>
-
-            {/* Two Factor Authentication */}
-            <Link to="/account-security">
-              <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-                <Lock className="w-5 h-5 text-amber-500" />
-                <div className="flex-1 text-left">
-                  <span className="font-medium">Authentification à deux facteurs</span>
-                  <p className="text-sm text-muted-foreground">Sécurisez votre compte</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </Link>
-
-            {/* Biometric Authentication */}
-            {biometricAvailable && (
-              <div className="flex items-center justify-between p-4 hover:bg-accent rounded-lg transition-colors">
-                <div className="flex items-center gap-3">
-                  <Fingerprint className="w-5 h-5 text-green-500" />
-                  <div className="flex flex-col">
-                    <span className="font-medium">Connexion {biometryType}</span>
-                    <span className="text-sm text-muted-foreground">
-                      Se connecter avec {biometryType}
-                    </span>
-                  </div>
-                </div>
-                <Switch 
-                  checked={biometricEnabled}
-                  onCheckedChange={handleBiometricToggle}
-                />
-              </div>
-            )}
-
-            {/* Privacy Settings */}
-            <Link to="/privacy-settings">
-              <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-                <Eye className="w-5 h-5 text-purple-500" />
-                <span className="flex-1 text-left font-medium">Paramètres de confidentialité</span>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </Link>
-
-            {/* Legal Section */}
-            <div className="pt-4 space-y-2">
-              <h3 className="font-semibold px-4 py-2 text-muted-foreground text-sm uppercase tracking-wide">Légal</h3>
-              
-              <Link to="/privacy">
-                <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-                  <FileText className="w-5 h-5 text-blue-500" />
-                  <span className="flex-1 text-left font-medium">Politique de confidentialité</span>
+              <Link to="/currency-settings">
+                <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                  <Globe className="w-5 h-5 text-orange-500" />
+                  <span className="flex-1 text-left font-medium">Devise préférée</span>
                   <ChevronRight className="w-5 h-5 text-muted-foreground" />
                 </button>
               </Link>
 
-              <Link to="/terms">
-                <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-                  <FileText className="w-5 h-5 text-cyan-500" />
-                  <span className="flex-1 text-left font-medium">Conditions d'utilisation</span>
+              <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                <Globe className="w-5 h-5 text-primary" />
+                <span className="flex-1 text-left font-medium">Langue</span>
+                <span className="text-muted-foreground mr-2">Français</span>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </button>
+
+              <div className="flex items-center justify-between p-3 hover:bg-accent rounded-lg transition-colors">
+                <div className="flex items-center gap-3">
+                  <Palette className="w-5 h-5 text-purple-500" />
+                  <span className="font-medium">Mode sombre</span>
+                </div>
+                <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Vérification d'identité */}
+          <AccordionItem value="verification" className="border rounded-xl px-4 bg-card/50">
+            <AccordionTrigger className="hover:no-underline py-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <BadgeCheck className="w-5 h-5 text-green-500" />
+                </div>
+                <span className="font-medium">Vérification d'identité</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 space-y-1">
+              <Link to="/verify-identity">
+                <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                  <BadgeCheck className="w-5 h-5 text-green-500" />
+                  <div className="flex-1 text-left">
+                    <span className="font-medium">Vérifier mon identité</span>
+                    <p className="text-sm text-muted-foreground">Augmentez votre score de confiance</p>
+                  </div>
                   <ChevronRight className="w-5 h-5 text-muted-foreground" />
                 </button>
               </Link>
-            </div>
-          </TabsContent>
+            </AccordionContent>
+          </AccordionItem>
 
-          {/* Notifications Tab */}
-          <TabsContent value="notifications" className="space-y-2 mt-0">
-            {/* Push Notifications */}
-            {pushSupported && (
-              <div className="flex items-center justify-between p-4 hover:bg-accent rounded-lg transition-colors">
-                <div className="flex items-center gap-3">
-                  <Bell className="w-5 h-5 text-primary" />
-                  <div className="flex flex-col">
-                    <span className="font-medium">Notifications push</span>
-                    <span className="text-sm text-muted-foreground">
-                      Recevoir des alertes en temps réel
-                    </span>
-                  </div>
+          {/* Sécurité du compte */}
+          <AccordionItem value="security" className="border rounded-xl px-4 bg-card/50">
+            <AccordionTrigger className="hover:no-underline py-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                  <Lock className="w-5 h-5 text-red-500" />
                 </div>
-                <Switch 
-                  checked={pushEnabled}
-                  onCheckedChange={handlePushToggle}
-                />
+                <span className="font-medium">Sécurité du compte</span>
               </div>
-            )}
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 space-y-1">
+              <Link to="/account-security">
+                <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                  <Shield className="w-5 h-5 text-primary" />
+                  <span className="flex-1 text-left font-medium">Changer le mot de passe</span>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </Link>
 
-            <div className="pt-4 space-y-2">
-              <h3 className="font-semibold px-4 py-2 text-muted-foreground text-sm uppercase tracking-wide">Préférences de notifications</h3>
-              
-              <div className="flex items-center justify-between p-4 hover:bg-accent rounded-lg transition-colors">
+              <Link to="/account-security">
+                <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                  <Lock className="w-5 h-5 text-amber-500" />
+                  <div className="flex-1 text-left">
+                    <span className="font-medium">Authentification à deux facteurs</span>
+                    <p className="text-sm text-muted-foreground">Sécurisez votre compte</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </Link>
+
+              {biometricAvailable && (
+                <div className="flex items-center justify-between p-3 hover:bg-accent rounded-lg transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Fingerprint className="w-5 h-5 text-green-500" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">Connexion {biometryType}</span>
+                      <span className="text-sm text-muted-foreground">Se connecter avec {biometryType}</span>
+                    </div>
+                  </div>
+                  <Switch checked={biometricEnabled} onCheckedChange={handleBiometricToggle} />
+                </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Notifications */}
+          <AccordionItem value="notifications" className="border rounded-xl px-4 bg-card/50">
+            <AccordionTrigger className="hover:no-underline py-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-orange-500" />
+                </div>
+                <span className="font-medium">Notifications</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 space-y-1">
+              {pushSupported && (
+                <div className="flex items-center justify-between p-3 hover:bg-accent rounded-lg transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Bell className="w-5 h-5 text-primary" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">Notifications push</span>
+                      <span className="text-sm text-muted-foreground">Alertes en temps réel</span>
+                    </div>
+                  </div>
+                  <Switch checked={pushEnabled} onCheckedChange={handlePushToggle} />
+                </div>
+              )}
+
+              <div className="flex items-center justify-between p-3 hover:bg-accent rounded-lg transition-colors">
                 <span>Nouveaux messages</span>
                 <Switch 
                   checked={preferences.messages_enabled}
@@ -388,7 +292,8 @@ const Settings = () => {
                   disabled={prefsLoading}
                 />
               </div>
-              <div className="flex items-center justify-between p-4 hover:bg-accent rounded-lg transition-colors">
+              
+              <div className="flex items-center justify-between p-3 hover:bg-accent rounded-lg transition-colors">
                 <span>Réponses à mes annonces</span>
                 <Switch 
                   checked={preferences.responses_enabled}
@@ -396,15 +301,17 @@ const Settings = () => {
                   disabled={prefsLoading}
                 />
               </div>
-              <div className="flex items-center justify-between p-4 hover:bg-accent rounded-lg transition-colors">
-                <span>Alertes voyageurs sur mes destinations</span>
+              
+              <div className="flex items-center justify-between p-3 hover:bg-accent rounded-lg transition-colors">
+                <span>Alertes voyageurs</span>
                 <Switch 
                   checked={preferences.alerts_enabled}
                   onCheckedChange={(checked) => updatePreference('alerts_enabled', checked)}
                   disabled={prefsLoading}
                 />
               </div>
-              <div className="flex items-center justify-between p-4 hover:bg-accent rounded-lg transition-colors">
+              
+              <div className="flex items-center justify-between p-3 hover:bg-accent rounded-lg transition-colors">
                 <span>Promotions / infos</span>
                 <Switch 
                   checked={preferences.promotions_enabled}
@@ -412,54 +319,171 @@ const Settings = () => {
                   disabled={prefsLoading}
                 />
               </div>
-            </div>
-          </TabsContent>
+            </AccordionContent>
+          </AccordionItem>
 
-          {/* Help Tab */}
-          <TabsContent value="help" className="space-y-2 mt-0">
-            {/* FAQ */}
-            <Link to="/faq">
-              <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-                <HelpCircle className="w-5 h-5 text-orange-500" />
-                <span className="flex-1 text-left font-medium">Questions fréquentes (FAQ)</span>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </Link>
+          {/* Confidentialité */}
+          <AccordionItem value="privacy" className="border rounded-xl px-4 bg-card/50">
+            <AccordionTrigger className="hover:no-underline py-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gray-500/20 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5 text-gray-400" />
+                </div>
+                <span className="font-medium">Confidentialité</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 space-y-1">
+              <Link to="/privacy-settings">
+                <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                  <Eye className="w-5 h-5 text-purple-500" />
+                  <span className="flex-1 text-left font-medium">Paramètres de confidentialité</span>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </Link>
 
-            {/* Community Guidelines */}
-            <Link to="/terms">
-              <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-                <Users className="w-5 h-5 text-blue-500" />
-                <span className="flex-1 text-left font-medium">Règles de la communauté</span>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </Link>
+              <Link to="/privacy">
+                <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                  <FileText className="w-5 h-5 text-blue-500" />
+                  <span className="flex-1 text-left font-medium">Politique de confidentialité</span>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </Link>
 
-            {/* Report Problem */}
-            <a href="mailto:support@kilofly.com?subject=Signalement d'un problème">
-              <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-                <AlertTriangle className="w-5 h-5 text-red-500" />
+              <Link to="/terms">
+                <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                  <FileText className="w-5 h-5 text-cyan-500" />
+                  <span className="flex-1 text-left font-medium">Conditions d'utilisation</span>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </Link>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Données et stockage */}
+          <AccordionItem value="storage" className="border rounded-xl px-4 bg-card/50">
+            <AccordionTrigger className="hover:no-underline py-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <Database className="w-5 h-5 text-blue-500" />
+                </div>
+                <span className="font-medium">Données et stockage</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 space-y-1">
+              <button 
+                className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors"
+                onClick={handleClearCache}
+                disabled={clearingCache}
+              >
+                <Trash2 className="w-5 h-5 text-red-500" />
                 <div className="flex-1 text-left">
-                  <span className="font-medium">Signaler un problème</span>
-                  <p className="text-sm text-muted-foreground">Nous contacter par email</p>
+                  <span className="font-medium">Vider le cache</span>
+                  <p className="text-sm text-muted-foreground">Libérer de l'espace</p>
+                </div>
+                {clearingCache && <span className="text-sm text-muted-foreground">...</span>}
+              </button>
+
+              <Link to="/user-transactions">
+                <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                  <DollarSign className="w-5 h-5 text-primary" />
+                  <span className="flex-1 text-left font-medium">Mes transactions</span>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </Link>
+
+              <Link to="/favorites">
+                <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                  <Heart className="w-5 h-5 text-red-500" />
+                  <span className="flex-1 text-left font-medium">Mes Favoris</span>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </Link>
+
+              <Link to="/route-alerts">
+                <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                  <MapPin className="w-5 h-5 text-green-500" />
+                  <span className="flex-1 text-left font-medium">Alertes de Routes</span>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </Link>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Support & aide */}
+          <AccordionItem value="help" className="border rounded-xl px-4 bg-card/50">
+            <AccordionTrigger className="hover:no-underline py-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                  <HelpCircle className="w-5 h-5 text-yellow-500" />
+                </div>
+                <span className="font-medium">Support & aide</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 space-y-1">
+              <Link to="/faq">
+                <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                  <HelpCircle className="w-5 h-5 text-orange-500" />
+                  <span className="flex-1 text-left font-medium">Questions fréquentes (FAQ)</span>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </Link>
+
+              <Link to="/terms">
+                <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                  <Users className="w-5 h-5 text-blue-500" />
+                  <span className="flex-1 text-left font-medium">Règles de la communauté</span>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </Link>
+
+              <a href="mailto:support@kilofly.com?subject=Signalement d'un problème">
+                <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                  <AlertTriangle className="w-5 h-5 text-red-500" />
+                  <div className="flex-1 text-left">
+                    <span className="font-medium">Signaler un problème</span>
+                    <p className="text-sm text-muted-foreground">Nous contacter</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </a>
+
+              <a href="mailto:support@kilofly.com">
+                <button className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors">
+                  <Headphones className="w-5 h-5 text-green-500" />
+                  <div className="flex-1 text-left">
+                    <span className="font-medium">Contacter le support</span>
+                    <p className="text-sm text-muted-foreground">support@kilofly.com</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </a>
+
+              <button 
+                className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors"
+                onClick={handleRateApp}
+              >
+                <Star className="w-5 h-5 text-yellow-500" />
+                <div className="flex-1 text-left">
+                  <span className="font-medium">Noter l'application</span>
+                  <p className="text-sm text-muted-foreground">Donnez-nous votre avis</p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground" />
               </button>
-            </a>
+            </AccordionContent>
+          </AccordionItem>
 
-            {/* Support */}
-            <a href="mailto:support@kilofly.com">
-              <button className="w-full flex items-center gap-3 p-4 hover:bg-accent rounded-lg transition-colors">
-                <Headphones className="w-5 h-5 text-green-500" />
-                <div className="flex-1 text-left">
-                  <span className="font-medium">Contacter le support</span>
-                  <p className="text-sm text-muted-foreground">support@kilofly.com</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </a>
-          </TabsContent>
-        </Tabs>
+        </Accordion>
+
+        {/* Sign Out */}
+        <div className="pt-8">
+          <Button 
+            variant="ghost"
+            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={handleSignOut}
+          >
+            Déconnexion
+          </Button>
+        </div>
       </div>
     </div>
   );
