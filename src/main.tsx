@@ -1,12 +1,23 @@
 import { createRoot } from "react-dom/client";
+import { useEffect, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import App from "./App.tsx";
 import "./index.css";
 import SplashScreen from "@/components/SplashScreen";
-import { useState, useEffect } from "react";
 
 const Root = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [showApp, setShowApp] = useState(false);
+
+  // Hide the native splash as soon as JS is running (our React SplashScreen covers the UI).
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    import("@capacitor/splash-screen")
+      .then(({ SplashScreen: NativeSplash }) => NativeSplash.hide())
+      .catch(() => {
+        // Ignore if plugin isn't available in this environment
+      });
+  }, []);
 
   const handleSplashFinish = () => {
     setShowSplash(false);
