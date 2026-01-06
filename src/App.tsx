@@ -54,6 +54,9 @@ import MyRewards from "./pages/MyRewards";
 import Wallet from "./pages/Wallet";
 import ReservationChatPage from "./pages/ReservationChatPage";
 import AdminWavePayments from "./pages/AdminWavePayments";
+import NotificationSettings from "./pages/NotificationSettings";
+import StorageSettings from "./pages/StorageSettings";
+import HelpSettings from "./pages/HelpSettings";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -149,6 +152,9 @@ const AnimatedRoutes = () => {
                   <Route path="/admin/transactions" element={<AdminTransactions />} />
                   <Route path="/account-security" element={<AccountSecurity />} />
                   <Route path="/privacy-settings" element={<PrivacySettings />} />
+                  <Route path="/notification-settings" element={<NotificationSettings />} />
+                  <Route path="/storage-settings" element={<StorageSettings />} />
+                  <Route path="/help" element={<HelpSettings />} />
                   <Route path="/currency-settings" element={<CurrencySettings />} />
                   <Route path="/trust-score-info" element={<TrustScoreInfo />} />
                   <Route path="/my-rewards" element={<MyRewards />} />
