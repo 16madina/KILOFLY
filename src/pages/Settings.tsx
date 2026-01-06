@@ -140,7 +140,11 @@ const Settings = () => {
       </header>
 
       <div className="container px-4 py-4 max-w-2xl mx-auto">
-        <Accordion type="multiple" className="space-y-3">
+        <Accordion
+          type="multiple"
+          defaultValue={["personal", "verification", "security", "notifications", "privacy", "storage", "help"]}
+          className="space-y-3"
+        >
           
           {/* Informations personnelles */}
           <AccordionItem value="personal" className="border rounded-xl px-4 bg-card/50">
