@@ -65,6 +65,7 @@ import { useCurrencyWelcome } from "./hooks/useCurrencyWelcome";
 import { useTransportOfferNotifications } from "./hooks/useTransportOfferNotifications";
 import { useKeyboardScroll } from "./hooks/useKeyboardScroll";
 import { useDeepLinks } from "./hooks/useDeepLinks";
+import { useNativePushPrompt } from "./hooks/useNativePushPrompt";
 
 const queryClient = new QueryClient();
 
@@ -183,6 +184,7 @@ const AppContent = () => {
   useTransportOfferNotifications();
   useKeyboardScroll();
   useDeepLinks(); // Handle deep links for Universal Links / App Links
+  useNativePushPrompt(); // Prompt for push notifications on native platforms
   
   return (
     <div className="relative">
