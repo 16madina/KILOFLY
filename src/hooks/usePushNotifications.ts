@@ -20,6 +20,11 @@ const getPlatform = (): Platform => {
   return "web";
 };
 
+const getCapacitorPlugin = <T = any>(name: string): T | null => {
+  const anyCap = Capacitor as any;
+  return (anyCap?.Plugins?.[name] as T) ?? null;
+};
+
 // --- Singleton state (shared across all hook instances) ---
 let globalState: GlobalPushState = {
   isNative: Capacitor.isNativePlatform(),
@@ -56,69 +61,71 @@ const initOnce = () => {
       return;
     }
 
-    try {
-      // Use Firebase Messaging plugin for native - it returns FCM tokens on both iOS and Android
-      console.log("Attempting to import @capacitor-firebase/messaging...");
-      const FirebaseModule = await import("@capacitor-firebase/messaging");
-      console.log("FirebaseModule imported:", Object.keys(FirebaseModule));
-      const { FirebaseMessaging } = FirebaseModule;
-      console.log("FirebaseMessaging available:", !!FirebaseMessaging);
+    // Native (iOS/Android): do NOT dynamic-import capacitor plugins here.
+    // In the native WebView (capacitor://localhost), externalized module specifiers like
+    // "@capacitor-firebase/messaging" won't resolve at runtime.
 
+    try {
+      const FirebaseMessaging = getCapacitorPlugin<any>("FirebaseMessaging");
       if (!FirebaseMessaging) {
-        throw new Error("FirebaseMessaging is undefined after import");
+        throw new Error("FirebaseMessaging plugin not available");
       }
 
       setGlobal({ isSupported: true });
 
-      console.log("Checking permissions...");
       const permStatus = await FirebaseMessaging.checkPermissions();
-      console.log("Permission status:", permStatus);
       setGlobal({ permission: permStatus.receive === "granted" ? "granted" : "default" });
 
-      // Remove existing listeners to prevent duplicates
       await FirebaseMessaging.removeAllListeners();
 
-      // Listen for token updates
-      FirebaseMessaging.addListener("tokenReceived", (event) => {
+      FirebaseMessaging.addListener("tokenReceived", (event: { token: string }) => {
         console.log("FCM token received:", event.token);
         setGlobal({ fcmToken: event.token, permission: "granted" });
       });
 
-      // Listen for foreground notifications
-      FirebaseMessaging.addListener("notificationReceived", (event) => {
+      FirebaseMessaging.addListener("notificationReceived", (event: { notification: any }) => {
         console.log("Push notification received:", event.notification);
       });
 
-      // Listen for notification tap actions
-      FirebaseMessaging.addListener("notificationActionPerformed", (event) => {
-        console.log("Push notification action performed:", event);
-        const data = event.notification?.data as Record<string, unknown> | undefined;
-        if (data?.route && typeof data.route === "string") {
-          window.location.href = data.route;
+      FirebaseMessaging.addListener(
+        "notificationActionPerformed",
+        (event: { notification?: { data?: Record<string, unknown> } }) => {
+          console.log("Push notification action performed:", event);
+          const data = event.notification?.data;
+          if (data?.route && typeof data.route === "string") {
+            window.location.href = data.route;
+          }
         }
-      });
+      );
 
       // Try to get existing token
       try {
-        console.log("Attempting to get existing token...");
         const tokenResult = await FirebaseMessaging.getToken();
-        console.log("Token result:", tokenResult);
         if (tokenResult?.token) {
           console.log("Existing FCM token:", tokenResult.token);
           setGlobal({ fcmToken: tokenResult.token });
         }
       } catch (e: unknown) {
         const tokenErr = e as Error;
-        console.log("No existing FCM token:", tokenErr?.message || tokenErr?.toString?.() || "unknown error");
+        console.log(
+          "No existing FCM token:",
+          tokenErr?.message || tokenErr?.toString?.() || "unknown error"
+        );
       }
     } catch (error: unknown) {
       const err = error as Error;
-      console.error("Error initializing Firebase Messaging:", err?.message || err?.toString?.() || JSON.stringify(error));
-      
+      console.error(
+        "Error initializing Firebase Messaging:",
+        err?.message || err?.toString?.() || JSON.stringify(error)
+      );
+
       // Fallback to standard Capacitor push notifications
       try {
-        const { PushNotifications } = await import("@capacitor/push-notifications");
-        
+        const PushNotifications = getCapacitorPlugin<any>("PushNotifications");
+        if (!PushNotifications) {
+          throw new Error("PushNotifications plugin not available");
+        }
+
         setGlobal({ isSupported: true });
 
         const permStatus = await PushNotifications.checkPermissions();
@@ -126,30 +133,38 @@ const initOnce = () => {
 
         await PushNotifications.removeAllListeners();
 
-        PushNotifications.addListener("registration", (token) => {
+        PushNotifications.addListener("registration", (token: { value: string }) => {
           console.log("Push registration success (fallback), token:", token.value);
           setGlobal({ fcmToken: token.value, permission: "granted" });
         });
 
-        PushNotifications.addListener("registrationError", (error) => {
-          console.error("Push registration error:", error);
+        PushNotifications.addListener("registrationError", (regError: unknown) => {
+          console.error("Push registration error:", regError);
           setGlobal({ permission: "denied" });
         });
 
-        PushNotifications.addListener("pushNotificationReceived", (notification) => {
+        PushNotifications.addListener("pushNotificationReceived", (notification: any) => {
           console.log("Push notification received:", notification);
         });
 
-        PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
+        PushNotifications.addListener("pushNotificationActionPerformed", (action: any) => {
           console.log("Push notification action performed:", action);
-          const data = action.notification.data;
+          const data = action?.notification?.data;
           if (data?.route) {
             window.location.href = data.route as string;
           }
         });
+
+        // If the user already granted permission earlier, register now to get a token.
+        if (permStatus.receive === "granted") {
+          await PushNotifications.register();
+        }
       } catch (fallbackError: unknown) {
         const fbErr = fallbackError as Error;
-        console.error("Fallback push also failed:", fbErr?.message || fbErr?.toString?.() || JSON.stringify(fallbackError));
+        console.error(
+          "Fallback push also failed:",
+          fbErr?.message || fbErr?.toString?.() || JSON.stringify(fallbackError)
+        );
         const supported = "Notification" in window;
         setGlobal({
           isSupported: supported,
@@ -182,51 +197,57 @@ export const usePushNotifications = () => {
     };
   }, []);
 
-  const saveTokenToDatabase = useCallback(async (token: string) => {
-    if (!user?.id) return;
+  const saveTokenToDatabase = useCallback(
+    async (token: string) => {
+      if (!user?.id) return;
 
-    const key = `${user.id}:${token}`;
-    if (lastSavedKey === key) return;
+      const key = `${user.id}:${token}`;
+      if (lastSavedKey === key) return;
 
-    try {
-      const platform = getPlatform();
+      try {
+        const platform = getPlatform();
 
-      const { error } = await supabase.rpc("upsert_push_token" as never, {
-        p_user_id: user.id,
-        p_token: token,
-        p_platform: platform,
-      } as never);
+        const { error } = await supabase.rpc("upsert_push_token" as never, {
+          p_user_id: user.id,
+          p_token: token,
+          p_platform: platform,
+        } as never);
 
-      if (error) {
-        const { error: insertError } = await supabase
-          .from("push_tokens" as never)
-          .upsert({ user_id: user.id, token, platform } as never, { onConflict: "user_id,token" });
+        if (error) {
+          const { error: insertError } = await supabase
+            .from("push_tokens" as never)
+            .upsert({ user_id: user.id, token, platform } as never, { onConflict: "user_id,token" });
 
-        if (insertError) {
-          console.error("Error saving push token:", insertError);
-          return;
+          if (insertError) {
+            console.error("Error saving push token:", insertError);
+            return;
+          }
         }
+
+        lastSavedKey = key;
+        console.log("Push token saved successfully");
+      } catch (saveErr) {
+        console.error("Error saving push token:", saveErr);
       }
+    },
+    [user?.id]
+  );
 
-      lastSavedKey = key;
-      console.log("Push token saved successfully");
-    } catch (error) {
-      console.error("Error saving push token:", error);
-    }
-  }, [user?.id]);
+  const removeTokenFromDatabase = useCallback(
+    async (token: string) => {
+      if (!user?.id) return;
 
-  const removeTokenFromDatabase = useCallback(async (token: string) => {
-    if (!user?.id) return;
-
-    try {
-      await supabase.from("push_tokens" as never).delete().eq("user_id", user.id).eq("token", token);
-      if (lastSavedKey?.startsWith(`${user.id}:`)) {
-        lastSavedKey = null;
+      try {
+        await supabase.from("push_tokens" as never).delete().eq("user_id", user.id).eq("token", token);
+        if (lastSavedKey?.startsWith(`${user.id}:`)) {
+          lastSavedKey = null;
+        }
+      } catch (removeErr) {
+        console.error("Error removing push token:", removeErr);
       }
-    } catch (error) {
-      console.error("Error removing push token:", error);
-    }
-  }, [user?.id]);
+    },
+    [user?.id]
+  );
 
   // If user logs in after native registration already happened, persist the token once.
   useEffect(() => {
@@ -246,10 +267,8 @@ export const usePushNotifications = () => {
 
     try {
       if (globalState.isNative) {
-        // Try Firebase Messaging first
-        try {
-          const { FirebaseMessaging } = await import("@capacitor-firebase/messaging");
-          
+        const FirebaseMessaging = getCapacitorPlugin<any>("FirebaseMessaging");
+        if (FirebaseMessaging) {
           const permResult = await FirebaseMessaging.requestPermissions();
 
           if (permResult.receive === "granted") {
@@ -262,29 +281,32 @@ export const usePushNotifications = () => {
 
           setGlobal({ permission: "denied" });
           return false;
-        } catch (e) {
-          // Fallback to standard push notifications
-          const { PushNotifications } = await import("@capacitor/push-notifications");
-          
-          const permResult = await PushNotifications.requestPermissions();
+        }
 
-          if (permResult.receive === "granted") {
-            await PushNotifications.register();
-            setGlobal({ permission: "granted" });
-            return true;
-          }
-
-          setGlobal({ permission: "denied" });
+        const PushNotifications = getCapacitorPlugin<any>("PushNotifications");
+        if (!PushNotifications) {
+          console.error("No native push plugin available");
           return false;
         }
+
+        const permResult = await PushNotifications.requestPermissions();
+
+        if (permResult.receive === "granted") {
+          await PushNotifications.register();
+          setGlobal({ permission: "granted" });
+          return true;
+        }
+
+        setGlobal({ permission: "denied" });
+        return false;
       }
 
       // Web fallback
       const result = await Notification.requestPermission();
       setGlobal({ permission: result as Permission });
       return result === "granted";
-    } catch (error) {
-      console.error("Error requesting notification permission:", error);
+    } catch (reqErr) {
+      console.error("Error requesting notification permission:", reqErr);
       return false;
     }
   }, []);
@@ -315,8 +337,8 @@ export const usePushNotifications = () => {
 
           setTimeout(() => notification.close(), 5000);
         }
-      } catch (error) {
-        console.error("Error showing notification:", error);
+      } catch (notifErr) {
+        console.error("Error showing notification:", notifErr);
       }
     },
     [state.isSupported, state.permission, state.isNative]
@@ -338,18 +360,23 @@ export const usePushNotifications = () => {
 
     if (state.isNative) {
       try {
-        // Try Firebase first
-        try {
-          const { FirebaseMessaging } = await import("@capacitor-firebase/messaging");
+        const FirebaseMessaging = getCapacitorPlugin<any>("FirebaseMessaging");
+        if (FirebaseMessaging) {
           await FirebaseMessaging.deleteToken();
-        } catch (e) {
-          // Fallback
-          const { PushNotifications } = await import("@capacitor/push-notifications");
-          await PushNotifications.unregister();
+          setGlobal({ fcmToken: null });
+          return;
         }
-        setGlobal({ fcmToken: null });
-      } catch (error) {
-        console.error("Error unregistering push notifications:", error);
+
+        const PushNotifications = getCapacitorPlugin<any>("PushNotifications");
+        if (PushNotifications) {
+          await PushNotifications.unregister();
+          setGlobal({ fcmToken: null });
+          return;
+        }
+
+        console.warn("No native push plugin available to unregister");
+      } catch (unregErr) {
+        console.error("Error unregistering push notifications:", unregErr);
       }
     }
   }, [state.fcmToken, state.isNative, removeTokenFromDatabase]);
@@ -365,3 +392,4 @@ export const usePushNotifications = () => {
     unregister,
   };
 };
+
