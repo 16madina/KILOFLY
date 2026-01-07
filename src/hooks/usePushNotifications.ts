@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Platform = "android" | "ios" | "web";
-type Permission = "granted" | "denied" | "default";
+// iOS may return "prompt" before the system dialog is shown.
+type Permission = "granted" | "denied" | "default" | "prompt";
 
 type GlobalPushState = {
   isNative: boolean;
@@ -15,6 +16,14 @@ type GlobalPushState = {
 
 // Register once at module load to avoid: "already registered. Cannot register plugins twice."
 const FirebaseMessaging = registerPlugin<any>("FirebaseMessaging");
+
+const mapReceiveToPermission = (receive: unknown): Permission => {
+  const val = String((receive as any) ?? "");
+  if (val === "granted") return "granted";
+  if (val === "denied") return "denied";
+  if (val === "prompt") return "prompt";
+  return "default";
+};
 
 const isUnimplementedPluginError = (e: unknown) => {
   const anyErr = e as any;
@@ -83,13 +92,15 @@ const initOnce = () => {
       setGlobal({ isSupported: true });
 
       const permStatus = await FirebaseMessaging.checkPermissions();
-      setGlobal({ permission: permStatus.receive === "granted" ? "granted" : "default" });
+      setGlobal({ permission: mapReceiveToPermission(permStatus?.receive) });
 
       await FirebaseMessaging.removeAllListeners();
 
       FirebaseMessaging.addListener("tokenReceived", (event: { token: string }) => {
         console.log("FCM token received:", event.token);
-        setGlobal({ fcmToken: event.token, permission: "granted" });
+        // Important: a token can exist even when iOS notification permission is still "prompt".
+        // Do NOT mark permission as granted based on token presence.
+        setGlobal({ fcmToken: event.token });
       });
 
       FirebaseMessaging.addListener("notificationReceived", (event: { notification: any }) => {
@@ -141,7 +152,7 @@ const initOnce = () => {
         setGlobal({ isSupported: true });
 
         const permStatus = await PushNotifications.checkPermissions();
-        setGlobal({ permission: permStatus.receive === "granted" ? "granted" : "default" });
+        setGlobal({ permission: mapReceiveToPermission(permStatus?.receive) });
 
         await PushNotifications.removeAllListeners();
 
@@ -168,7 +179,7 @@ const initOnce = () => {
         });
 
         // If the user already granted permission earlier, register now to get a token.
-        if (permStatus.receive === "granted") {
+        if (permStatus?.receive === "granted") {
           await PushNotifications.register();
         }
       } catch (fallbackError: unknown) {
