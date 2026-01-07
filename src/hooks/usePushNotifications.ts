@@ -13,6 +13,16 @@ type GlobalPushState = {
   fcmToken: string | null;
 };
 
+// Register once at module load to avoid: "already registered. Cannot register plugins twice."
+const FirebaseMessaging = registerPlugin<any>("FirebaseMessaging");
+
+const isUnimplementedPluginError = (e: unknown) => {
+  const anyErr = e as any;
+  const code = anyErr?.code;
+  const message = String(anyErr?.message ?? anyErr?.toString?.() ?? "");
+  return code === "UNIMPLEMENTED" || message.includes("not implemented") || message.includes("UNIMPLEMENTED");
+};
+
 const getPlatform = (): Platform => {
   const platform = Capacitor.getPlatform();
   if (platform === "android") return "android";
@@ -66,7 +76,6 @@ const initOnce = () => {
     // "@capacitor-firebase/messaging" won't resolve at runtime.
 
     try {
-      const FirebaseMessaging = registerPlugin<any>("FirebaseMessaging");
       if (!FirebaseMessaging?.checkPermissions) {
         throw new Error("FirebaseMessaging plugin not available");
       }
@@ -106,7 +115,10 @@ const initOnce = () => {
           setGlobal({ fcmToken: tokenResult.token });
         }
       } catch (e: unknown) {
-        const tokenErr = e as Error;
+        const tokenErr = e as any;
+        if (isUnimplementedPluginError(tokenErr)) {
+          throw tokenErr;
+        }
         console.log(
           "No existing FCM token:",
           tokenErr?.message || tokenErr?.toString?.() || "unknown error"
@@ -267,37 +279,73 @@ export const usePushNotifications = () => {
 
     try {
       if (globalState.isNative) {
-        const FirebaseMessaging = registerPlugin<any>("FirebaseMessaging");
-        if (FirebaseMessaging?.requestPermissions) {
-          const permResult = await FirebaseMessaging.requestPermissions();
+        // Always request permission via the standard PushNotifications plugin first.
+        // This is what triggers the iOS system popup.
+        const PushNotifications = getCapacitorPlugin<any>("PushNotifications");
 
-          if (permResult.receive === "granted") {
-            const tokenResult = await FirebaseMessaging.getToken();
-            if (tokenResult?.token) {
-              setGlobal({ fcmToken: tokenResult.token, permission: "granted" });
-            }
-            return true;
+        if (PushNotifications?.requestPermissions) {
+          const permResult = await PushNotifications.requestPermissions();
+          const granted = permResult.receive === "granted";
+
+          setGlobal({ permission: granted ? "granted" : "denied" });
+
+          if (!granted) return false;
+
+          // Register to receive a device token (APNs on iOS / FCM on Android via OS).
+          if (PushNotifications?.register) {
+            await PushNotifications.register();
           }
 
-          setGlobal({ permission: "denied" });
-          return false;
-        }
+          // Then try to fetch an FCM token via FirebaseMessaging (needed for FCM HTTP v1).
+          // If the native plugin isn't installed, we silently ignore and keep the fallback token.
+          try {
+            if (FirebaseMessaging?.requestPermissions) {
+              await FirebaseMessaging.requestPermissions();
+            }
+            if (FirebaseMessaging?.getToken) {
+              const tokenResult = await FirebaseMessaging.getToken();
+              if (tokenResult?.token) {
+                setGlobal({ fcmToken: tokenResult.token });
+              }
+            }
+          } catch (e: unknown) {
+            if (!isUnimplementedPluginError(e)) {
+              console.warn("FirebaseMessaging token fetch failed:", e);
+            }
+          }
 
-        const PushNotifications = getCapacitorPlugin<any>("PushNotifications");
-        if (!PushNotifications) {
-          console.error("No native push plugin available");
-          return false;
-        }
-
-        const permResult = await PushNotifications.requestPermissions();
-
-        if (permResult.receive === "granted") {
-          await PushNotifications.register();
-          setGlobal({ permission: "granted" });
           return true;
         }
 
-        setGlobal({ permission: "denied" });
+        // Last resort: try FirebaseMessaging permissions (may be unimplemented on iOS if not installed)
+        if (FirebaseMessaging?.requestPermissions) {
+          const permResult = await FirebaseMessaging.requestPermissions();
+          const granted = permResult.receive === "granted";
+
+          if (!granted) {
+            setGlobal({ permission: "denied" });
+            return false;
+          }
+
+          try {
+            const tokenResult = await FirebaseMessaging.getToken();
+            if (tokenResult?.token) {
+              setGlobal({ fcmToken: tokenResult.token, permission: "granted" });
+            } else {
+              setGlobal({ permission: "granted" });
+            }
+          } catch (e: unknown) {
+            if (isUnimplementedPluginError(e)) {
+              setGlobal({ permission: "granted" });
+              return true;
+            }
+            throw e;
+          }
+
+          return true;
+        }
+
+        console.error("No native push plugin available");
         return false;
       }
 
@@ -360,11 +408,17 @@ export const usePushNotifications = () => {
 
     if (state.isNative) {
       try {
-        const FirebaseMessaging = registerPlugin<any>("FirebaseMessaging");
         if (FirebaseMessaging?.deleteToken) {
-          await FirebaseMessaging.deleteToken();
-          setGlobal({ fcmToken: null });
-          return;
+          try {
+            await FirebaseMessaging.deleteToken();
+            setGlobal({ fcmToken: null });
+            return;
+          } catch (e: unknown) {
+            if (!isUnimplementedPluginError(e)) {
+              console.warn("FirebaseMessaging deleteToken failed:", e);
+            }
+            // fall through to PushNotifications.unregister
+          }
         }
 
         const PushNotifications = getCapacitorPlugin<any>("PushNotifications");
