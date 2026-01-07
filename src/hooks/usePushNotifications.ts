@@ -58,11 +58,21 @@ const initOnce = () => {
 
     try {
       // Use Firebase Messaging plugin for native - it returns FCM tokens on both iOS and Android
-      const { FirebaseMessaging } = await import("@capacitor-firebase/messaging");
+      console.log("Attempting to import @capacitor-firebase/messaging...");
+      const FirebaseModule = await import("@capacitor-firebase/messaging");
+      console.log("FirebaseModule imported:", Object.keys(FirebaseModule));
+      const { FirebaseMessaging } = FirebaseModule;
+      console.log("FirebaseMessaging available:", !!FirebaseMessaging);
+
+      if (!FirebaseMessaging) {
+        throw new Error("FirebaseMessaging is undefined after import");
+      }
 
       setGlobal({ isSupported: true });
 
+      console.log("Checking permissions...");
       const permStatus = await FirebaseMessaging.checkPermissions();
+      console.log("Permission status:", permStatus);
       setGlobal({ permission: permStatus.receive === "granted" ? "granted" : "default" });
 
       // Remove existing listeners to prevent duplicates
@@ -90,13 +100,16 @@ const initOnce = () => {
 
       // Try to get existing token
       try {
+        console.log("Attempting to get existing token...");
         const tokenResult = await FirebaseMessaging.getToken();
+        console.log("Token result:", tokenResult);
         if (tokenResult?.token) {
           console.log("Existing FCM token:", tokenResult.token);
           setGlobal({ fcmToken: tokenResult.token });
         }
-      } catch (e) {
-        console.log("No existing FCM token, will get one after permission request");
+      } catch (e: unknown) {
+        const tokenErr = e as Error;
+        console.log("No existing FCM token:", tokenErr?.message || tokenErr?.toString?.() || "unknown error");
       }
     } catch (error: unknown) {
       const err = error as Error;
