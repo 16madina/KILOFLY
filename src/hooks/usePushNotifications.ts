@@ -98,8 +98,9 @@ const initOnce = () => {
       } catch (e) {
         console.log("No existing FCM token, will get one after permission request");
       }
-    } catch (error) {
-      console.error("Error initializing Firebase Messaging:", error);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Error initializing Firebase Messaging:", err?.message || err?.toString?.() || JSON.stringify(error));
       
       // Fallback to standard Capacitor push notifications
       try {
@@ -133,8 +134,9 @@ const initOnce = () => {
             window.location.href = data.route as string;
           }
         });
-      } catch (fallbackError) {
-        console.error("Fallback push also failed:", fallbackError);
+      } catch (fallbackError: unknown) {
+        const fbErr = fallbackError as Error;
+        console.error("Fallback push also failed:", fbErr?.message || fbErr?.toString?.() || JSON.stringify(fallbackError));
         const supported = "Notification" in window;
         setGlobal({
           isSupported: supported,
