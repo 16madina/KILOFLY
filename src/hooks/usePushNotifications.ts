@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useState } from "react";
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -66,8 +66,8 @@ const initOnce = () => {
     // "@capacitor-firebase/messaging" won't resolve at runtime.
 
     try {
-      const FirebaseMessaging = getCapacitorPlugin<any>("FirebaseMessaging");
-      if (!FirebaseMessaging) {
+      const FirebaseMessaging = registerPlugin<any>("FirebaseMessaging");
+      if (!FirebaseMessaging?.checkPermissions) {
         throw new Error("FirebaseMessaging plugin not available");
       }
 
@@ -267,8 +267,8 @@ export const usePushNotifications = () => {
 
     try {
       if (globalState.isNative) {
-        const FirebaseMessaging = getCapacitorPlugin<any>("FirebaseMessaging");
-        if (FirebaseMessaging) {
+        const FirebaseMessaging = registerPlugin<any>("FirebaseMessaging");
+        if (FirebaseMessaging?.requestPermissions) {
           const permResult = await FirebaseMessaging.requestPermissions();
 
           if (permResult.receive === "granted") {
@@ -360,8 +360,8 @@ export const usePushNotifications = () => {
 
     if (state.isNative) {
       try {
-        const FirebaseMessaging = getCapacitorPlugin<any>("FirebaseMessaging");
-        if (FirebaseMessaging) {
+        const FirebaseMessaging = registerPlugin<any>("FirebaseMessaging");
+        if (FirebaseMessaging?.deleteToken) {
           await FirebaseMessaging.deleteToken();
           setGlobal({ fcmToken: null });
           return;
