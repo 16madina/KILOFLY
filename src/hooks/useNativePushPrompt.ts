@@ -18,8 +18,8 @@ export const useNativePushPrompt = () => {
     // Only prompt once per app session
     if (promptedRef.current) return;
     
-    // Only prompt if we haven't asked yet
-    if (permission !== "default") return;
+    // Only prompt if we haven't asked yet (web returns "default", iOS returns "prompt")
+    if (permission !== "default" && (permission as string) !== "prompt") return;
     
     // Wait for support detection
     if (!isSupported) return;
