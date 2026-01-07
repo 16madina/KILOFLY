@@ -6,8 +6,6 @@ import { useAuth } from "@/contexts/AuthContext";
 type Platform = "android" | "ios" | "web";
 type Permission = "granted" | "denied" | "default";
 
-type PushNotificationsApi = typeof import("@capacitor/push-notifications").PushNotifications;
-
 type GlobalPushState = {
   isNative: boolean;
   isSupported: boolean;
@@ -30,7 +28,6 @@ let globalState: GlobalPushState = {
   fcmToken: null,
 };
 
-let pushApi: PushNotificationsApi | null = null;
 let initPromise: Promise<void> | null = null;
 let lastSavedKey: string | null = null;
 
@@ -60,45 +57,90 @@ const initOnce = () => {
     }
 
     try {
-      const { PushNotifications } = await import("@capacitor/push-notifications");
-      pushApi = PushNotifications;
+      // Use Firebase Messaging plugin for native - it returns FCM tokens on both iOS and Android
+      const { FirebaseMessaging } = await import("@capacitor-firebase/messaging");
 
       setGlobal({ isSupported: true });
 
-      const permStatus = await PushNotifications.checkPermissions();
+      const permStatus = await FirebaseMessaging.checkPermissions();
       setGlobal({ permission: permStatus.receive === "granted" ? "granted" : "default" });
 
-      // Ensure we don't stack native listeners across hot reloads / multiple hook mounts
-      await PushNotifications.removeAllListeners();
+      // Remove existing listeners to prevent duplicates
+      await FirebaseMessaging.removeAllListeners();
 
-      PushNotifications.addListener("registration", (token) => {
-        console.log("Push registration success, token:", token.value);
-        setGlobal({ fcmToken: token.value, permission: "granted" });
+      // Listen for token updates
+      FirebaseMessaging.addListener("tokenReceived", (event) => {
+        console.log("FCM token received:", event.token);
+        setGlobal({ fcmToken: event.token, permission: "granted" });
       });
 
-      PushNotifications.addListener("registrationError", (error) => {
-        console.error("Push registration error:", error);
-        setGlobal({ permission: "denied" });
+      // Listen for foreground notifications
+      FirebaseMessaging.addListener("notificationReceived", (event) => {
+        console.log("Push notification received:", event.notification);
       });
 
-      PushNotifications.addListener("pushNotificationReceived", (notification) => {
-        console.log("Push notification received:", notification);
-      });
-
-      PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
-        console.log("Push notification action performed:", action);
-        const data = action.notification.data;
-        if (data?.route) {
-          window.location.href = data.route as string;
+      // Listen for notification tap actions
+      FirebaseMessaging.addListener("notificationActionPerformed", (event) => {
+        console.log("Push notification action performed:", event);
+        const data = event.notification?.data as Record<string, unknown> | undefined;
+        if (data?.route && typeof data.route === "string") {
+          window.location.href = data.route;
         }
       });
+
+      // Try to get existing token
+      try {
+        const tokenResult = await FirebaseMessaging.getToken();
+        if (tokenResult?.token) {
+          console.log("Existing FCM token:", tokenResult.token);
+          setGlobal({ fcmToken: tokenResult.token });
+        }
+      } catch (e) {
+        console.log("No existing FCM token, will get one after permission request");
+      }
     } catch (error) {
-      console.error("Error initializing push notifications:", error);
-      const supported = "Notification" in window;
-      setGlobal({
-        isSupported: supported,
-        permission: supported ? (Notification.permission as Permission) : "default",
-      });
+      console.error("Error initializing Firebase Messaging:", error);
+      
+      // Fallback to standard Capacitor push notifications
+      try {
+        const { PushNotifications } = await import("@capacitor/push-notifications");
+        
+        setGlobal({ isSupported: true });
+
+        const permStatus = await PushNotifications.checkPermissions();
+        setGlobal({ permission: permStatus.receive === "granted" ? "granted" : "default" });
+
+        await PushNotifications.removeAllListeners();
+
+        PushNotifications.addListener("registration", (token) => {
+          console.log("Push registration success (fallback), token:", token.value);
+          setGlobal({ fcmToken: token.value, permission: "granted" });
+        });
+
+        PushNotifications.addListener("registrationError", (error) => {
+          console.error("Push registration error:", error);
+          setGlobal({ permission: "denied" });
+        });
+
+        PushNotifications.addListener("pushNotificationReceived", (notification) => {
+          console.log("Push notification received:", notification);
+        });
+
+        PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
+          console.log("Push notification action performed:", action);
+          const data = action.notification.data;
+          if (data?.route) {
+            window.location.href = data.route as string;
+          }
+        });
+      } catch (fallbackError) {
+        console.error("Fallback push also failed:", fallbackError);
+        const supported = "Notification" in window;
+        setGlobal({
+          isSupported: supported,
+          permission: supported ? (Notification.permission as Permission) : "default",
+        });
+      }
     }
   })();
 
@@ -188,17 +230,38 @@ export const usePushNotifications = () => {
     }
 
     try {
-      if (globalState.isNative && pushApi) {
-        const permResult = await pushApi.requestPermissions();
+      if (globalState.isNative) {
+        // Try Firebase Messaging first
+        try {
+          const { FirebaseMessaging } = await import("@capacitor-firebase/messaging");
+          
+          const permResult = await FirebaseMessaging.requestPermissions();
 
-        if (permResult.receive === "granted") {
-          await pushApi.register();
-          setGlobal({ permission: "granted" });
-          return true;
+          if (permResult.receive === "granted") {
+            const tokenResult = await FirebaseMessaging.getToken();
+            if (tokenResult?.token) {
+              setGlobal({ fcmToken: tokenResult.token, permission: "granted" });
+            }
+            return true;
+          }
+
+          setGlobal({ permission: "denied" });
+          return false;
+        } catch (e) {
+          // Fallback to standard push notifications
+          const { PushNotifications } = await import("@capacitor/push-notifications");
+          
+          const permResult = await PushNotifications.requestPermissions();
+
+          if (permResult.receive === "granted") {
+            await PushNotifications.register();
+            setGlobal({ permission: "granted" });
+            return true;
+          }
+
+          setGlobal({ permission: "denied" });
+          return false;
         }
-
-        setGlobal({ permission: "denied" });
-        return false;
       }
 
       // Web fallback
@@ -258,9 +321,17 @@ export const usePushNotifications = () => {
       await removeTokenFromDatabase(state.fcmToken);
     }
 
-    if (state.isNative && pushApi) {
+    if (state.isNative) {
       try {
-        await pushApi.unregister();
+        // Try Firebase first
+        try {
+          const { FirebaseMessaging } = await import("@capacitor-firebase/messaging");
+          await FirebaseMessaging.deleteToken();
+        } catch (e) {
+          // Fallback
+          const { PushNotifications } = await import("@capacitor/push-notifications");
+          await PushNotifications.unregister();
+        }
         setGlobal({ fcmToken: null });
       } catch (error) {
         console.error("Error unregistering push notifications:", error);
