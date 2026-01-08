@@ -43,7 +43,7 @@ const handleNotificationNavigation = (data: Record<string, unknown> | undefined)
 
   // If reservation_id is provided, navigate to the reservation chat
   if (data.reservation_id && typeof data.reservation_id === "string") {
-    window.location.href = `/reservation/${data.reservation_id}/chat`;
+    window.location.href = `/reservation-chat/${data.reservation_id}`;
     return;
   }
 
