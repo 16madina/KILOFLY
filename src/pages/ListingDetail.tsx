@@ -826,7 +826,7 @@ const ListingDetail = () => {
               <AlertDescription className="text-sm">
                 <span className="font-medium">Rappel :</span> Consultez les{" "}
                 <Link
-                  to="/prohibited-items"
+                  to="/settings/airport-regulations"
                   className="text-primary hover:underline inline-flex items-center gap-1 font-medium"
                 >
                   règlements aéroportuaires
@@ -1060,7 +1060,7 @@ const ListingDetail = () => {
                   <Label htmlFor="regulations" className="text-sm leading-relaxed cursor-pointer">
                     J'accepte les{" "}
                     <Link
-                      to="/prohibited-items"
+                      to="/settings/airport-regulations"
                       className="text-primary hover:underline font-medium"
                       onClick={(e) => e.stopPropagation()}
                     >
