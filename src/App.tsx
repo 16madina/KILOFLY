@@ -22,6 +22,7 @@ import AdminVerification from "./pages/AdminVerification";
 import AdminAIAnalytics from "./pages/AdminAIAnalytics";
 import NotFound from "./pages/NotFound";
 import ProhibitedItems from "./pages/ProhibitedItems";
+import AirportRegulations from "./pages/AirportRegulations";
 import AdminReports from "./pages/AdminReports";
 import Settings from "./pages/Settings";
 import MyListings from "./pages/MyListings";
@@ -137,6 +138,7 @@ const AnimatedRoutes = () => {
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/prohibited-items" element={<ProhibitedItems />} />
+                  <Route path="/settings/airport-regulations" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><AirportRegulations /></motion.div>} />
                   <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/admin/email" element={<AdminEmail />} />
                   <Route path="/admin/users" element={<AdminUsers />} />
