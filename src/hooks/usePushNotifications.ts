@@ -25,6 +25,45 @@ const mapReceiveToPermission = (receive: unknown): Permission => {
   return "default";
 };
 
+// Handle navigation based on notification data
+const handleNotificationNavigation = (data: Record<string, unknown> | undefined) => {
+  if (!data) return;
+
+  // If explicit route is provided, use it
+  if (data.route && typeof data.route === "string") {
+    window.location.href = data.route;
+    return;
+  }
+
+  // If conversation_id is provided, navigate to that conversation
+  if (data.conversation_id && typeof data.conversation_id === "string") {
+    window.location.href = `/conversation/${data.conversation_id}`;
+    return;
+  }
+
+  // If reservation_id is provided, navigate to the reservation chat
+  if (data.reservation_id && typeof data.reservation_id === "string") {
+    window.location.href = `/reservation/${data.reservation_id}/chat`;
+    return;
+  }
+
+  // If transport_request_id is provided, navigate to transport requests
+  if (data.transport_request_id && typeof data.transport_request_id === "string") {
+    window.location.href = `/my-transport-requests`;
+    return;
+  }
+
+  // Default fallback based on notification type
+  const type = data.type as string | undefined;
+  if (type === "message" || type === "new_message") {
+    window.location.href = "/messages";
+  } else if (type === "reservation" || type === "reservation_status") {
+    window.location.href = "/profile?tab=rdv";
+  } else if (type === "transport_offer" || type === "offer_accepted" || type === "offer_rejected") {
+    window.location.href = "/my-transport-requests";
+  }
+};
+
 const isUnimplementedPluginError = (e: unknown) => {
   const anyErr = e as any;
   const code = anyErr?.code;
@@ -112,9 +151,7 @@ const initOnce = () => {
         (event: { notification?: { data?: Record<string, unknown> } }) => {
           console.log("Push notification action performed:", event);
           const data = event.notification?.data;
-          if (data?.route && typeof data.route === "string") {
-            window.location.href = data.route;
-          }
+          handleNotificationNavigation(data);
         }
       );
 
@@ -173,9 +210,7 @@ const initOnce = () => {
         PushNotifications.addListener("pushNotificationActionPerformed", (action: any) => {
           console.log("Push notification action performed:", action);
           const data = action?.notification?.data;
-          if (data?.route) {
-            window.location.href = data.route as string;
-          }
+          handleNotificationNavigation(data);
         });
 
         // If the user already granted permission earlier, register now to get a token.

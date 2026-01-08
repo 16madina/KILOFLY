@@ -560,33 +560,63 @@ export type Database = {
       }
       notifications: {
         Row: {
+          conversation_id: string | null
           created_at: string
           id: string
           message: string
           read: boolean
+          reservation_id: string | null
           title: string
+          transport_request_id: string | null
           type: string
           user_id: string
         }
         Insert: {
+          conversation_id?: string | null
           created_at?: string
           id?: string
           message: string
           read?: boolean
+          reservation_id?: string | null
           title: string
+          transport_request_id?: string | null
           type: string
           user_id: string
         }
         Update: {
+          conversation_id?: string | null
           created_at?: string
           id?: string
           message?: string
           read?: boolean
+          reservation_id?: string | null
           title?: string
+          transport_request_id?: string | null
           type?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_transport_request_id_fkey"
+            columns: ["transport_request_id"]
+            isOneToOne: false
+            referencedRelation: "transport_requests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
@@ -1709,15 +1739,28 @@ export type Database = {
         }
         Returns: boolean
       }
-      send_notification: {
-        Args: {
-          p_message: string
-          p_title: string
-          p_type: string
-          p_user_id: string
-        }
-        Returns: string
-      }
+      send_notification:
+        | {
+            Args: {
+              p_message: string
+              p_title: string
+              p_type: string
+              p_user_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_conversation_id?: string
+              p_message: string
+              p_reservation_id?: string
+              p_title: string
+              p_transport_request_id?: string
+              p_type: string
+              p_user_id: string
+            }
+            Returns: string
+          }
       upsert_push_token: {
         Args: { p_platform: string; p_token: string; p_user_id: string }
         Returns: undefined
