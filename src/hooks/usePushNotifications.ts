@@ -4,6 +4,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Platform = "android" | "ios" | "web";
+
+// Debug logging for notification events
+const logNotificationDebug = (type: "received" | "actionPerformed", data: Record<string, unknown>) => {
+  try {
+    const STORAGE_KEY = "debug_notification_events";
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const events = stored ? JSON.parse(stored) : [];
+    events.unshift({ type, timestamp: new Date().toISOString(), data });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(events.slice(0, 20)));
+  } catch {
+    // Ignore storage errors
+  }
+};
 // iOS may return "prompt" before the system dialog is shown.
 type Permission = "granted" | "denied" | "default" | "prompt";
 
@@ -144,6 +157,7 @@ const initOnce = () => {
 
       FirebaseMessaging.addListener("notificationReceived", (event: { notification: any }) => {
         console.log("Push notification received:", event.notification);
+        logNotificationDebug("received", event.notification || {});
       });
 
       FirebaseMessaging.addListener(
@@ -151,6 +165,7 @@ const initOnce = () => {
         (event: { notification?: { data?: Record<string, unknown> } }) => {
           console.log("Push notification action performed:", event);
           const data = event.notification?.data;
+          logNotificationDebug("actionPerformed", { notification: event.notification, extractedData: data });
           handleNotificationNavigation(data);
         }
       );
@@ -205,11 +220,13 @@ const initOnce = () => {
 
         PushNotifications.addListener("pushNotificationReceived", (notification: any) => {
           console.log("Push notification received:", notification);
+          logNotificationDebug("received", notification || {});
         });
 
         PushNotifications.addListener("pushNotificationActionPerformed", (action: any) => {
           console.log("Push notification action performed:", action);
           const data = action?.notification?.data;
+          logNotificationDebug("actionPerformed", { action, extractedData: data });
           handleNotificationNavigation(data);
         });
 
