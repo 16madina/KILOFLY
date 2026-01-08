@@ -19,6 +19,9 @@ const config: CapacitorConfig = {
       style: 'dark',
       resizeOnFullScreen: true,
     },
+    PushNotifications: {
+      presentationOptions: ['alert', 'badge', 'sound'],
+    },
   },
   // ============================================
   // DEEP LINKS & UNIVERSAL LINKS CONFIGURATION
