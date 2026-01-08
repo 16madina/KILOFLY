@@ -44,7 +44,32 @@ serve(async (req: Request): Promise<Response> => {
 
     const { email, password, fullName, phone, country, city, userType, avatarUrl }: SignupRequest = await req.json();
 
-    console.log(`Creating user account for: ${email}`);
+    console.log(`Creating user account for: ${email}, country: ${country}`);
+
+    // Map country codes to their local currencies
+    const countryCurrencyMap: Record<string, string> = {
+      // Europe
+      FR: 'EUR', BE: 'EUR', DE: 'EUR', ES: 'EUR', IT: 'EUR', PT: 'EUR', NL: 'EUR', AT: 'EUR', IE: 'EUR', GR: 'EUR', FI: 'EUR',
+      GB: 'GBP',
+      CH: 'CHF',
+      // North America
+      US: 'USD',
+      CA: 'CAD',
+      // West Africa (UEMOA - XOF)
+      SN: 'XOF', CI: 'XOF', ML: 'XOF', BF: 'XOF', NE: 'XOF', TG: 'XOF', BJ: 'XOF',
+      // Central Africa (CEMAC - XAF)
+      CM: 'XAF', GA: 'XAF', CG: 'XAF',
+      // Other Africa
+      GN: 'GNF',
+      MA: 'MAD',
+      NG: 'NGN',
+      CD: 'CDF',
+      DZ: 'DZD',
+    };
+
+    // Determine preferred currency based on country
+    const preferredCurrency = country ? (countryCurrencyMap[country] || 'EUR') : 'EUR';
+    console.log(`Preferred currency for ${country}: ${preferredCurrency}`);
 
     // Generate signup confirmation link with redirect
     const redirectTo = "https://kiloflyapp.com/email-confirmed";
@@ -63,6 +88,7 @@ serve(async (req: Request): Promise<Response> => {
           user_type: userType || "traveler",
           avatar_url: avatarUrl || "",
           terms_accepted: true,
+          preferred_currency: preferredCurrency,
         },
       },
     });
