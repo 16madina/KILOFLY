@@ -205,11 +205,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
           <BrowserRouter>
             <AuthProvider>
               <AppContent />
+              <Toaster />
+              <Sonner />
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
