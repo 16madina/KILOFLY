@@ -43,6 +43,7 @@ import {
   HandHeart,
   PackageCheck
 } from "lucide-react";
+import { formatPrice, Currency } from "@/lib/currency";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -102,6 +103,7 @@ interface Listing {
   arrival_date: string;
   available_kg: number;
   price_per_kg: number;
+  currency: Currency;
   destination_image: string | null;
   allowed_items: string[];
   prohibited_items: string[];
@@ -612,7 +614,7 @@ const ListingDetail = () => {
             <div>
               <p className="text-sm text-muted-foreground mb-1">Prix par kilogramme</p>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold tracking-tight">{listing.price_per_kg}€</span>
+                <span className="text-4xl font-bold tracking-tight">{formatPrice(listing.price_per_kg, listing.currency)}</span>
                 <span className="text-muted-foreground">/kg</span>
               </div>
             </div>
@@ -1027,13 +1029,13 @@ const ListingDetail = () => {
                 {/* Price Summary - Premium */}
                 <div className="bg-background/50 rounded-2xl p-4 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{requestedKg} kg × {listing.price_per_kg}€</span>
-                    <span>{totalPrice}€</span>
+                    <span className="text-muted-foreground">{requestedKg} kg × {formatPrice(listing.price_per_kg, listing.currency)}</span>
+                    <span>{formatPrice(totalPrice, listing.currency)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between items-center">
                     <span className="font-semibold">Total</span>
-                    <span className="text-2xl font-bold text-primary">{totalPrice}€</span>
+                    <span className="text-2xl font-bold text-primary">{formatPrice(totalPrice, listing.currency)}</span>
                   </div>
                 </div>
 
