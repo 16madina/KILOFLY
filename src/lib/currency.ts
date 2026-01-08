@@ -1,18 +1,32 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type Currency = 'EUR' | 'USD' | 'XOF';
+// Currencies available for posting listings
+export type ListingCurrency = 'EUR' | 'USD' | 'XOF';
+
+// All currencies including display-only currencies (for user preferences)
+export type Currency = 'EUR' | 'USD' | 'XOF' | 'CAD' | 'GBP';
 
 export const CURRENCY_SYMBOLS: Record<Currency, string> = {
   EUR: '€',
   USD: '$',
   XOF: 'CFA',
+  CAD: 'CA$',
+  GBP: '£',
 };
 
 export const CURRENCY_NAMES: Record<Currency, string> = {
   EUR: 'Euro',
   USD: 'US Dollar',
   XOF: 'Franc CFA',
+  CAD: 'Dollar canadien',
+  GBP: 'Livre sterling',
 };
+
+// Currencies users can post listings in
+export const LISTING_CURRENCIES: ListingCurrency[] = ['EUR', 'USD', 'XOF'];
+
+// All currencies users can set as their preferred display currency
+export const DISPLAY_CURRENCIES: Currency[] = ['EUR', 'USD', 'XOF', 'CAD', 'GBP'];
 
 // Cache for exchange rates
 let exchangeRatesCache: Map<string, { rate: number; timestamp: number }> = new Map();
@@ -62,10 +76,24 @@ export async function getExchangeRate(
     const fallbackRates: Record<string, number> = {
       'EUR-USD': 1.08,
       'EUR-XOF': 656,
+      'EUR-CAD': 1.50,
+      'EUR-GBP': 0.84,
       'USD-EUR': 0.93,
       'USD-XOF': 607,
+      'USD-CAD': 1.39,
+      'USD-GBP': 0.78,
       'XOF-EUR': 0.0015,
       'XOF-USD': 0.0016,
+      'XOF-CAD': 0.0023,
+      'XOF-GBP': 0.0013,
+      'CAD-EUR': 0.67,
+      'CAD-USD': 0.72,
+      'CAD-XOF': 435,
+      'CAD-GBP': 0.56,
+      'GBP-EUR': 1.19,
+      'GBP-USD': 1.28,
+      'GBP-XOF': 781,
+      'GBP-CAD': 1.78,
     };
 
     return fallbackRates[cacheKey] || 1;

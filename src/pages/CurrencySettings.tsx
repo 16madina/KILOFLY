@@ -8,7 +8,7 @@ import { ArrowLeft, DollarSign } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Currency, CURRENCY_NAMES, CURRENCY_SYMBOLS } from "@/lib/currency";
+import { Currency, CURRENCY_NAMES, CURRENCY_SYMBOLS, DISPLAY_CURRENCIES } from "@/lib/currency";
 
 const CurrencySettings = () => {
   const navigate = useNavigate();
@@ -66,7 +66,7 @@ const CurrencySettings = () => {
     }
   };
 
-  const currencies: Currency[] = ["EUR", "USD", "XOF"];
+  const currencies = DISPLAY_CURRENCIES;
 
   return (
     <div className="min-h-screen bg-background pb-32 mb-safe">
