@@ -33,23 +33,36 @@ serve(async (req) => {
 
     const data: ExchangeRateResponse = await response.json();
     
-    // Extract rates for our supported currencies (including display-only currencies)
-    const eurToUsd = data.rates.USD || 1.08;
-    const eurToXof = data.rates.XOF || 656;
-    const eurToCad = data.rates.CAD || 1.50;
-    const eurToGbp = data.rates.GBP || 0.84;
+    // All currencies we support (listing + display currencies)
+    const currencies = ['EUR', 'USD', 'XOF', 'CAD', 'GBP', 'GNF', 'MAD', 'NGN', 'XAF', 'CDF', 'DZD', 'CHF'];
+    
+    // Build EUR rates map from API response
+    const eurRates: Record<string, number> = { EUR: 1 };
+    for (const currency of currencies) {
+      if (currency !== 'EUR') {
+        eurRates[currency] = data.rates[currency] || getFallbackRate(currency);
+      }
+    }
 
-    console.log('Exchange rates fetched:', { eurToUsd, eurToXof, eurToCad, eurToGbp });
+    console.log('Exchange rates fetched:', eurRates);
 
-    // All currencies we support
-    const currencies = ['EUR', 'USD', 'XOF', 'CAD', 'GBP'];
-    const eurRates: Record<string, number> = {
-      EUR: 1,
-      USD: eurToUsd,
-      XOF: eurToXof,
-      CAD: eurToCad,
-      GBP: eurToGbp,
-    };
+    // Fallback rates if API doesn't have the currency
+    function getFallbackRate(currency: string): number {
+      const fallbacks: Record<string, number> = {
+        USD: 1.08,
+        XOF: 656,
+        CAD: 1.50,
+        GBP: 0.84,
+        GNF: 9200,
+        MAD: 10.8,
+        NGN: 1650,
+        XAF: 656,
+        CDF: 2800,
+        DZD: 145,
+        CHF: 0.94,
+      };
+      return fallbacks[currency] || 1;
+    }
 
     // Calculate all conversion pairs
     const rates: { base_currency: string; target_currency: string; rate: number }[] = [];
