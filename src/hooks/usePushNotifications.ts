@@ -42,38 +42,53 @@ const mapReceiveToPermission = (receive: unknown): Permission => {
 const handleNotificationNavigation = (data: Record<string, unknown> | undefined) => {
   if (!data) return;
 
+  const navigateTo = (path: string) => {
+    try {
+      const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      if (current === path) return;
+
+      // Prefer SPA navigation (no full reload). Works even during cold-start:
+      // - if Router is already mounted, it will react to popstate
+      // - if Router isn't mounted yet, it will mount on the updated URL
+      window.history.replaceState({}, "", path);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    } catch {
+      window.location.href = path;
+    }
+  };
+
   // If explicit route is provided, use it
-  if (data.route && typeof data.route === "string") {
-    window.location.href = data.route;
+  if (typeof data.route === "string" && data.route.length > 0) {
+    navigateTo(data.route);
     return;
   }
 
   // If conversation_id is provided, navigate to that conversation
-  if (data.conversation_id && typeof data.conversation_id === "string") {
-    window.location.href = `/conversation/${data.conversation_id}`;
+  if (typeof data.conversation_id === "string" && data.conversation_id.length > 0) {
+    navigateTo(`/conversation/${data.conversation_id}`);
     return;
   }
 
   // If reservation_id is provided, navigate to the reservation chat
-  if (data.reservation_id && typeof data.reservation_id === "string") {
-    window.location.href = `/reservation-chat/${data.reservation_id}`;
+  if (typeof data.reservation_id === "string" && data.reservation_id.length > 0) {
+    navigateTo(`/reservation-chat/${data.reservation_id}`);
     return;
   }
 
   // If transport_request_id is provided, navigate to transport requests
-  if (data.transport_request_id && typeof data.transport_request_id === "string") {
-    window.location.href = `/my-transport-requests`;
+  if (typeof data.transport_request_id === "string" && data.transport_request_id.length > 0) {
+    navigateTo(`/my-transport-requests`);
     return;
   }
 
   // Default fallback based on notification type
   const type = data.type as string | undefined;
   if (type === "message" || type === "new_message") {
-    window.location.href = "/messages";
+    navigateTo("/messages");
   } else if (type === "reservation" || type === "reservation_status") {
-    window.location.href = "/profile?tab=rdv";
+    navigateTo("/profile?tab=rdv");
   } else if (type === "transport_offer" || type === "offer_accepted" || type === "offer_rejected") {
-    window.location.href = "/my-transport-requests";
+    navigateTo("/my-transport-requests");
   }
 };
 
@@ -251,6 +266,12 @@ const initOnce = () => {
 
   return initPromise;
 };
+
+// Kick initialization as early as possible (module load) so iOS cold-start taps
+// are not missed before React effects run.
+if (typeof window !== "undefined") {
+  void initOnce();
+}
 
 export const usePushNotifications = () => {
   const { user } = useAuth();
