@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 export type ListingCurrency = 'EUR' | 'USD' | 'XOF';
 
 // All currencies including display-only currencies (for user preferences)
-export type Currency = 'EUR' | 'USD' | 'XOF' | 'CAD' | 'GBP';
+export type Currency = 'EUR' | 'USD' | 'XOF' | 'CAD' | 'GBP' | 'GNF' | 'MAD' | 'NGN' | 'XAF' | 'CDF' | 'DZD' | 'CHF';
 
 export const CURRENCY_SYMBOLS: Record<Currency, string> = {
   EUR: '€',
@@ -12,21 +12,56 @@ export const CURRENCY_SYMBOLS: Record<Currency, string> = {
   XOF: 'CFA',
   CAD: 'CA$',
   GBP: '£',
+  GNF: 'GNF',
+  MAD: 'DH',
+  NGN: '₦',
+  XAF: 'FCFA',
+  CDF: 'FC',
+  DZD: 'DA',
+  CHF: 'CHF',
 };
 
 export const CURRENCY_NAMES: Record<Currency, string> = {
   EUR: 'Euro',
   USD: 'US Dollar',
-  XOF: 'Franc CFA',
+  XOF: 'Franc CFA (UEMOA)',
   CAD: 'Dollar canadien',
   GBP: 'Livre sterling',
+  GNF: 'Franc guinéen',
+  MAD: 'Dirham marocain',
+  NGN: 'Naira nigérian',
+  XAF: 'Franc CFA (CEMAC)',
+  CDF: 'Franc congolais',
+  DZD: 'Dinar algérien',
+  CHF: 'Franc suisse',
 };
 
 // Currencies users can post listings in
 export const LISTING_CURRENCIES: ListingCurrency[] = ['EUR', 'USD', 'XOF'];
 
 // All currencies users can set as their preferred display currency
-export const DISPLAY_CURRENCIES: Currency[] = ['EUR', 'USD', 'XOF', 'CAD', 'GBP'];
+export const DISPLAY_CURRENCIES: Currency[] = ['EUR', 'USD', 'XOF', 'CAD', 'GBP', 'GNF', 'MAD', 'NGN', 'XAF', 'CDF', 'DZD', 'CHF'];
+
+// Map country codes to their local currencies
+export const COUNTRY_CURRENCY_MAP: Record<string, Currency> = {
+  // Europe
+  FR: 'EUR', BE: 'EUR', DE: 'EUR', ES: 'EUR', IT: 'EUR', PT: 'EUR', NL: 'EUR', AT: 'EUR', IE: 'EUR', GR: 'EUR', FI: 'EUR',
+  GB: 'GBP',
+  CH: 'CHF',
+  // North America
+  US: 'USD',
+  CA: 'CAD',
+  // West Africa (UEMOA - XOF)
+  SN: 'XOF', CI: 'XOF', ML: 'XOF', BF: 'XOF', NE: 'XOF', TG: 'XOF', BJ: 'XOF',
+  // Central Africa (CEMAC - XAF)
+  CM: 'XAF', GA: 'XAF', CG: 'XAF',
+  // Other Africa
+  GN: 'GNF',
+  MA: 'MAD',
+  NG: 'NGN',
+  CD: 'CDF',
+  DZ: 'DZD',
+};
 
 // Cache for exchange rates
 let exchangeRatesCache: Map<string, { rate: number; timestamp: number }> = new Map();
@@ -73,30 +108,31 @@ export async function getExchangeRate(
     console.error('Error fetching exchange rate:', error);
     
     // Fallback to approximate rates
-    const fallbackRates: Record<string, number> = {
-      'EUR-USD': 1.08,
-      'EUR-XOF': 656,
-      'EUR-CAD': 1.50,
-      'EUR-GBP': 0.84,
-      'USD-EUR': 0.93,
-      'USD-XOF': 607,
-      'USD-CAD': 1.39,
-      'USD-GBP': 0.78,
-      'XOF-EUR': 0.0015,
-      'XOF-USD': 0.0016,
-      'XOF-CAD': 0.0023,
-      'XOF-GBP': 0.0013,
-      'CAD-EUR': 0.67,
-      'CAD-USD': 0.72,
-      'CAD-XOF': 435,
-      'CAD-GBP': 0.56,
-      'GBP-EUR': 1.19,
-      'GBP-USD': 1.28,
-      'GBP-XOF': 781,
-      'GBP-CAD': 1.78,
+    // EUR-based fallback rates
+    const eurRates: Record<string, number> = {
+      EUR: 1,
+      USD: 1.08,
+      XOF: 656,
+      CAD: 1.50,
+      GBP: 0.84,
+      GNF: 9200,
+      MAD: 10.8,
+      NGN: 1650,
+      XAF: 656,
+      CDF: 2800,
+      DZD: 145,
+      CHF: 0.94,
     };
 
-    return fallbackRates[cacheKey] || 1;
+    // Calculate conversion using EUR as pivot
+    const [base, target] = cacheKey.split('-') as [Currency, Currency];
+    if (eurRates[base] && eurRates[target]) {
+      const baseToEur = 1 / eurRates[base];
+      const eurToTarget = eurRates[target];
+      return baseToEur * eurToTarget;
+    }
+
+    return 1;
   }
 }
 
@@ -131,8 +167,8 @@ export function formatPrice(
 
   if (!showSymbol) return formattedAmount;
 
-  // XOF doesn't use decimals traditionally
-  if (currency === 'XOF') {
+  // African currencies don't use decimals traditionally
+  if (['XOF', 'XAF', 'GNF', 'NGN', 'CDF', 'DZD'].includes(currency)) {
     const roundedAmount = Math.round(amount).toLocaleString('fr-FR');
     return `${roundedAmount} ${CURRENCY_SYMBOLS[currency]}`;
   }
