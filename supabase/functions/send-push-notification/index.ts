@@ -186,6 +186,15 @@ Deno.serve(async (req) => {
     const results = await Promise.all(
       tokens.map(async ({ token, platform }) => {
         try {
+          // Ensure all data values are strings (FCM requirement)
+          const stringData: Record<string, string> = {};
+          if (data) {
+            for (const [key, value] of Object.entries(data)) {
+              stringData[key] = String(value ?? "");
+            }
+          }
+          stringData.click_action = "FLUTTER_NOTIFICATION_CLICK";
+
           // FCM HTTP v1 API message format
           const message: any = {
             message: {
@@ -194,10 +203,7 @@ Deno.serve(async (req) => {
                 title,
                 body,
               },
-              data: {
-                ...data,
-                click_action: "FLUTTER_NOTIFICATION_CLICK",
-              },
+              data: stringData,
             },
           };
 
@@ -219,6 +225,8 @@ Deno.serve(async (req) => {
                   "mutable-content": 1,
                   "content-available": 1,
                 },
+                // Include custom data in APNs payload for iOS
+                ...stringData,
               },
             };
           } else {
