@@ -44,6 +44,7 @@ import {
   PackageCheck
 } from "lucide-react";
 import { formatPrice, Currency } from "@/lib/currency";
+import { PriceDisplay } from "@/components/PriceDisplay";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -614,7 +615,12 @@ const ListingDetail = () => {
             <div>
               <p className="text-sm text-muted-foreground mb-1">Prix par kilogramme</p>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold tracking-tight">{formatPrice(listing.price_per_kg, listing.currency)}</span>
+                <PriceDisplay 
+                  amount={listing.price_per_kg} 
+                  currency={listing.currency} 
+                  className="text-4xl font-bold tracking-tight"
+                  conversionClassName="text-sm text-muted-foreground"
+                />
                 <span className="text-muted-foreground">/kg</span>
               </div>
             </div>
@@ -1035,7 +1041,12 @@ const ListingDetail = () => {
                   <Separator />
                   <div className="flex justify-between items-center">
                     <span className="font-semibold">Total</span>
-                    <span className="text-2xl font-bold text-primary">{formatPrice(totalPrice, listing.currency)}</span>
+                    <PriceDisplay 
+                      amount={totalPrice} 
+                      currency={listing.currency} 
+                      className="text-2xl font-bold text-primary"
+                      conversionClassName="text-sm text-muted-foreground"
+                    />
                   </div>
                 </div>
 
