@@ -33,24 +33,41 @@ serve(async (req) => {
 
     const data: ExchangeRateResponse = await response.json();
     
-    // Extract rates for our supported currencies
+    // Extract rates for our supported currencies (including display-only currencies)
     const eurToUsd = data.rates.USD || 1.08;
     const eurToXof = data.rates.XOF || 656;
+    const eurToCad = data.rates.CAD || 1.50;
+    const eurToGbp = data.rates.GBP || 0.84;
 
-    console.log('Exchange rates fetched:', { eurToUsd, eurToXof });
+    console.log('Exchange rates fetched:', { eurToUsd, eurToXof, eurToCad, eurToGbp });
+
+    // All currencies we support
+    const currencies = ['EUR', 'USD', 'XOF', 'CAD', 'GBP'];
+    const eurRates: Record<string, number> = {
+      EUR: 1,
+      USD: eurToUsd,
+      XOF: eurToXof,
+      CAD: eurToCad,
+      GBP: eurToGbp,
+    };
 
     // Calculate all conversion pairs
-    const rates = [
-      { base_currency: 'EUR', target_currency: 'USD', rate: eurToUsd },
-      { base_currency: 'EUR', target_currency: 'XOF', rate: eurToXof },
-      { base_currency: 'USD', target_currency: 'EUR', rate: 1 / eurToUsd },
-      { base_currency: 'USD', target_currency: 'XOF', rate: eurToXof / eurToUsd },
-      { base_currency: 'XOF', target_currency: 'EUR', rate: 1 / eurToXof },
-      { base_currency: 'XOF', target_currency: 'USD', rate: eurToUsd / eurToXof },
-      { base_currency: 'EUR', target_currency: 'EUR', rate: 1 },
-      { base_currency: 'USD', target_currency: 'USD', rate: 1 },
-      { base_currency: 'XOF', target_currency: 'XOF', rate: 1 },
-    ];
+    const rates: { base_currency: string; target_currency: string; rate: number }[] = [];
+    
+    for (const base of currencies) {
+      for (const target of currencies) {
+        // Convert via EUR as pivot
+        const baseToEur = 1 / eurRates[base];
+        const eurToTarget = eurRates[target];
+        const rate = baseToEur * eurToTarget;
+        
+        rates.push({
+          base_currency: base,
+          target_currency: target,
+          rate: rate,
+        });
+      }
+    }
 
     // Update exchange rates in database
     for (const rate of rates) {
