@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "389513482442",
+    "project_id": "kilofly-33d0c",
+    "storage_bucket": "kilofly-33d0c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:389513482442:android:9fb96b2194ed03b6a0e433",
+        "android_client_info": {
+          "package_name": "com.kilofly.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMMcxeNIm-qZ0rEH-mZlQpP041bAsPbr4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
