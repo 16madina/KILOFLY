@@ -59,6 +59,7 @@ import NotificationSettings from "./pages/NotificationSettings";
 import StorageSettings from "./pages/StorageSettings";
 import HelpSettings from "./pages/HelpSettings";
 import DebugNotifications from "./pages/DebugNotifications";
+import Download from "./pages/Download";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -169,6 +170,7 @@ const AnimatedRoutes = () => {
           <Route path="/email-confirmed" element={<EmailConfirmed />} />
           <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/faq" element={<FAQ />} />
+                  <Route path="/download" element={<Download />} />
                   <Route path="/debug-notifications" element={<DebugNotifications />} />
                   <Route path="/payment" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><Payment /></motion.div>} />
                   <Route path="/payment-success" element={<motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}><PaymentSuccess /></motion.div>} />
