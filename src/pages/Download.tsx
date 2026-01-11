@@ -9,8 +9,8 @@ const Download = () => {
   const [platform, setPlatform] = useState<Platform>("desktop");
 
   // Liens des stores (à remplacer par les vrais liens)
-  const APP_STORE_URL = "https://apps.apple.com/app/kilofly/id123456789";
-  const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.kilofly.app";
+  const APP_STORE_URL = "https://apps.apple.com/us/app/kilofly-app/id6757349482";
+  const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=app.lovable.2b7a5f775ecc4622bc5b450979c265cc";
 
   useEffect(() => {
     const userAgent = navigator.userAgent || navigator.vendor;
