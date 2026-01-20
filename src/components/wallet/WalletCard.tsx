@@ -51,7 +51,7 @@ export default function WalletCard() {
     setIsProcessing(true);
     try {
       await requestWithdrawal(amount, phoneNumber, payoutMethod);
-      toast.success('Demande de retrait envoyée !');
+      toast.success('Demande de retrait envoyée ! Délai de traitement : 1 à 3 heures.');
       setShowWithdrawForm(false);
       setWithdrawAmount('');
       setPhoneNumber('');
@@ -232,6 +232,13 @@ export default function WalletCard() {
                       Tout retirer
                     </button>
                   </div>
+                </div>
+
+                {/* Info about processing time */}
+                <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                  <p className="text-sm text-primary">
+                    ⏱️ Délai de traitement : <strong>1 à 3 heures</strong>. Vous recevrez une notification une fois le transfert effectué.
+                  </p>
                 </div>
 
                 <div className="flex gap-2 pt-2">

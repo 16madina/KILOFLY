@@ -105,13 +105,33 @@ serve(async (req) => {
       .eq('id', userId)
       .single();
 
+    const userName = profile?.full_name || 'Un utilisateur';
+
     // Send notification to user
     await supabase.rpc('send_notification', {
       p_user_id: userId,
       p_title: '💸 Demande de retrait reçue',
-      p_message: `Votre demande de retrait de ${amount} XOF vers ${payoutMethod === 'wave' ? 'Wave' : 'Orange Money'} (${phoneNumber}) est en cours de traitement.`,
+      p_message: `Votre demande de retrait de ${amount} XOF vers ${payoutMethod === 'wave' ? 'Wave' : 'Orange Money'} (${phoneNumber}) a été enregistrée. Délai de traitement : 1 à 3 heures.`,
       p_type: 'info'
     });
+
+    // Send notification to all admins
+    const { data: admins } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'admin');
+
+    if (admins && admins.length > 0) {
+      for (const admin of admins) {
+        await supabase.rpc('send_notification', {
+          p_user_id: admin.user_id,
+          p_title: '🔔 Nouvelle demande de retrait',
+          p_message: `${userName} demande un retrait de ${amount} XOF vers ${payoutMethod === 'wave' ? 'Wave' : 'Orange Money'} (${phoneNumber}). Réf: ${reference}`,
+          p_type: 'info'
+        });
+      }
+      console.log(`Notified ${admins.length} admin(s) about withdrawal request`);
+    }
 
     console.log('Withdrawal request created successfully:', {
       transactionId: transaction.id,
