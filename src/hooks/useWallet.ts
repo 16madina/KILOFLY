@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNativeBanner } from '@/components/mobile/NativeBanner';
 
 interface Wallet {
   id: string;
@@ -27,10 +28,12 @@ interface WalletTransaction {
 
 export function useWallet() {
   const { user } = useAuth();
+  const banner = useNativeBanner();
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const previousBalanceRef = useRef<number | null>(null);
 
   const fetchWallet = async () => {
     if (!user) {
@@ -61,6 +64,7 @@ export function useWallet() {
       }
 
       setWallet(walletData);
+      previousBalanceRef.current = walletData.balance;
 
       // Fetch transactions
       if (walletData) {
@@ -103,7 +107,21 @@ export function useWallet() {
         (payload) => {
           console.log('Wallet update:', payload);
           if (payload.new) {
-            setWallet(payload.new as Wallet);
+            const newWallet = payload.new as Wallet;
+            const oldBalance = previousBalanceRef.current;
+            
+            // Show notification if balance changed
+            if (oldBalance !== null && oldBalance !== newWallet.balance) {
+              const diff = newWallet.balance - oldBalance;
+              if (diff > 0) {
+                banner.success(`+${diff.toLocaleString('fr-FR')} ${newWallet.currency} crédités sur votre portefeuille`);
+              } else {
+                banner.info(`${diff.toLocaleString('fr-FR')} ${newWallet.currency} débités de votre portefeuille`);
+              }
+            }
+            
+            previousBalanceRef.current = newWallet.balance;
+            setWallet(newWallet);
           }
         }
       )
