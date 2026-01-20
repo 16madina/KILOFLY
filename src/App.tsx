@@ -55,6 +55,7 @@ import MyRewards from "./pages/MyRewards";
 import Wallet from "./pages/Wallet";
 import ReservationChatPage from "./pages/ReservationChatPage";
 import AdminWavePayments from "./pages/AdminWavePayments";
+import AdminWithdrawals from "./pages/AdminWithdrawals";
 import NotificationSettings from "./pages/NotificationSettings";
 import StorageSettings from "./pages/StorageSettings";
 import HelpSettings from "./pages/HelpSettings";
@@ -148,6 +149,7 @@ const AnimatedRoutes = () => {
                   <Route path="/admin/ai-analytics" element={<AdminAIAnalytics />} />
                   <Route path="/admin/reports" element={<AdminReports />} />
                   <Route path="/admin/wave-payments" element={<AdminWavePayments />} />
+                  <Route path="/admin/withdrawals" element={<AdminWithdrawals />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/my-listings" element={<MyListings />} />
                   <Route path="/my-transactions" element={<MyTransactions />} />

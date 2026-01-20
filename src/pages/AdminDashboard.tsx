@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Package, Receipt, ShieldCheck, AlertTriangle, TrendingUp, Mail, Ban, UserX, Bot, LayoutDashboard, BarChart3 } from "lucide-react";
+import { Users, Package, Receipt, ShieldCheck, AlertTriangle, TrendingUp, Mail, Ban, UserX, Bot, LayoutDashboard, BarChart3, Wallet, ArrowUpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Button } from "@/components/ui/button";
@@ -460,6 +460,22 @@ const AdminDashboard = () => {
                   <CardContent>
                     <p className="text-sm text-muted-foreground">
                       Envoyer des emails avec Resend
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link to="/admin/withdrawals">
+                <Card className="hover:bg-muted/50 transition-all hover:shadow-md cursor-pointer h-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <ArrowUpCircle className="h-5 w-5 text-green-600" />
+                      Demandes de Retrait
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      Gérer les retraits vendeurs (Wave, Orange Money)
                     </p>
                   </CardContent>
                 </Card>
