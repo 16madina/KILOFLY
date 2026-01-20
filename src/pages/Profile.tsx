@@ -16,6 +16,7 @@ import { MyCancelledReservationsEmbed } from "@/components/profile/MyCancelledRe
 import { MyTransactionsEmbed } from "@/components/profile/MyTransactionsEmbed";
 import WalletCard from "@/components/wallet/WalletCard";
 import { TrustScore } from "@/components/TrustScore";
+import { useWallet } from "@/hooks/useWallet";
 import { 
   ChevronLeft,
   ChevronRight,
@@ -233,6 +234,7 @@ const UnauthenticatedCTA = ({ onNavigateToAuth }: { onNavigateToAuth: () => void
 const Profile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { wallet } = useWallet();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<Stats>({
@@ -587,6 +589,15 @@ const Profile = () => {
 
           {/* Verification Badges */}
           <div className="flex flex-wrap gap-2 justify-center mt-4 pt-4 border-t border-border/50">
+            {/* Wallet Badge - Clickable */}
+            <button 
+              onClick={() => navigate('/wallet')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+            >
+              <Wallet className="h-3.5 w-3.5" />
+              <span>{wallet?.balance?.toLocaleString('fr-FR') || 0} {wallet?.currency || 'XOF'}</span>
+            </button>
+            
             {user?.email_confirmed_at ? (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs">
                 <CheckCircle2 className="h-3.5 w-3.5" />
