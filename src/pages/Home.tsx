@@ -310,6 +310,25 @@ const Home = () => {
               </p>
             </div>
           </div>
+
+          {/* Detailed explanation */}
+          <div className="mt-6 max-w-2xl mx-auto bg-muted/50 rounded-xl p-4 sm:p-6 space-y-3">
+            <h4 className="font-semibold text-sm text-center mb-4">Comment ça marche exactement ?</h4>
+            <div className="space-y-2 text-xs sm:text-sm text-muted-foreground">
+              <p>
+                <span className="font-medium text-foreground">💰 Paiement sécurisé :</span> L'expéditeur paie au moment de la réservation. Les fonds sont conservés par KiloFly jusqu'à la confirmation de réception du colis.
+              </p>
+              <p>
+                <span className="font-medium text-foreground">📦 Remise du colis :</span> Avant le départ, l'expéditeur remet son colis au voyageur (en main propre ou via un point relais). Les deux parties signent électroniquement pour valider la prise en charge.
+              </p>
+              <p>
+                <span className="font-medium text-foreground">✈️ Transport :</span> Le voyageur transporte le colis dans ses bagages. À l'arrivée, il remet le colis au destinataire.
+              </p>
+              <p>
+                <span className="font-medium text-foreground">✅ Confirmation :</span> Une fois le colis reçu, le destinataire confirme la livraison. Le voyageur reçoit alors son paiement (moins 5% de commission).
+              </p>
+            </div>
+          </div>
         </section>
 
         {/* Currency Converter Button + Post Listing */}
