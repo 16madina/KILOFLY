@@ -144,7 +144,7 @@ export function useWallet() {
       throw new Error('Montant minimum: 500 XOF');
     }
 
-    const { data, error } = await supabase.functions.invoke('cinetpay-payout', {
+    const { data, error } = await supabase.functions.invoke('request-withdrawal', {
       body: {
         walletId: wallet.id,
         amount,
@@ -155,7 +155,7 @@ export function useWallet() {
     });
 
     if (error) throw error;
-    if (!data.success) throw new Error(data.error);
+    if (data && !data.success) throw new Error(data.error);
 
     // Refresh wallet data
     await fetchWallet();
