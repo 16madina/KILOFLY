@@ -63,6 +63,7 @@ import DebugNotifications from "./pages/DebugNotifications";
 import Download from "./pages/Download";
 import CookieConsent from "./components/CookieConsent";
 import MobileBottomNav from "./components/MobileBottomNav";
+import { NativeBannerProvider } from "./components/mobile/NativeBanner";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useExchangeRates } from "./hooks/useExchangeRates";
 import { useCurrencyWelcome } from "./hooks/useCurrencyWelcome";
@@ -213,9 +214,11 @@ function App() {
         <TooltipProvider>
           <BrowserRouter>
             <AuthProvider>
-              <AppContent />
-              <Toaster />
-              <Sonner />
+              <NativeBannerProvider>
+                <AppContent />
+                <Toaster />
+                <Sonner />
+              </NativeBannerProvider>
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
