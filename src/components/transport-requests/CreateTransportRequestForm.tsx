@@ -64,19 +64,38 @@ export const CreateTransportRequestForm = ({ onSuccess, onCancel }: CreateTransp
 
       setLoading(true);
 
-      const { error } = await supabase.from("transport_requests").insert({
-        user_id: user.id,
-        departure: validatedData.departure,
-        arrival: validatedData.arrival,
-        departure_date_start: validatedData.departureDateStart,
-        departure_date_end: validatedData.departureDateEnd || null,
-        requested_kg: validatedData.requestedKg,
-        budget_max: validatedData.budgetMax || null,
-        currency: formData.currency,
-        description: validatedData.description || null,
-      });
+      const { data: insertedRequest, error } = await supabase
+        .from("transport_requests")
+        .insert({
+          user_id: user.id,
+          departure: validatedData.departure,
+          arrival: validatedData.arrival,
+          departure_date_start: validatedData.departureDateStart,
+          departure_date_end: validatedData.departureDateEnd || null,
+          requested_kg: validatedData.requestedKg,
+          budget_max: validatedData.budgetMax || null,
+          currency: formData.currency,
+          description: validatedData.description || null,
+        })
+        .select("id")
+        .single();
 
       if (error) throw error;
+
+      // Send push notifications to all users
+      if (insertedRequest) {
+        supabase.functions.invoke("notify-new-transport-request", {
+          body: {
+            request_id: insertedRequest.id,
+            departure: validatedData.departure,
+            arrival: validatedData.arrival,
+            requested_kg: validatedData.requestedKg,
+            poster_user_id: user.id,
+          },
+        }).catch((err) => {
+          console.error("Error sending notifications:", err);
+        });
+      }
 
       toast.success("Votre demande a été publiée !");
       onSuccess?.();
