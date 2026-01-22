@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.request-withdrawal]
 verify_jwt = true
+
+[functions.notify-new-listing]
+verify_jwt = false

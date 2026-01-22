@@ -252,7 +252,7 @@ const PostListing = () => {
         }
       } else {
         // Create new listing
-        const { error } = await supabase.from("listings").insert({
+        const { data: newListing, error } = await supabase.from("listings").insert({
           user_id: user.id,
           departure: validatedData.departure,
           arrival: validatedData.arrival,
@@ -264,10 +264,25 @@ const PostListing = () => {
           description: validatedData.description || null,
           prohibited_items: validatedData.prohibited_items,
           delivery_option: deliveryOption,
-        });
+        }).select("id").single();
 
         if (error) throw error;
         toast.success("Annonce créée avec succès!");
+
+        // Send push notifications to all users about the new listing
+        if (newListing?.id) {
+          supabase.functions.invoke("notify-new-listing", {
+            body: {
+              listing_id: newListing.id,
+              departure: validatedData.departure,
+              arrival: validatedData.arrival,
+              available_kg: validatedData.available_kg,
+              poster_user_id: user.id,
+            },
+          }).catch((err) => {
+            console.error("Error sending new listing notifications:", err);
+          });
+        }
       }
 
       navigate("/my-listings");
