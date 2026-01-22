@@ -2,7 +2,7 @@ import AnimatedListingCard from "@/components/mobile/AnimatedListingCard";
 import Navbar from "@/components/Navbar";
 import { SkeletonShimmer } from "@/components/ui/skeleton-shimmer";
 import { Button } from "@/components/ui/button";
-import { Search, ShieldCheck, CreditCard, Package, Users, TrendingUp, Plus, Plane } from "lucide-react";
+import { Search, ShieldCheck, CreditCard, Package, Users, TrendingUp, Plus, Plane, HelpCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
@@ -309,25 +309,39 @@ const Home = () => {
                 Récupérez vos colis à destination en toute tranquillité
               </p>
             </div>
-          </div>
 
-          {/* Detailed explanation */}
-          <div className="mt-6 max-w-2xl mx-auto bg-muted/50 rounded-xl p-4 sm:p-6 space-y-3">
-            <h4 className="font-semibold text-sm text-center mb-4">Comment ça marche exactement ?</h4>
-            <div className="space-y-2 text-xs sm:text-sm text-muted-foreground">
-              <p>
-                <span className="font-medium text-foreground">💰 Paiement sécurisé :</span> L'expéditeur paie au moment de la réservation. Les fonds sont conservés par KiloFly jusqu'à la confirmation de réception du colis.
-              </p>
-              <p>
-                <span className="font-medium text-foreground">📦 Remise du colis :</span> Avant le départ, l'expéditeur remet son colis au voyageur (en main propre ou via un point relais). Les deux parties signent électroniquement pour valider la prise en charge.
-              </p>
-              <p>
-                <span className="font-medium text-foreground">✈️ Transport :</span> Le voyageur transporte le colis dans ses bagages. À l'arrivée, il remet le colis au destinataire.
-              </p>
-              <p>
-                <span className="font-medium text-foreground">✅ Confirmation :</span> Une fois le colis reçu, le destinataire confirme la livraison. Le voyageur reçoit alors son paiement (moins 5% de commission).
-              </p>
-            </div>
+            {/* How it works button */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <button className="flex flex-col items-center text-center group cursor-pointer">
+                  <div className="mb-2 p-2 bg-muted rounded-full group-hover:bg-primary/10 transition-colors">
+                    <HelpCircle className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </div>
+                  <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors">
+                    En savoir +
+                  </span>
+                </button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-lg text-center">Comment ça marche exactement ?</h4>
+                  <div className="space-y-3 text-sm text-muted-foreground">
+                    <p>
+                      <span className="font-medium text-foreground">💰 Paiement sécurisé :</span> L'expéditeur paie au moment de la réservation. Les fonds sont conservés par KiloFly jusqu'à la confirmation de réception du colis.
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">📦 Remise du colis :</span> Avant le départ, l'expéditeur remet son colis au voyageur (en main propre ou via un point relais). Les deux parties signent électroniquement pour valider la prise en charge.
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">✈️ Transport :</span> Le voyageur transporte le colis dans ses bagages. À l'arrivée, il remet le colis au destinataire.
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">✅ Confirmation :</span> Une fois le colis reçu, le destinataire confirme la livraison. Le voyageur reçoit alors son paiement (moins 5% de commission).
+                    </p>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </section>
 
