@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     // Check notification preferences for each user
     const { data: preferences, error: prefsError } = await supabase
       .from("notification_preferences")
-      .select("user_id, alerts")
+    .select("user_id, alerts_enabled")
       .in("user_id", uniqueUserIds);
 
     if (prefsError) {
@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
     }
 
     // Create a map of user preferences
-    const prefsMap = new Map(preferences?.map(p => [p.user_id, p.alerts]) || []);
+  const prefsMap = new Map(preferences?.map(p => [p.user_id, p.alerts_enabled]) || []);
 
     // Filter users who have alerts enabled (default to true if no preference)
     const usersToNotify = uniqueUserIds.filter(userId => {
