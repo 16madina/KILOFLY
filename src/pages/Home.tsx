@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar";
 import { SkeletonShimmer } from "@/components/ui/skeleton-shimmer";
 import { Button } from "@/components/ui/button";
 import { Search, ShieldCheck, CreditCard, Package, Users, TrendingUp, Plus, Plane, HelpCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import kiloflyHeroBanner from "@/assets/kilofly-hero-banner.png";
@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { SearchFlow } from "@/components/SearchFlow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TransportRequestsList } from "@/components/transport-requests/TransportRequestsList";
+import { motion } from "framer-motion";
 
 interface Listing {
   id: string;
@@ -322,24 +323,101 @@ const Home = () => {
                   </span>
                 </button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <div className="space-y-4">
+              <DialogContent className="max-w-md overflow-hidden">
+                <motion.div 
+                  className="space-y-5"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
                   <h4 className="font-semibold text-lg text-center">Comment ça marche exactement ?</h4>
-                  <div className="space-y-3 text-sm text-muted-foreground">
-                    <p>
-                      <span className="font-medium text-foreground">💰 Paiement sécurisé :</span> L'expéditeur paie au moment de la réservation. Les fonds sont conservés par KiloFly jusqu'à la confirmation de réception du colis.
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">📦 Remise du colis :</span> Avant le départ, l'expéditeur remet son colis au voyageur (en main propre ou via un point relais). Les deux parties signent électroniquement pour valider la prise en charge.
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">✈️ Transport :</span> Le voyageur transporte le colis dans ses bagages. À l'arrivée, il remet le colis au destinataire.
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">✅ Confirmation :</span> Une fois le colis reçu, le destinataire confirme la livraison. Le voyageur reçoit alors son paiement (moins 5% de commission).
-                    </p>
+                  
+                  <div className="space-y-4">
+                    <motion.div 
+                      className="flex gap-4 items-start p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 }}
+                    >
+                      <motion.div 
+                        className="flex-shrink-0 w-12 h-12 rounded-full bg-green-500 flex items-center justify-center"
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ repeat: Infinity, duration: 2, repeatDelay: 1 }}
+                      >
+                        <CreditCard className="h-6 w-6 text-white" />
+                      </motion.div>
+                      <div>
+                        <h5 className="font-semibold text-green-700 dark:text-green-400 mb-1">Paiement sécurisé</h5>
+                        <p className="text-xs text-muted-foreground">
+                          L'expéditeur paie à la réservation. Les fonds sont conservés par KiloFly jusqu'à la confirmation.
+                        </p>
+                      </div>
+                    </motion.div>
+
+                    <motion.div 
+                      className="flex gap-4 items-start p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <motion.div 
+                        className="flex-shrink-0 w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center"
+                        animate={{ y: [0, -4, 0] }}
+                        transition={{ repeat: Infinity, duration: 1.5, repeatDelay: 0.5 }}
+                      >
+                        <Package className="h-6 w-6 text-white" />
+                      </motion.div>
+                      <div>
+                        <h5 className="font-semibold text-blue-700 dark:text-blue-400 mb-1">Remise du colis</h5>
+                        <p className="text-xs text-muted-foreground">
+                          L'expéditeur remet son colis au voyageur. Les deux parties signent électroniquement.
+                        </p>
+                      </div>
+                    </motion.div>
+
+                    <motion.div 
+                      className="flex gap-4 items-start p-3 rounded-lg bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <motion.div 
+                        className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-sky flex items-center justify-center"
+                        animate={{ x: [0, 8, 0] }}
+                        transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                      >
+                        <Plane className="h-6 w-6 text-white" />
+                      </motion.div>
+                      <div>
+                        <h5 className="font-semibold text-sky-700 dark:text-sky-400 mb-1">Transport</h5>
+                        <p className="text-xs text-muted-foreground">
+                          Le voyageur transporte le colis dans ses bagages et le remet au destinataire à l'arrivée.
+                        </p>
+                      </div>
+                    </motion.div>
+
+                    <motion.div 
+                      className="flex gap-4 items-start p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      <motion.div 
+                        className="flex-shrink-0 w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center"
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ repeat: Infinity, duration: 1, repeatDelay: 2 }}
+                      >
+                        <ShieldCheck className="h-6 w-6 text-white" />
+                      </motion.div>
+                      <div>
+                        <h5 className="font-semibold text-emerald-700 dark:text-emerald-400 mb-1">Confirmation</h5>
+                        <p className="text-xs text-muted-foreground">
+                          Le destinataire confirme la livraison. Le voyageur reçoit son paiement (moins 5% de commission).
+                        </p>
+                      </div>
+                    </motion.div>
                   </div>
-                </div>
+                </motion.div>
               </DialogContent>
             </Dialog>
           </div>
