@@ -36,7 +36,6 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       external: [
         '@capacitor/app',
-        '@capacitor/browser',
         '@capacitor-firebase/messaging',
         '@capacitor/push-notifications',
       ],
