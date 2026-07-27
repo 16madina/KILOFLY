@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets / signing
+kiloflykey
+kiloflykey/
+upload_certificate.pem
+*.jks
+*.keystore
+
