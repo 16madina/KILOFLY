@@ -1,9 +1,28 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+
+
+// Live web shell (like KiDi+): UI/JS updates without a new Play build.
+// Local hot-reload: set NATIVE_APP_URL=http://YOUR_LAN_IP:5173 before cap sync.
+const nativeAppUrl = process.env.NATIVE_APP_URL || "https://kiloflyapp.com";
+
 const config: CapacitorConfig = {
   appId: 'com.kilofly.app',
   appName: 'KiloFly',
   webDir: 'dist',
+  server: {
+    url: nativeAppUrl,
+    cleartext: nativeAppUrl.startsWith("http://"),
+    androidScheme: "https",
+    allowNavigation: [
+      "kiloflyapp.com",
+      "www.kiloflyapp.com",
+      "*.lovable.app",
+      "*.lovableproject.com",
+      "*.stripe.com",
+    ],
+  },
+
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
